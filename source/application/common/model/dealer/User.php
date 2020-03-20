@@ -3,6 +3,7 @@
 namespace app\common\model\dealer;
 
 use app\common\model\BaseModel;
+use app\common\model\User as UserModel;
 
 /**
  * 分销商用户模型

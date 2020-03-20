@@ -2,6 +2,8 @@
 
 namespace app\store\model\user;
 
+use app\common\enum\user\grade\GradeType as GradeTypeEnum;
+use app\common\enum\user\grade\Rebate as RebateEnum;
 use app\common\model\user\Grade as GradeModel;
 
 use app\store\model\User as UserModel;
@@ -43,6 +45,8 @@ class Grade extends GradeModel
         $data['weight'] = intval($data['weight']);
         $data['upgrade_integral'] = intval($data['upgrade_integral']);
         $data['status'] = intval($data['status']);
+        $data['grade_type'] = intval($data['grade_type']);
+        $data['is_rebate'] = intval($data['is_rebate']);
         $data['wxapp_id'] = self::$wxapp_id;
         return $this->allowField(true)->save($data);
     }
@@ -61,6 +65,8 @@ class Grade extends GradeModel
         $data['weight'] = intval($data['weight']);
         $data['upgrade_integral'] = intval($data['upgrade_integral']);
         $data['status'] = intval($data['status']);
+        $data['grade_type'] = intval($data['grade_type']);
+        $data['is_rebate'] = intval($data['is_rebate']);
         return $this->allowField(true)->save($data) !== false;
     }
 
@@ -137,6 +143,24 @@ class Grade extends GradeModel
      */
     public static function getGradeInfo($grade_id){
         return self::where(['grade_id'=>$grade_id])->field(['grade_id', 'weight', 'upgrade_integral'])->find();
+    }
+
+    /**
+     * 获取器 重组等级类型数据
+     * @param $value
+     * @return mixed
+     */
+    public function getGradeTypeAttr($value){
+        return GradeTypeEnum::data()[$value];
+    }
+
+    /**
+     * 获取器 重组返利数据
+     * @param $value
+     * @return mixed
+     */
+    public function getIsRebateAttr($value){
+        return RebateEnum::data()[$value];
     }
 
 }

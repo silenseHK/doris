@@ -3,6 +3,7 @@
 namespace app\api\controller;
 
 use app\api\model\User as UserModel;
+use think\Exception;
 
 /**
  * 用户管理
@@ -25,6 +26,17 @@ class User extends Controller
             'user_id' => $model->login($this->request->post()),
             'token' => $model->getToken()
         ]);
+    }
+
+    public function register(){
+        try{
+            $model = new UserModel;
+            return $this->renderSuccess([
+                'user_id' => $model->doRegister($this->request->post())
+            ]);
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
     }
 
     /**

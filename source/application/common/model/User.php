@@ -482,7 +482,7 @@ class User extends BaseModel
         }else{
             $filter = $relation;
         }
-        $rebateGradeIds = Grade::getRebateGrade($userData['weight'], $userData['grade_type']);
+        $rebateGradeIds = Grade::getRebateGrade($userData['grade_type']);
         ##查找获利人
         $orderFilter = implode(',', $filter);
         $rebateUser = self::where(['user_id'=>['IN', $filter], 'grade_id'=>['IN', $rebateGradeIds], 'is_delete'=>0])->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->find();

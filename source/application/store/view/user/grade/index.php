@@ -28,8 +28,10 @@
                                 <th>等级名称</th>
                                 <th>等级权重</th>
                                 <th>升级条件</th>
+                                <th>等级类型</th>
 <!--                                <th>等级权益</th>-->
                                 <th>状态</th>
+                                <th>是否返利</th>
                                 <th>创建时间</th>
                                 <th>操作</th>
                             </tr>
@@ -43,6 +45,9 @@
                                     <td class="am-text-middle">
                                         <span>积分满<?= $item['upgrade_integral'] ?>点</span>
                                     </td>
+                                    <td class="am-text-middle">
+                                        <span class="am-badge am-badge-<?= $item['grade_type']['value'] == 20 ? 'success' : 'warning' ?>"><?= $item['grade_type']['text'] ?></span>
+                                    </td>
 <!--                                    <td class="am-text-middle">-->
 <!--                                        <span>--><?//= $item['equity']['discount'] ?><!--折</span>-->
 <!--                                    </td>-->
@@ -50,6 +55,11 @@
                                        <span class="am-badge am-badge-<?= $item['status'] ? 'success' : 'warning' ?>">
                                            <?= $item['status'] ? '启用' : '禁用' ?>
                                        </span>
+                                    </td>
+                                    <td class="am-text-middle">
+                                        <span class="am-badge am-badge-<?= $item['is_rebate']['value'] == 10 ? 'success' : 'warning' ?>">
+                                        <?= $item['is_rebate']['text'] ?>
+                                        </span>
                                     </td>
                                     <td class="am-text-middle"><?= $item['create_time'] ?></td>
                                     <td class="am-text-middle">

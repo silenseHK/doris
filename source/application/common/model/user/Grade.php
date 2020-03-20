@@ -187,9 +187,9 @@ class Grade extends BaseModel
      * @param int $gradeType
      * @return array
      */
-    public static function getRebateGrade($weight, $gradeType=10){
+    public static function getRebateGrade($gradeType=10){
         return self::where([
-                'weight'=>['GT', $weight],
+                'is_rebate'=> 1,
                 'grade_type' => $gradeType,
                 'is_delete' => 0,
                 'status' => 1

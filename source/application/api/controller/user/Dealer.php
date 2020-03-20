@@ -42,15 +42,13 @@ class Dealer extends Controller
      */
     public function center()
     {
-        $dealer = $this->dealer;
-        
         return $this->renderSuccess([
             // 当前是否为分销商
             'is_dealer' => $this->isDealerUser(),
             // 当前用户信息
             'user' => $this->user,
             // 分销商用户信息
-            'dealer' => $dealer,
+            'dealer' => $this->dealer,
             // 背景图
             'background' => $this->setting['background']['values']['index'],
             // 页面文字

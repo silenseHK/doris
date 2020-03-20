@@ -63,6 +63,35 @@
 <!--                                    </div>-->
 <!--                                </div>-->
 <!--                            </div>-->
+
+                            <div class="am-form-group">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require"> 等级类型 </label>
+                                <div class="am-u-sm-9 am-u-end">
+                                    <label class="am-radio-inline">
+                                        <input type="radio" name="grade[grade_type]" value="10" data-am-ucheck <?= $model['grade_type']['value']== 10? "checked" : "" ?> >
+                                        低阶
+                                    </label>
+                                    <label class="am-radio-inline">
+                                        <input type="radio" name="grade[grade_type]" value="20" data-am-ucheck <?= $model['grade_type']['value']== 20? "checked" : "" ?> >
+                                        高阶
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="am-form-group">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require"> 是否返利 </label>
+                                <div class="am-u-sm-9 am-u-end">
+                                    <label class="am-radio-inline">
+                                        <input type="radio" name="grade[is_rebate]" value="10" data-am-ucheck <?= $model['is_rebate']['value']== 10? "checked" : "" ?> >
+                                        是
+                                    </label>
+                                    <label class="am-radio-inline">
+                                        <input type="radio" name="grade[is_rebate]" value="20" data-am-ucheck <?= $model['is_rebate']['value']== 20? "checked" : "" ?> >
+                                        否
+                                    </label>
+                                </div>
+                            </div>
+
                             <div class="am-form-group">
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require"> 等级状态 </label>
                                 <div class="am-u-sm-9 am-u-end">

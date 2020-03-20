@@ -17,6 +17,7 @@ use think\Exception;
 use think\Hook;
 use think\Validate;
 use app\common\model\Goods as GoodsModel;
+use app\api\validate\user\Check;
 
 /**
  * 用户模型类
@@ -341,6 +342,12 @@ class User extends UserModel
             Hook::listen('user_instant_grade',$options);
         }
 
+    }
+
+    public function doRegister($post){
+        $Validate = new Check();
+        $res = $Validate->scene('register')->check($post);
+        if(!$res)throw new Exception($Validate->getError());
     }
 
 }
