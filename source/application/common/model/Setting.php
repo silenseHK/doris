@@ -161,14 +161,19 @@ class Setting extends BaseModel
                     'default' => 'aliyun',
                     'engine' => [
                         'aliyun' => [
-                            'AccessKeyId' => '',
-                            'AccessKeySecret' => '',
-                            'sign' => '萤火科技',
+                            'AccessKeyId' => 'LTAI4FmPMAnaLRxTnoZ5ftVb',
+                            'AccessKeySecret' => 'VJngYeoy3gn9ThIOoQfKraiKK2bwpz',
+                            'sign' => '终极码app应用',
                             'order_pay' => [
                                 'is_enable' => '0',
                                 'template_code' => '',
                                 'accept_phone' => '',
                             ],
+                            'verify_code' => [
+                                'is_enable' => '1',
+                                'template_code' => 'SMS_182546922',
+                                'accept_phone' => ''
+                            ]
                         ],
                     ],
                 ],

@@ -10,24 +10,20 @@ class Check extends Validate
 {
 
     protected $rule = [
-        'code' => 'require',
-        'user_info' => 'require|array',
-        'referee_id' => 'number|>=:0',
-        'mobile' => 'require|mobile',
-        'password' => 'require|min:6|password|confirm',
-        'password_confirm' => 'require'
-    ];
-
-    protected $message = [
-        'code' => '登陆code',
-        'user_info' => '用户信息',
-        'referee_id' => '推荐人',
-        'mobile' => '手机号',
-        'password' => '登陆密码'
+        'code|登陆code' => 'require',
+        'user_info|用户信息' => 'require',
+        'referee_id|推荐人' => 'number|>=:0',
+        'mobile|手机号' => 'require|mobile',
+        'password|登陆密码' => 'require|min:6|password|confirm',
+        'password_confirm' => 'require',
+        'verify_code|验证码' => 'require',
+        'wxapp_id' => 'require',
+        'code_type|验证码类型' => 'require|in:10'
     ];
 
     protected $scene = [
-        'register' => ['code', 'user_info', 'referee_id', 'mobile', 'password', 'password_confirm']
+        'register' => ['code', 'user_info', 'referee_id', 'mobile', 'password', 'password_confirm', 'wxapp_id'],
+        'send_verify_code' => ['mobile', 'wxapp_id', 'code_type']
     ];
 
     /**
@@ -49,9 +45,9 @@ class Check extends Validate
      * @return bool|string
      */
     protected function password($value){
-        if(!preg_match('/[a-zA-Z]/', $value))return "密码需要为8-20位的字母和数字的组合";
-        if(!preg_match('/[\d]/', $value))return "密码需要为8-20位的字母和数字的组合";
-        if(!preg_match('/^[A-Za-z0-9]{8,20}$/', $value))return "密码需要为8-20位的字母和数字的组合";
+        if(!preg_match('/[a-zA-Z]/', $value))return "密码需要为8-20位字母和数字的组合";
+        if(!preg_match('/[\d]/', $value))return "密码需要为8-20位字母和数字的组合";
+        if(!preg_match('/^[A-Za-z0-9]{8,20}$/', $value))return "密码需要为8-20位字母和数字的组合";
         return true;
     }
 

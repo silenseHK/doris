@@ -332,3 +332,13 @@ function format_time($timeStamp)
 function str_filter($str){
     return addslashes(strip_tags(trim($str)));
 }
+
+/**
+ * 获取一天开始的时间戳
+ * @return false|int
+ */
+function get_day_start_timestamp(){
+    return strtotime(date('Y-m-d',time()) . " 00:00:01");
+}
+
+

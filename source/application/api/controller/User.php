@@ -28,11 +28,16 @@ class User extends Controller
         ]);
     }
 
+    /**
+     * 168用户注册
+     * @return array
+     */
     public function register(){
         try{
             $model = new UserModel;
             return $this->renderSuccess([
-                'user_id' => $model->doRegister($this->request->post())
+                'user_id' => $model->doRegister($this->request->post()),
+                'token' => $model->getToken()
             ]);
         }catch(Exception $e){
             return $this->renderError($e->getMessage());
@@ -50,6 +55,20 @@ class User extends Controller
         // 当前用户信息
         $userInfo = $this->getUser();
         return $this->renderSuccess(compact('userInfo'));
+    }
+
+    /**
+     * 注册发送验证码
+     * @return array
+     */
+    public function sendVerifyCode(){
+        try{
+            $model = new UserModel;
+            $model->sendVerifyCode($this->request->post());
+            return $this->renderSuccess('发送成功');
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
     }
 
 }

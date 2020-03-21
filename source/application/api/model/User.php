@@ -3,7 +3,9 @@
 namespace app\api\model;
 
 use app\common\enum\user\balanceLog\Scene;
+use app\common\enum\VerifyCode;
 use app\common\model\GoodsGrade;
+use app\common\model\MobileVerifyCode;
 use app\common\model\user\Grade;
 use app\common\model\user\IntegralLog;
 use app\common\model\UserGoodsStock;
@@ -18,6 +20,8 @@ use think\Hook;
 use think\Validate;
 use app\common\model\Goods as GoodsModel;
 use app\api\validate\user\Check;
+use app\common\enum\VerifyCode as verifyCodeEnum;
+use app\common\model\Setting as SettingModel;
 
 /**
  * 用户模型类
@@ -26,6 +30,33 @@ use app\api\validate\user\Check;
  */
 class User extends UserModel
 {
+
+    protected $insert = ['grade_id', 'relation'];
+
+    /**
+     * 获取器 -- 设置用户初始会员等级
+     * @param $value
+     * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function setGradeIdAttr($value){
+        return Grade::getLowestGrade()['grade_id'];
+    }
+
+    /**
+     * 获取器 -- 设置用户的代理关系网
+     * @param $value
+     * @param $data
+     * @return string
+     */
+    public function setRelationAttr($value, $data){
+        $inviteUserId = $data['invitation_user_id'];
+        $relation = $inviteUserId ? (self::getUserRelation($inviteUserId)) : "";
+        return $inviteUserId ? trim($inviteUserId . '_' . $relation,'_') : "";
+    }
+
     private $token;
 
     /**
@@ -344,10 +375,61 @@ class User extends UserModel
 
     }
 
+    /**
+     * 168 注册
+     * @param $post
+     * @return mixed
+     * @throws BaseException
+     * @throws Exception
+     * @throws \think\exception\DbException
+     */
     public function doRegister($post){
+        ##验证参数
         $Validate = new Check();
         $res = $Validate->scene('register')->check($post);
         if(!$res)throw new Exception($Validate->getError());
+        ##验证手机验证码
+        if(!MobileVerifyCode::checkVerifyCode($post['mobile'], $post['verify_code'], verifyCodeEnum::REGISTER))throw new Exception('验证码错误');
+
+        ##微信登录 获取session_key
+        $code = str_filter($post['code']);
+        $session = $this->wxlogin($code);
+        // 自动注册用户
+        $referee_id = isset($post['referee_id']) ? $post['referee_id'] : 0;
+        $userInfo = json_decode(htmlspecialchars_decode($post['user_info']), true);
+        $userInfo['mobile'] = $post['mobile'];
+        $userInfo['password'] = password_hash($post['password'],PASSWORD_DEFAULT);
+        $userInfo['invitation_user_id'] = $referee_id;
+        $user_id = $this->register($session['openid'], $userInfo, $referee_id);
+
+        // 生成token (session3rd)
+        $this->token = $this->token($session['openid']);
+        // 记录缓存, 7天
+        Cache::set($this->token, $session, 86400 * 7);
+        return $user_id;
+    }
+
+    /**
+     * 注册发送验证码
+     * @param $post
+     * @throws Exception
+     */
+    public function sendVerifyCode($post){
+        ##验证参数
+        $Validate = new Check();
+        $res = $Validate->scene('send_verify_code')->check($post);
+        if(!$res)throw new Exception($Validate->getError());
+        $mobile = trim($post['mobile']);
+        $wxappId = intval($post['wxapp_id']);
+        $codeType = intval($post['code_type']);
+        if($codeType == VerifyCode::REGISTER){
+            ##判断手机号是否已注册
+            if(!self::checkExistMobile($mobile))throw new Exception('手机号已经注册过了');
+        }
+        ##判断发送时间
+        MobileVerifyCode::checkSendRight($mobile, $wxappId, $codeType);
+        ##发送验证码
+        MobileVerifyCode::sendVerifyCode($mobile, $wxappId, $codeType);
     }
 
 }

@@ -489,4 +489,24 @@ class User extends BaseModel
         return $rebateUser ? $rebateUser->toArray() : [];
     }
 
+    /**
+     * 获取用户代理关系
+     * @param $userId
+     * @return mixed
+     */
+    public static function getUserRelation($userId){
+        return self::where(['user_id'=>$userId])->value('relation');
+    }
+
+    /**
+     * 检查电话号码是否已被注册
+     * @param $mobile
+     * @return bool
+     * @throws Exception
+     */
+    public static function checkExistMobile($mobile){
+        $check = self::where(['mobile'=>$mobile])->count('user_id');
+        return $check ? false : true;
+    }
+
 }
