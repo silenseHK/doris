@@ -403,4 +403,14 @@ class Goods extends BaseModel
         return self::where(['goods_id'=>$goodsId])->field(['integral_weight', 'is_add_integral', 'sale_type'])->find();
     }
 
+    /**
+     * 获取商品详情
+     * @param $goodsId
+     * @return static
+     */
+    public static function deliverDetail($goodsId)
+    {
+
+    }
+
 }

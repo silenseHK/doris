@@ -6,6 +6,9 @@ use app\api\controller\Controller;
 use app\api\model\dealer\Setting;
 use app\api\model\dealer\User as DealerUserModel;
 use app\api\model\dealer\Referee as RefereeModel;
+use app\api\model\User;
+use app\api\model\user\Grade;
+use think\Exception;
 
 /**
  * 我的团队
@@ -55,6 +58,31 @@ class Team extends Controller
             // 页面文字
             'words' => $this->setting['words']['values'],
         ]);
+    }
+
+    /**
+     * 获取等级列表
+     * @return array
+     */
+    public function gradeList(){
+        try{
+            $user = $this->getUser();
+            $model = new Grade();
+            return $this->renderSuccess([
+                'list' => $model->getGradeList(),
+            ]);
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    public function memberList(){
+        try{
+            $user = $this->getUser();
+            return $this->renderSuccess($user->getMemberList($this->request->post()));
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
     }
 
 }

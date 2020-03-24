@@ -197,4 +197,18 @@ class Grade extends BaseModel
             ->column('grade_id');
     }
 
+    /**
+     * 获取可展示的会员等级id数组
+     * @return array
+     */
+    public static function getShowGradeIds(){
+        return self::where(
+            [
+                'is_delete' => 0,
+                'status' => 1,
+                'is_show' => 1
+            ]
+        )->column('grade_id');
+    }
+
 }

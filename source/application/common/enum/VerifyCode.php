@@ -16,7 +16,7 @@ class VerifyCode extends EnumBasics
                 'value' => self::REGISTER,
                 'expire_time' => 10 * 60,  //10分钟有效
                 'send_expire_time' => 2 * 60,  //2分钟内不能重复发送
-                'days_num' => 1,  //一天最多发送五条
+                'days_num' => 100,  //一天最多发送五条
                 'msg_type' => 'verify_code'
             ]
         ];

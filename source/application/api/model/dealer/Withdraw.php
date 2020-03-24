@@ -2,8 +2,10 @@
 
 namespace app\api\model\dealer;
 
+use app\api\model\user\GoodsStock;
 use app\common\exception\BaseException;
 use app\common\model\dealer\Withdraw as WithdrawModel;
+use app\api\model\User as UserModel;
 
 /**
  * 分销商提现明细模型
@@ -39,7 +41,7 @@ class Withdraw extends WithdrawModel
 
     /**
      * 提交申请
-     * @param User $dealer
+     * @param UserModel $dealer
      * @param $data
      * @return false|int
      * @throws BaseException
@@ -55,8 +57,7 @@ class Withdraw extends WithdrawModel
             'wxapp_id' => self::$wxapp_id,
         ]));
         // 冻结用户资金
-        $dealer->freezeMoney($data['money']);
-        return true;
+        return $dealer->freezeMoney($data['money']);
     }
 
     /**
@@ -67,16 +68,20 @@ class Withdraw extends WithdrawModel
      */
     private function validation($dealer, $data)
     {
+        //判断[云库存]是否有负库存
+        if(!GoodsStock::checkAllStock($dealer['user_id'])){
+            throw new BaseException(['msg' => '有商品库存为负,请先补充库存']);
+        }
         // 结算设置
         $settlement = Setting::getItem('settlement');
         // 最低提现佣金
         if ($data['money'] <= 0) {
             throw new BaseException(['msg' => '提现金额不正确']);
         }
-        if ($dealer['money'] <= 0) {
+        if ($dealer['balance'] <= 0) {
             throw new BaseException(['msg' => '当前用户没有可提现佣金']);
         }
-        if ($data['money'] > $dealer['money']) {
+        if ($data['money'] > $dealer['balance']) {
             throw new BaseException(['msg' => '提现金额不能大于可提现佣金']);
         }
         if ($data['money'] < $settlement['min_money']) {

@@ -15,21 +15,19 @@ class User extends Controller
     /**
      * 用户自动登录
      * @return array
+     * @throws Exception
      * @throws \app\common\exception\BaseException
-     * @throws \think\Exception
      * @throws \think\exception\DbException
      */
     public function login()
     {
         $model = new UserModel;
-        return $this->renderSuccess([
-            'user_id' => $model->login($this->request->post()),
-            'token' => $model->getToken()
-        ]);
+        $userData = $model->login($this->request->post());
+        return $this->renderSuccess(array_merge($userData, ['token' => $model->getToken()]));
     }
 
     /**
-     * 168用户注册
+     * 168用户注册【停用】
      * @return array
      */
     public function register(){
@@ -66,6 +64,21 @@ class User extends Controller
             $model = new UserModel;
             $model->sendVerifyCode($this->request->post());
             return $this->renderSuccess('发送成功');
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 绑定手机号
+     * @return array
+     */
+    public function bindMobile(){
+        try{
+            $user = $this->getUser();
+            $model = new UserModel;
+            $model->bindMobile($this->request->post(), $user);
+            return $this->renderSuccess('','操作成功');
         }catch(Exception $e){
             return $this->renderError($e->getMessage());
         }

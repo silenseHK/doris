@@ -46,7 +46,7 @@ class Withdraw extends Controller
     {
         $formData = json_decode(htmlspecialchars_decode($data), true);
         $model = new WithdrawModel;
-        if ($model->submit($this->dealer, $formData)) {
+        if ($model->submit($this->user, $formData) === true) {
             return $this->renderSuccess([], '申请提现成功');
         }
         return $this->renderError($model->getError() ?: '提交失败');

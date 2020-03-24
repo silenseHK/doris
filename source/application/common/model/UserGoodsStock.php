@@ -116,4 +116,16 @@ class UserGoodsStock extends BaseModel
         return self::where(['user_id'=>$userId, 'goods_id'=>$goodsId])->setInc('stock', $stock);
     }
 
+    /**
+     * 通过user_id 和 goods_id 减少用户的库存
+     * @param $userId
+     * @param $goodsId
+     * @param $stock
+     * @return int|true
+     * @throws \think\Exception
+     */
+    public static function decStockByUserGoodsId($userId, $goodsId, $stock){
+        return self::where(['user_id'=>$userId, 'goods_id'=>$goodsId])->setDec('stock', $stock);
+    }
+
 }

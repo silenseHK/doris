@@ -2,6 +2,9 @@
 
 namespace app\api\model;
 
+use app\api\model\user\BalanceLog;
+use app\api\model\user\GoodsStock;
+use app\api\validate\user\TeamValidate;
 use app\common\enum\user\balanceLog\Scene;
 use app\common\enum\VerifyCode;
 use app\common\model\GoodsGrade;
@@ -15,6 +18,8 @@ use app\common\exception\BaseException;
 use app\common\model\User as UserModel;
 use app\api\model\dealer\Referee as RefereeModel;
 use app\api\model\dealer\Setting as DealerSettingModel;
+use think\Db;
+use think\db\Query;
 use think\Exception;
 use think\Hook;
 use think\Validate;
@@ -52,6 +57,7 @@ class User extends UserModel
      * @return string
      */
     public function setRelationAttr($value, $data){
+        if(!isset($data['invitation_user_id']))return "";
         $inviteUserId = $data['invitation_user_id'];
         $relation = $inviteUserId ? (self::getUserRelation($inviteUserId)) : "";
         return $inviteUserId ? trim($inviteUserId . '_' . $relation,'_') : "";
@@ -79,16 +85,21 @@ class User extends UserModel
      */
     public static function getUser($token)
     {
-        $openId = Cache::get($token)['openid'];
-        return self::detail(['open_id' => $openId], ['address', 'addressDefault', 'grade']);
+//        $openId = Cache::get($token)['openid'];
+        $mobile = Cache::get($token);
+        if(is_array($mobile)){
+            $where = ['open_id'=>$mobile['openid']];
+        }else{
+            $where = ['mobile' => $mobile];
+        }
+        return self::detail($where, ['address', 'addressDefault', 'grade']);
     }
 
     /**
      * 用户登录
-     * @param array $post
-     * @return string
+     * @param $post
+     * @return mixed
      * @throws BaseException
-     * @throws \think\Exception
      * @throws \think\exception\DbException
      */
     public function login($post)
@@ -98,13 +109,44 @@ class User extends UserModel
         // 自动注册用户
         $referee_id = isset($post['referee_id']) ? $post['referee_id'] : null;
         $userInfo = json_decode(htmlspecialchars_decode($post['user_info']), true);
-        $user_id = $this->register($session['openid'], $userInfo, $referee_id);
+        $userInfo['open_id'] = $session['openid'];
+        $userInfo['invitation_user_id'] = intval($referee_id);
+        $userData = $this->register($userInfo, $referee_id);
         // 生成token (session3rd)
         $this->token = $this->token($session['openid']);
         // 记录缓存, 7天
         Cache::set($this->token, $session, 86400 * 7);
-        return $user_id;
+        return $userData;
     }
+
+    /**
+     * 用户登录
+     * @param $post
+     * @return mixed
+     * @throws Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+//    public function login($post){
+//        ##验证
+//        $validate = new Check();
+//        $rule = [
+//            'password|登陆密码' => 'require|min:6|password',
+//        ];
+//        $res = $validate->scene('login')->rule($rule)->check($post);
+//        if(!$res)throw new Exception($validate->getError());
+//        ##接收参数
+//        $mobile = str_filter($post['mobile']);
+//        $password = str_filter($post['password']);
+//        $user = $this->where(['mobile'=>$mobile])->field(['user_id', 'password'])->find();
+//        if(!$user)throw new Exception('账号或密码错误');
+//        if(!password_verify($password, $user['password']))throw new Exception('账号或密码错误');
+//        $this->token = $this->token($mobile);
+//        // 记录缓存, 7天
+//        Cache::set($this->token, $mobile, 86400 * 7);
+//        return $user['user_id'];
+//    }
 
     /**
      * 获取token
@@ -157,19 +199,18 @@ class User extends UserModel
 
     /**
      * 自动注册用户
-     * @param $open_id
+     * @param $mobile
      * @param $data
      * @param int $referee_id
      * @return mixed
      * @throws \Exception
      * @throws \think\exception\DbException
      */
-    private function register($open_id, $data, $referee_id = null)
+    private function register($data, $referee_id = null)
     {
         // 查询用户是否已存在
-        $user = self::detail(['open_id' => $open_id]);
+        $user = self::detail(['open_id' => $data['open_id']]);
         $model = $user ?: $this;
-        $data['open_id'] = $open_id;
         $data['wxapp_id'] = self::$wxapp_id;
 
         // @nickName 用户昵称
@@ -192,7 +233,9 @@ class User extends UserModel
             $this->rollback();
             throw new BaseException(['msg' => $e->getMessage()]);
         }
-        return $model['user_id'];
+        $is_bind_mobile = 0;
+        if($user && $user['mobile'])$is_bind_mobile = 1;
+        return ['user_id' => $model['user_id'], 'is_bind_mobile' => $is_bind_mobile];
     }
 
     /**
@@ -390,7 +433,8 @@ class User extends UserModel
         if(!$res)throw new Exception($Validate->getError());
         ##验证手机验证码
         if(!MobileVerifyCode::checkVerifyCode($post['mobile'], $post['verify_code'], verifyCodeEnum::REGISTER))throw new Exception('验证码错误');
-
+        ##判断手机号是否已注册
+        if(!self::checkExistMobile($post['mobile']))throw new Exception('手机号已被注册');
         ##微信登录 获取session_key
         $code = str_filter($post['code']);
         $session = $this->wxlogin($code);
@@ -398,9 +442,10 @@ class User extends UserModel
         $referee_id = isset($post['referee_id']) ? $post['referee_id'] : 0;
         $userInfo = json_decode(htmlspecialchars_decode($post['user_info']), true);
         $userInfo['mobile'] = $post['mobile'];
+        $userInfo['open_id'] = $session['openid'];
         $userInfo['password'] = password_hash($post['password'],PASSWORD_DEFAULT);
         $userInfo['invitation_user_id'] = $referee_id;
-        $user_id = $this->register($session['openid'], $userInfo, $referee_id);
+        $user_id = $this->register($userInfo, $referee_id);
 
         // 生成token (session3rd)
         $this->token = $this->token($session['openid']);
@@ -430,6 +475,171 @@ class User extends UserModel
         MobileVerifyCode::checkSendRight($mobile, $wxappId, $codeType);
         ##发送验证码
         MobileVerifyCode::sendVerifyCode($mobile, $wxappId, $codeType);
+    }
+
+    /**
+     * 绑定手机号
+     * @param $post
+     * @param $user
+     * @throws Exception
+     */
+    public function bindMobile($post, $user){
+        ##验证参数
+        $Validate = new Check();
+        $res = $Validate->scene('bind_mobile')->check($post);
+        if(!$res)throw new Exception($Validate->getError());
+        ##验证验证码
+        $mobile = str_filter($post['mobile']);
+        $code = str_filter($post['verify_code']);
+        if(!MobileVerifyCode::checkVerifyCode($mobile, $code,VerifyCode::REGISTER))throw new Exception('验证码错误');
+        ##操作
+        Db::startTrans();
+        try{
+            ##绑定
+            $res = $this->where(['user_id'=>$user['user_id']])->setField('mobile', $mobile);
+            if($res === false)throw new Exception('手机号绑定失败');
+            ##使用验证码
+            $res = MobileVerifyCode::useVerifyByMobileCode($mobile, $code);
+            if($res === false)throw new Exception('验证码使用失败');
+            Db::commit();
+        }catch(Exception $e){
+            Db::rollback();
+        }
+    }
+
+    /**
+     * 获取提货发货的用户地址和商品库存
+     * @param $user
+     * @param $post
+     * @return array
+     * @throws Exception
+     */
+    public function getGoodsSendData($user, $post){
+        ##验证
+        $Validate = new Check();
+        $res = $Validate->scene('goods_send_data')->check($post);
+        if(!$res)throw new Exception($Validate->getError());
+        ##获取收货地址
+        $address = $user['address_default'] ? : (empty($user['address'])?[] : $user['address'][0]);
+        ##商品库存
+        $stock = GoodsStock::getStock($user['user_id'], intval($post['goods_id']));
+        return compact('address','stock');
+    }
+
+    /**
+     * 获取可提货发货商品列表
+     * @param $user
+     * @param $post
+     * @return false|\PDOStatement|string|\think\Collection
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getGoodsSendLists($user, $post){
+        ##获取用户拥有库存的列表
+        return GoodsStock::getSendLists($user['user_id']);
+    }
+
+    /**
+     * 获取用户成员
+     * @param $post
+     * @return \think\Paginator
+     * @throws Exception
+     * @throws \think\exception\DbException
+     */
+    public function getMemberList($post){
+        ##验证参数
+        $Validate = new TeamValidate();
+        $res = $Validate->scene('member_list')->check($post);
+        if(!$res)throw new Exception($Validate->getError());
+        ##接收参数
+        $grade_id = intval($post['grade_id']);
+        $keywords = isset($post['keywords']) ? str_filter($post['keywords']) : '';
+        $page = isset($post['page']) ? intval($post['page']) : 1;
+        $size = isset($post['size']) ? intval($post['size']) : 6;
+        ##成员列表
+        return $this->memberList($this['user_id'], $grade_id, $keywords, $page, $size);
+    }
+
+    /**
+     * 获取用户成员信息
+     * @param $user_id
+     * @param $grade_id
+     * @param $keywords
+     * @param $page
+     * @param $size
+     * @return \think\Paginator
+     * @throws \think\exception\DbException
+     */
+    public function memberList($user_id, $grade_id, $keywords, $page, $size){
+        if($keywords)$where['nickName|mobile'] = ['LIKE', "%{$keywords}%"];
+        $where['relation'] = ['LIKE', "%_{$user_id}_%"];
+        if($grade_id > 0){
+            $where['grade_id'] = $grade_id;
+        }else{
+            ##获取可显示的等级
+            $grade_ids = Grade::getShowGradeIds();
+            $where['grade_id'] = ['IN', $grade_ids];
+        }
+
+        return $this
+            ->where($where)
+            ->with(['grade' => function(Query $query){
+                $query->field(['grade_id', 'name']);
+            }])
+            ->field(['user_id', 'avatarUrl', 'balance', 'nickName', 'mobile', 'grade_id' ,'user_id as month_buy', 'user_id as day_buy', 'user_id as last_month_buy'])
+            ->paginate($size,true, ['page'=>$page]);
+    }
+
+    /**
+     * 获取器 -- 获取用户本月进货量
+     * @param $user_id
+     * @return float|int
+     */
+    public function getMonthBuyAttr($user_id){
+        return GoodsStock::countMonthBuy($user_id);
+    }
+
+    /**
+     * 获取器 -- 获取用户今日进货量
+     * @param $user_id
+     * @return float|int
+     */
+    public function getDayBuyAttr($user_id){
+        return GoodsStock::countDayBuy($user_id);
+    }
+
+    /**
+     * 获取器 -- 获取用户上月进货量
+     * @param $user_id
+     * @return float|int
+     */
+    public function getLastMonthBuyAttr($user_id){
+        return GoodsStock::countLastMonthBuy($user_id);
+    }
+
+    /**
+     * 冻结待提现的余额
+     * @param $money
+     * @return bool|string
+     */
+    public function freezeMoney($money){
+        Db::startTrans();
+        try{
+            $res = $this->save(['freeze_money'=>['inc', $money], 'balance'=> ['dec', $money]]);
+            if($res === false)throw new Exception('申请失败');
+            ##添加余额变更记录
+            $res = BalanceLog::add(Scene::WITHDRAW,[
+                'money' => -$money,
+                'user_id' => $this['user_id']
+            ],'');
+            if($res === false)throw new Exception('申请失败');
+            Db::commit();
+            return true;
+        }catch(Exception $e){
+            Db::rollback();
+            return $e->getMessage();
+        }
     }
 
 }

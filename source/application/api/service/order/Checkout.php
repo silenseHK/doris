@@ -571,6 +571,7 @@ class Checkout
             $this->goodsList,
             OrderTypeEnum::MASTER
         );
+//        print_r(json_decode(json_encode($this->goodsList),true));die;
         // 获取不支持当前城市配送的商品
         $notInRuleGoods = $ExpressService->getNotInRuleGoods();
         // 验证商品是否在配送范围

@@ -113,4 +113,14 @@ class MobileVerifyCode extends BaseModel
         if($check)throw new Exception('请勿频繁发送短信');
     }
 
+    /**
+     * 使用验证码--手机+验证码方式
+     * @param $mobile
+     * @param $code
+     * @return int
+     */
+    public static function useVerifyByMobileCode($mobile, $code){
+        return self::where(compact('mobile','code'))->setField('is_used',1);
+    }
+
 }

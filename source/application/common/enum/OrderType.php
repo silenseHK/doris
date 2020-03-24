@@ -18,6 +18,9 @@ class OrderType extends EnumBasics
     // 余额充值
     const RECHARGE = 100;
 
+    ## 运费支付
+    const FREIGHT = 30;
+
     /**
      * 获取订单类型值
      * @return array
@@ -36,6 +39,10 @@ class OrderType extends EnumBasics
             self::RECHARGE => [
                 'name' => '余额充值',
                 'value' => self::RECHARGE,
+            ],
+            self::FREIGHT => [
+                'name' => '运费支付',
+                'value' => self::FREIGHT,
             ],
         ];
     }

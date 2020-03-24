@@ -22,6 +22,7 @@ class WxPay extends WxBase
         OrderTypeEnum::MASTER => 'app\api\service\order\PaySuccess',
         OrderTypeEnum::SHARING => 'app\api\service\sharing\order\PaySuccess',
         OrderTypeEnum::RECHARGE => 'app\api\service\recharge\PaySuccess',
+        OrderTypeEnum::FREIGHT => 'app\api\service\freight\PaySuccess',
     ];
 
     /**

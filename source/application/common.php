@@ -334,11 +334,51 @@ function str_filter($str){
 }
 
 /**
- * 获取一天开始的时间戳
+ * 获取今天开始的时间戳
  * @return false|int
  */
 function get_day_start_timestamp(){
-    return strtotime(date('Y-m-d',time()) . " 00:00:01");
+    return mktime(0,0,0,date('m'),date('d'),date('Y'));
+}
+
+/**
+ * 获取今天结束的时间戳
+ * @return false|int
+ */
+function get_day_end_timestamp(){
+    return mktime(0,0,0,date('m'),date('d')+1,date('Y'))-1;
+}
+
+/**
+ * 获取本月开始的时间戳
+ * @return false|int
+ */
+function get_month_start_timestamp(){
+    return strtotime(date('Y-m-01 00:00:01',time()));
+}
+
+/**
+ * 获取上月开始的时间戳
+ * @return false|string
+ */
+function get_last_month_start_timestamp(){
+    return strtotime(date('Y-m-01 00:00:00',strtotime('-1 month')));
+}
+
+/**
+ * 获取本月结束的时间戳
+ * @return false|string
+ */
+function get_month_end_timestamp(){
+    return mktime (23,59,59, date ( "m" ), date ( "t" ), date ( "Y" ) );
+}
+
+/**
+ * 获取上月结束时间戳
+ * @return false|string
+ */
+function get_last_month_end_timestamp(){
+    return strtotime(date("Y-m-d 23:59:59", strtotime(-date('d').'day')));
 }
 
 

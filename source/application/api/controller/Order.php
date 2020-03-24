@@ -64,7 +64,6 @@ class Order extends Controller
             $params['goods_num'],
             $this->user
         );
-//        print_r(json_decode(json_encode($goodsList),true));die;
         // 获取订单确认信息
         $orderInfo = $Checkout->onCheckout($this->user, $goodsList);
         ## 点击立即购买的返回

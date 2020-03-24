@@ -63,4 +63,21 @@ class Payment
         return $payment;
     }
 
+    /**
+     * 构建运费微信支付
+     * @param $user
+     * @param $orderNo
+     * @param $payPrice
+     * @param int $orderType
+     * @return array
+     * @throws \app\common\exception\BaseException
+     * @throws \think\exception\DbException
+     */
+    public static function freightWechat($user, $orderNo, $payPrice, $orderType=OrderTypeEnum::FREIGHT){
+        // 统一下单API
+        $wxConfig = WxappModel::getWxappCache($user['wxapp_id']);
+        $WxPay = new WxPay($wxConfig);
+        return $WxPay->unifiedorder($orderNo, $user['open_id'], $payPrice, $orderType);
+    }
+
 }

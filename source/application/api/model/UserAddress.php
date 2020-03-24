@@ -129,4 +129,13 @@ class UserAddress extends UserAddressModel
         return self::get(compact('user_id', 'address_id'));
     }
 
+    /**
+     * 获取地址详细信息
+     * @param $address
+     * @return string
+     */
+    public static function getAddress($address){
+        return \app\api\model\Region::getNameById($address['province_id']) . Region::getNameById($address['city_id']) . Region::getNameById($address['region_id']) . $address['detail'];
+    }
+
 }

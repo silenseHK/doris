@@ -32,6 +32,12 @@ class Scene extends EnumBasics
     // 付出返利
     const PAY_REBATE = 70;
 
+    //申请提现
+    const WITHDRAW = 80;
+
+    //提现驳回
+    const WITHDRAW_REFUSE = 90;
+
     /**
      * 获取订单类型值
      * @return array
@@ -73,7 +79,17 @@ class Scene extends EnumBasics
                 'name' => '返利支出',
                 'value' => self::PAY_REBATE,
                 'describe' => '支出返利：%s'
-            ]
+            ],
+            self::WITHDRAW => [
+                'name' => '申请提现',
+                'value' => self::WITHDRAW,
+                'describe' => '申请提现：%s'
+            ],
+            self::WITHDRAW_REFUSE => [
+                'name' => '提现驳回',
+                'value' => self::WITHDRAW_REFUSE,
+                'describe' => '提现驳回：%s'
+            ],
         ];
     }
 
