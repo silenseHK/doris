@@ -3,10 +3,14 @@
 namespace app\common\model;
 
 use app\common\enum\user\balanceLog\Scene;
+use app\common\enum\user\grade\GradeSize;
+use app\common\enum\user\grade\GradeType;
+use app\common\enum\user\grade\RebateConfig;
 use app\common\model\user\BalanceLog;
 use app\common\model\user\Grade;
 use app\common\model\user\IntegralLog;
 use app\common\model\user\PointsLog as PointsLogModel;
+use think\db\Query;
 use think\Exception;
 use think\Hook;
 
@@ -180,7 +184,11 @@ class User extends BaseModel
             $addIntegral = $goodsInfo['integral_weight'] * $num;
         }
         #获取用户信息
-        $userInfo = self::where(['user_id'=>$userId])->field(['grade_id', 'relation', 'integral'])->find();
+        $userInfo = self::where(['user_id'=>$userId])->field(['grade_id', 'relation', 'integral'])->with([
+            'grade' => function(Query $query){
+                $query->field(['grade_id', 'grade_type', 'weight']);
+            }
+        ])->find();
         $finalIntegral = $userInfo['integral'] + $addIntegral;
         $userInfo['final_integral'] = $finalIntegral;
         return $userInfo;
@@ -216,8 +224,17 @@ class User extends BaseModel
         try{
             #获取商品信息
             $userInfo = self::getRecentUserInfo($userId, $goodsId, $num);
+            ##如果是董事或者合伙人则直接由平台发货
+            if($userInfo['grade']['grade_type'] == GradeType::HIDE){
+                return 0;
+            }
             ##获取最新等级
-            $gradeInfo = Grade::getRecentGrade($userInfo['final_integral']);
+            $gradeInfo = Grade::getRecentGrade($userInfo['final_integral'],
+                [
+                    'grade_id'=>$userInfo['grade_id'],
+                    'weight'=>$userInfo['grade']['weight'],
+                    'grade_type' => $userInfo['grade']['grade_type'],
+                ]);
             ##获取商品供货方
             return self::getSupplyUserId($userInfo['relation'], $gradeInfo['weight']);
         }catch(Exception $e){
@@ -254,9 +271,11 @@ class User extends BaseModel
      * @return bool|int  返回0表示由平台发货
      */
     public static function getSupplyUserId($relation, $weight){
+        $relation = trim($relation,'_');
         if(!$relation)return 0;
         ##获取供货人的等级id
         $applyGradeIds = Grade::getApplyGrade($weight);
+        if(empty($applyGradeIds))return 0;
         $relation = explode('_', $relation);
         ##获取供应人id
         $relation_ids = implode(',', $relation);
@@ -468,7 +487,7 @@ class User extends BaseModel
             ->field(['u.relation', 'ug.grade_type', 'u.grade_id', 'ug.weight'])
             ->find();
         if(!$userData['relation'])return [];
-        $relation = explode('_',$userData['relation']);
+        $relation = explode('_',trim($userData['relation'],'_'));
         if(!$relation[0])return [];
         ##获取
         if($supplyUserId > 0){
@@ -489,6 +508,115 @@ class User extends BaseModel
         return $rebateUser ? $rebateUser->toArray() : [];
     }
 
+    public static function getRebateUser2($userId, $goodsId, $num, $supplyUserId){
+        ##获取用户最新的信息
+        #获取商品信息
+        $userInfo = self::getRecentUserInfo($userId, $goodsId, $num);
+        ##获取最新等级
+        $gradeInfo = Grade::getRecentGrade($userInfo['final_integral'],
+            [
+                'grade_id' => $userInfo['grade_id'],
+                'weight' => $userInfo['grade']['weight'],
+                'grade_type' => $userInfo['grade']['grade_type']
+            ]);
+        ##游客不返利
+        if($gradeInfo['grade_type'] == GradeType::LOW){
+            return [];
+        }
+        ##代理
+        if($gradeInfo['grade_type'] == GradeType::HIGH){
+            #VIP
+            if($gradeInfo['weight'] == GradeSize::VIP){
+                ##查找上级到供货人为止是否有VIP
+                $rebateUserId = self::VIPGetRebate($userInfo['relation'], $supplyUserId);
+                if(!$rebateUserId)return [];
+                $rebateConf = RebateConfig::getConf()[GradeSize::VIP];
+                $money = $rebateConf['money'] * $num;
+                return [
+                    [
+                        'user_id' => $rebateUserId,
+                        'money' => $money,
+                        'remark' => $rebateConf['text'],
+                    ]
+                ];
+            }
+            #总代
+            elseif($gradeInfo['weight'] == GradeSize::AGENT){
+                ##查找上级到供货人为止是否有VIP
+                $vipUserId = self::VIPGetRebate($userInfo['relation'], $supplyUserId);
+                if($vipUserId){
+                    $rebateConf = RebateConfig::getConf()[GradeSize::AGENT][GradeSize::AGENT];
+                    ##检查vip之前是否有总代
+                    $agentUserId = self::agentGetRebate($userInfo['relation'], $vipUserId);
+                    if($agentUserId){ ## 有总代【vip没有返利】
+                        $money = $rebateConf['money'] * $num;
+                        return [
+                            [
+                                'user_id' => $agentUserId,
+                                'money' => $money,
+                                'remark' => $rebateConf['text'],
+                            ]
+                        ];
+                    }else{ ##没有总代
+                        $rebateConf2 = RebateConfig::getConf()[GradeSize::AGENT][GradeSize::VIP];
+                        $money = $rebateConf2['money'] * $num;
+                        ##检查在发货人之前是否有总代
+                        $agentUserId = self::agentGetRebate($userInfo['relation'], $supplyUserId);
+                        if($agentUserId){ ##有总代
+                            $money2 = ($rebateConf['money'] - $rebateConf2['money']) * $num;
+
+                            return [
+                                [
+                                    'user_id' => $vipUserId,
+                                    'money' => $money,
+                                    'remark' => $rebateConf2['text'],
+                                ],
+                                [
+                                    'user_id' => $agentUserId,
+                                    'money' => $money2,
+                                    'remark' => $rebateConf['text'],
+                                ]
+                            ];
+                        }else{ ##没有总代
+                            return [
+                                [
+                                    'user_id' => $vipUserId,
+                                    'money' => $money,
+                                    'remark' => $rebateConf2['text'],
+                                ],
+                            ];
+                        }
+                    }
+                }
+            }#战略董事
+            elseif($gradeInfo['weight'] == GradeSize::STRATEGY){
+                ##查找上级到发货人之间有没有战略董事(找两个)
+                $strategyUser = self::strategyGetRebate($userInfo['relation'], $supplyUserId,'strategy');
+                if(!empty($strategyUser)){ ##没有战略董事
+                    ##查找是否有总代
+                    $agentUserId = self::strategyGetRebate($userInfo['relation'], $supplyUserId,'agent');
+                    if($agentUserId){ ##有总代
+                        $agentConf = RebateConfig::getConf()[GradeSize::STRATEGY][GradeSize::AGENT];
+                        $money = $agentConf['money'] * $num;
+                        return [
+                            [
+                                'user_id' => $agentUserId,
+                                'money' => $money,
+                                'remark' => $agentConf['text'],
+                            ],
+                        ];
+                    }
+                }else{ ##有战略董事
+                    ##查找第一个战略懂事之前的第一个总代
+                    $agentUserId = self::strategyGetRebate($userInfo['relation'], $strategyUser[0]['user_id'],'agent');
+                    if(!$agentUserId){ ##没有总代
+                        
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * 获取用户代理关系
      * @param $userId
@@ -507,6 +635,122 @@ class User extends BaseModel
     public static function checkExistMobile($mobile){
         $check = self::where(['mobile'=>$mobile])->count('user_id');
         return $check ? false : true;
+    }
+
+    /**
+     * 获取VIP的获利人
+     * @param $relation
+     * @param $supply_user_id
+     * @return array|int|mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function VIPGetRebate($relation, $supply_user_id){
+        $relation = trim($relation,'_');
+        if(!$relation)return 0;
+        $relation = explode('_', $relation);
+        if(!$relation[0])return 0;
+        ##获取
+        $filter = self::initFilter($relation, $supply_user_id);
+        $orderFilter = implode(',', $filter);
+        ##VIP grade_id
+        $grade_id = Grade::getGradeId(GradeSize::VIP);
+        $rebateUser = self::where(['user_id'=>['IN', $filter], 'grade_id'=>$grade_id, 'is_delete'=>0])->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->find();
+        if($rebateUser)return 0;
+        return $rebateUser['user_id'];
+    }
+
+    /**
+     * 获取总代【范围内】的第一个总代
+     * @param $relation
+     * @param $user_id
+     * @return int|mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function agentGetRebate($relation, $user_id){
+        $relation = trim($relation,'_');
+        if(!$relation)return 0;
+        $relation = explode('_', $relation);
+        if(!$relation[0])return 0;
+        ##获取
+        $filter = self::initFilter($relation, $user_id);
+        $orderFilter = implode(',', $filter);
+        ##agent grade_id
+        $grade_id = Grade::getGradeId(GradeSize::AGENT);
+        $rebateUser = self::where(['user_id'=>['IN', $filter], 'grade_id'=>$grade_id, 'is_delete'=>0])->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->find();
+        if($rebateUser)return 0;
+        return $rebateUser['user_id'];
+    }
+
+    /**
+     * 获取战略董事【范围内】的总代 or 战略懂事
+     * @param $relation
+     * @param $user_id
+     * @param $type
+     * @return array|int
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function strategyGetRebate($relation, $user_id, $type){
+        $relation = trim($relation,'_');
+        if(!$relation)return 0;
+        $relation = explode('_', $relation);
+        if(!$relation[0])return 0;
+        ##获取
+        $filter = self::initFilter($relation, $user_id);
+        $orderFilter = implode(',', $filter);
+
+        if($type == 'agent'){
+            ##agent grade_id
+            $grade_id = Grade::getGradeId(GradeSize::AGENT);
+        }else{
+            ##strategy grade_id
+            $grade_id = Grade::getGradeId(GradeSize::STRATEGY);
+        }
+        $where = [
+            'user_id' => ['IN', $filter],
+            'grade_id' => $grade_id,
+            'is_delete' => 0
+        ];
+        $rebateUser = self::where($where)->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->with(
+            [
+                'grade' => function(Query $query){
+                    $query->field(['grade_id', 'weight']);
+                }
+            ]
+        )->find();
+        if($type == 'strategy'){
+            if(!$rebateUser)return [];
+            return $rebateUser->toArray();
+        }else{
+            if(!$rebateUser)return 0;
+            return $rebateUser['user_id'];
+        }
+    }
+
+    /**
+     * 初始化查询条件
+     * @param $relation
+     * @param $supply_user_id
+     * @return array
+     */
+    public static function initFilter($relation, $supply_user_id){
+        if($supply_user_id > 0){
+            $filter = [];
+            foreach($relation as $rel){
+                if($rel == $supply_user_id){
+                    break;
+                }
+                $filter[] = $rel;
+            }
+        }else{
+            $filter = $relation;
+        }
+        return $filter;
     }
 
 }

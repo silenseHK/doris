@@ -7,18 +7,18 @@
                 </div>
                 <div class="widget-body am-fr">
                     <!-- 工具栏 -->
-                    <div class="page_toolbar am-margin-bottom-xs am-cf">
-                        <div class="am-form-group">
-                            <div class="am-btn-toolbar">
-                                <div class="am-btn-group am-btn-group-xs">
-                                    <a class="am-btn am-btn-default am-btn-success am-radius"
-                                       href="<?= url('user.grade/add') ?>">
-                                        <span class="am-icon-plus"></span> 新增
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<!--                    <div class="page_toolbar am-margin-bottom-xs am-cf">-->
+<!--                        <div class="am-form-group">-->
+<!--                            <div class="am-btn-toolbar">-->
+<!--                                <div class="am-btn-group am-btn-group-xs">-->
+<!--                                    <a class="am-btn am-btn-default am-btn-success am-radius"-->
+<!--                                       href="--><?//= url('user.grade/add') ?><!--">-->
+<!--                                        <span class="am-icon-plus"></span> 新增-->
+<!--                                    </a>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    </div>-->
                     <div class="am-scrollable-horizontal am-u-sm-12">
                         <table width="100%" class="am-table am-table-compact am-table-striped
                          tpl-table-black am-text-nowrap">
@@ -31,9 +31,9 @@
                                 <th>等级类型</th>
 <!--                                <th>等级权益</th>-->
                                 <th>状态</th>
-                                <th>是否返利</th>
-                                <th>创建时间</th>
-                                <th>操作</th>
+<!--                                <th>是否返利</th>-->
+<!--                                <th>创建时间</th>-->
+<!--                                <th>操作</th>-->
                             </tr>
                             </thead>
                             <tbody>
@@ -56,15 +56,15 @@
                                            <?= $item['status'] ? '启用' : '禁用' ?>
                                        </span>
                                     </td>
-                                    <td class="am-text-middle">
-                                        <span class="am-badge am-badge-<?= $item['is_rebate']['value'] == 10 ? 'success' : 'warning' ?>">
-                                        <?= $item['is_rebate']['text'] ?>
-                                        </span>
-                                    </td>
-                                    <td class="am-text-middle"><?= $item['create_time'] ?></td>
-                                    <td class="am-text-middle">
-                                        <div class="tpl-table-black-operation">
-                                            <?php if (checkPrivilege('user.grade/edit')): ?>
+<!--                                    <td class="am-text-middle">-->
+<!--                                        <span class="am-badge am-badge---><?//= $item['is_rebate']['value'] == 10 ? 'success' : 'warning' ?><!--">-->
+<!--                                        --><?//= $item['is_rebate']['text'] ?>
+<!--                                        </span>-->
+<!--                                    </td>-->
+<!--                                    <td class="am-text-middle">--><?//= $item['create_time'] ?><!--</td>-->
+<!--                                    <td class="am-text-middle">-->
+<!--                                        <div class="tpl-table-black-operation">-->
+                                            <?php /* if (checkPrivilege('user.grade/edit')): ?>
                                                 <a class="tpl-table-black-operation-default"
                                                    href="<?= url('user.grade/edit', ['grade_id' => $item['grade_id']]) ?>">
                                                     <i class="am-icon-pencil"></i> 编辑
@@ -75,9 +75,9 @@
                                                    href="javascript:void(0);" data-id="<?= $item['grade_id'] ?>">
                                                     <i class="am-icon-trash"></i> 删除
                                                 </a>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
+                                            <?php endif; */?>
+<!--                                        </div>-->
+<!--                                    </td>-->
                                 </tr>
                             <?php endforeach; else: ?>
                                 <tr>

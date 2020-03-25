@@ -7,6 +7,7 @@ use app\common\service\Order as OrderService;
 use app\common\library\wechat\WxPay;
 use app\store\model\Wxapp as WxappModel;
 use app\common\model\dealer\Withdraw as WithdrawModel;
+use app\store\model\User as UserModel;
 
 /**
  * 分销商提现明细模型
@@ -81,7 +82,7 @@ class Withdraw extends WithdrawModel
         $data['audit_time'] = time();
         $this->allowField(true)->save($data);
         // 提现驳回：解冻分销商资金
-        $data['apply_status'] == '30' && User::backFreezeMoney($this['user_id'], $this['money']);
+        $data['apply_status'] == '30' && UserModel::backFreezeMoney($this['user_id'], $this['money'], $data['reject_reason']);
         // 发送模板消息
         (new Message)->withdraw($this);
         return true;
@@ -102,14 +103,14 @@ class Withdraw extends WithdrawModel
                 'audit_time' => time(),
             ]);
             // 更新分销商累积提现佣金
-            User::totalMoney($this['user_id'], $this['money']);
+            UserModel::totalMoney($this['user_id'], $this['money']);
             // 记录分销商资金明细
-            Capital::add([
-                'user_id' => $this['user_id'],
-                'flow_type' => 20,
-                'money' => -$this['money'],
-                'describe' => '申请提现',
-            ]);
+//            Capital::add([
+//                'user_id' => $this['user_id'],
+//                'flow_type' => 20,
+//                'money' => -$this['money'],
+//                'describe' => '申请提现',
+//            ]);
             // 发送模板消息
             (new Message)->withdraw($this);
             // 事务提交

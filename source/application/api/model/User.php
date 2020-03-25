@@ -60,7 +60,7 @@ class User extends UserModel
         if(!isset($data['invitation_user_id']))return "";
         $inviteUserId = $data['invitation_user_id'];
         $relation = $inviteUserId ? (self::getUserRelation($inviteUserId)) : "";
-        return $inviteUserId ? trim($inviteUserId . '_' . $relation,'_') : "";
+        return $inviteUserId ? "_" . trim($inviteUserId . '_' . trim($relation,'_'),'_') . "_" : "";
     }
 
     private $token;

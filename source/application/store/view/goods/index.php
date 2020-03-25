@@ -126,12 +126,12 @@
                                                     <i class="am-icon-trash"></i> 删除
                                                 </a>
                                             <?php endif; ?>
-                                            <?php if (checkPrivilege('goods/copy')): ?>
+                                            <?php /* if (checkPrivilege('goods/copy')): ?>
                                                 <a class="tpl-table-black-operation-green" href="<?= url('goods/copy',
                                                     ['goods_id' => $item['goods_id']]) ?>">
                                                     一键复制
                                                 </a>
-                                            <?php endif; ?>
+                                            <?php endif; */ ?>
                                         </div>
                                     </td>
                                 </tr>

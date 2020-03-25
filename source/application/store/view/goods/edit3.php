@@ -86,13 +86,14 @@
                             <div class="am-form-group">
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require"> 商品销售类型 </label>
                                 <div class="am-u-sm-9 am-u-end">
+                                    <input type="hidden" name="goods[sale_type]" value="<?= $model['sale_type'] ?>" />
                                     <label class="am-radio-inline">
-                                        <input type="radio" name="goods[sale_type]" value="1" data-am-ucheck
+                                        <input disabled type="radio" name="goods[sale_type]" value="1" data-am-ucheck
                                                <?= $model['sale_type'] == 1 ? 'checked' : '' ?>>
                                         层级代理
                                     </label>
                                     <label class="am-radio-inline">
-                                        <input type="radio" name="goods[sale_type]" value="2" data-am-ucheck <?= $model['sale_type'] == 2 ? 'checked' : '' ?>>
+                                        <input disabled type="radio" name="goods[sale_type]" value="2" data-am-ucheck <?= $model['sale_type'] == 2 ? 'checked' : '' ?>>
                                         平台直营（零售）
                                     </label>
                                     <div class="help-block">
@@ -145,28 +146,10 @@
                                             <?php endforeach; ?>
 
                                             <div class="help-block">
-                                                <small>注：价格范围0.01-100000</small>
+<!--                                                <small>注：价格范围0.01-100000</small>-->
                                             </div>
                                         </div>
-                                        <div class="am-u-sm-9 am-u-md-6 am-u-lg-3 am-u-end">
-                                            <!-- 会员返利列表-->
-                                            <?php foreach ($gradeList as $k => $item): ?>
-                                                <div class="am-input-group am-margin-bottom-sm">
-                                                    <span class="am-input-group-label am-input-group-label__left">
-                                                        返利
-                                                    </span>
-                                                    <input type="number" class="am-form-field"
-                                                           name="grade_goods[<?= $item['grade_id'] ?>][rebate]"
-                                                           value="<?= isset($goodsGradeList[$k])?$goodsGradeList[$k]['rebate']:'' ?>" min="0" max="1000" required>
-                                                    <span class="am-input-group-label am-input-group-label__right">元</span>
 
-                                                </div>
-                                            <?php endforeach; ?>
-
-                                            <div class="help-block">
-                                                <small>注：价格范围0.01-1000</small>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -189,12 +172,13 @@
                             <div class="am-form-group">
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">商品规格 </label>
                                 <div class="am-u-sm-9 am-u-end">
+                                    <input type="hidden" name="goods[spec_type]" value="<?= $model['spec_type'] ?>" />
                                     <label class="am-radio-inline">
-                                        <input type="radio" name="goods[spec_type]" value="10" data-am-ucheck <?= $model['spec_type'] == 10 ? 'checked' : '' ?> >
+                                        <input disabled type="radio" name="goods[spec_type]" value="10" data-am-ucheck <?= $model['spec_type'] == 10 ? 'checked' : '' ?> >
                                         单规格
                                     </label>
                                     <label class="am-radio-inline">
-                                        <input type="radio" name="goods[spec_type]" value="20" data-am-ucheck <?= $model['spec_type'] == 20 ? 'checked' : '' ?> >
+                                        <input disabled type="radio" name="goods[spec_type]" value="20" data-am-ucheck <?= $model['spec_type'] == 20 ? 'checked' : '' ?> >
                                         <span>多规格</span>
                                     </label>
                                 </div>
@@ -521,9 +505,9 @@
                             </div>
 
                             <!-- 会员价格设置 -->
-                            <div class="widget-head am-cf">
-                                <div class="widget-title am-fl">会员价格设置</div>
-                            </div>
+<!--                            <div class="widget-head am-cf">-->
+<!--                                <div class="widget-title am-fl">会员价格设置</div>-->
+<!--                            </div>-->
 
 
                             <div class="widget-head am-cf">

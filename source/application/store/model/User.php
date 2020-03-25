@@ -2,8 +2,10 @@
 
 namespace app\store\model;
 
+use app\common\enum\user\balanceLog\Scene;
 use app\common\model\User as UserModel;
 
+use app\store\model\user\BalanceLog;
 use app\store\model\user\Grade;
 use app\store\model\user\GradeLog as GradeLogModel;
 use app\store\model\user\BalanceLog as BalanceLogModel;
@@ -288,6 +290,42 @@ class User extends UserModel
             Db::rollback();;
             return $e->getMessage();
         }
+    }
+
+    /**
+     * 返还冻结的余额
+     * @param $user_id
+     * @param $money
+     * @param $reason
+     * @return bool|string
+     */
+    public static function backFreezeMoney($user_id, $money, $reason){
+        Db::startTrans();
+        try{
+            ##返还用户可提现余额,减少用户冻结中余额
+            $res = self::update(['balance'=>['inc', $money], 'freeze_money'=>['dec', $money]], compact('user_id'));
+            if($res === false)throw new Exception('余额返还失败');
+            ##添加余额变动记录
+            BalanceLog::add(Scene::WITHDRAW_REFUSE, [
+                'money' => $money,
+                'user_id' => $user_id
+            ], $reason);
+            Db::commit();
+            return true;
+        }catch(Exception $e){
+            Db::rollback();
+            return $e->getMessage();
+        }
+    }
+
+    /**
+     * 减少冻结的余额,增加总提现金额
+     * @param $user_id
+     * @param $money
+     */
+    public static function totalMoney($user_id, $money){
+        ##增加用户已提现金额,减少用户冻结中余额
+        self::update(['balance'=>['inc', $money], 'freeze_money'=>['dec', $money]], compact('user_id'));
     }
 
 }

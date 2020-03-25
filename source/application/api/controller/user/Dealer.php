@@ -91,9 +91,11 @@ class Dealer extends Controller
      */
     public function withdraw()
     {
+        $dealer = $this->user;
+        $dealer['money'] = $dealer['balance'];
         return $this->renderSuccess([
             // 分销商用户信息
-            'dealer' => $this->dealer,
+            'dealer' => $this->user,
             // 结算设置
             'settlement' => $this->setting['settlement']['values'],
             // 背景图

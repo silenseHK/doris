@@ -42,7 +42,7 @@ class GoodsGrade extends GoodsGradeModel
                 $data[] = [
                     'grade_id' => $k,
                     'goods_id' => $goods_id,
-                    'rebate' => floatval($grade['rebate']),
+                    'rebate' => 0,
                     'price' => floatval($grade['price'])
                 ];
             }

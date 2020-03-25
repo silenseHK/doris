@@ -42,9 +42,9 @@ class Withdraw extends Controller
      * @return array
      * @throws \app\common\exception\BaseException
      */
-    public function submit($data)
+    public function submit()
     {
-        $formData = json_decode(htmlspecialchars_decode($data), true);
+        $formData = $this->request->post();
         $model = new WithdrawModel;
         if ($model->submit($this->user, $formData) === true) {
             return $this->renderSuccess([], '申请提现成功');

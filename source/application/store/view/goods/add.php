@@ -136,25 +136,7 @@
                                                 <small>注：价格范围0.01-100000</small>
                                             </div>
                                         </div>
-                                        <div class="am-u-sm-9 am-u-md-6 am-u-lg-3 am-u-end">
-                                            <!-- 会员返利列表-->
-                                            <?php foreach ($gradeList as $item): ?>
-                                                <div class="am-input-group am-margin-bottom-sm">
-                                                    <span class="am-input-group-label am-input-group-label__left">
-                                                        返利
-                                                    </span>
-                                                    <input type="number" class="am-form-field"
-                                                           name="grade_goods[<?= $item['grade_id'] ?>][rebate]"
-                                                           value="" min="0" max="1000" required>
-                                                    <span class="am-input-group-label am-input-group-label__right">元</span>
 
-                                                </div>
-                                            <?php endforeach; ?>
-
-                                            <div class="help-block">
-                                                <small>注：价格范围0.01-1000</small>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -501,9 +483,9 @@
                             </div>
 
                             <!-- 会员价格设置 -->
-                            <div class="widget-head am-cf">
-                                <div class="widget-title am-fl">会员价格设置</div>
-                            </div>
+<!--                            <div class="widget-head am-cf">-->
+<!--                                <div class="widget-title am-fl">会员价格设置</div>-->
+<!--                            </div>-->
 
 
                             <div class="widget-head am-cf">

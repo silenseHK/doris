@@ -8,10 +8,14 @@ use app\common\enum\EnumBasics;
 
 class GradeType extends EnumBasics
 {
-    ## 高等级
+
+    ## 合伙人OR董事
+    const HIDE = 30;
+
+    ## 代理
     const HIGH = 20;
 
-    ##低等级
+    ## 消费者
     const LOW = 10;
 
     /**
@@ -20,6 +24,10 @@ class GradeType extends EnumBasics
      */
     public static function data(){
         return [
+            self::HIDE => [
+                'text' => '合伙人OR董事',
+                'value' => self::HIDE
+            ],
             self::HIGH => [
                 'text' => '高阶',
                 'value' => self::HIGH

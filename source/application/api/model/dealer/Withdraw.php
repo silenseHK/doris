@@ -2,6 +2,7 @@
 
 namespace app\api\model\dealer;
 
+use app\api\model\user\BankCard;
 use app\api\model\user\GoodsStock;
 use app\common\exception\BaseException;
 use app\common\model\dealer\Withdraw as WithdrawModel;
@@ -51,7 +52,7 @@ class Withdraw extends WithdrawModel
         // 数据验证
         $this->validation($dealer, $data);
         // 新增申请记录
-        $this->save(array_merge($data, [
+        $this->allowField(true)->save(array_merge($data, [
             'user_id' => $dealer['user_id'],
             'apply_status' => 10,
             'wxapp_id' => self::$wxapp_id,
@@ -65,8 +66,11 @@ class Withdraw extends WithdrawModel
      * @param $dealer
      * @param $data
      * @throws BaseException
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
      */
-    private function validation($dealer, $data)
+    private function validation($dealer, &$data)
     {
         //判断[云库存]是否有负库存
         if(!GoodsStock::checkAllStock($dealer['user_id'])){
@@ -90,14 +94,23 @@ class Withdraw extends WithdrawModel
         if (!in_array($data['pay_type'], $settlement['pay_type'])) {
             throw new BaseException(['msg' => '提现方式不正确']);
         }
-        if ($data['pay_type'] == '20') {
+        if ($data['pay_type'] == '20') { ##支付宝提现
             if (empty($data['alipay_name']) || empty($data['alipay_account'])) {
                 throw new BaseException(['msg' => '请补全提现信息']);
             }
-        } elseif ($data['pay_type'] == '30') {
-            if (empty($data['bank_name']) || empty($data['bank_account']) || empty($data['bank_card'])) {
-                throw new BaseException(['msg' => '请补全提现信息']);
+        } elseif ($data['pay_type'] == '30') { ##银行卡提现
+//            if (empty($data['bank_name']) || empty($data['bank_account']) || empty($data['bank_card'])) {
+//                throw new BaseException(['msg' => '请补全提现信息']);
+//            }
+            if(empty($data['card_id'])){
+                throw new BaseException(['msg' => '请选择银行卡']);
             }
+            ##获取银行卡信息
+            $bankInfo = BankCard::getInfo($dealer['user_id'], $data['card_id']);
+            if(!$bankInfo)throw new BaseException(['msg' => '银行卡信息错误']);
+            $data['bank_name'] = $bankInfo['bank']['bank_name'];
+            $data['bank_account'] = $bankInfo['card_account'];
+            $data['bank_card'] = $bankInfo['card_number'];
         }
     }
 

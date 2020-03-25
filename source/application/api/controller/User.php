@@ -84,4 +84,15 @@ class User extends Controller
         }
     }
 
+    public function test(){
+        $arr = [1,2,3,4,5,6,7,8,9];
+        foreach($arr as $v){
+            echo $v . "\r\n";
+            if($v>4){
+                break;
+            }
+            echo $v . "\r\n";
+        }
+    }
+
 }

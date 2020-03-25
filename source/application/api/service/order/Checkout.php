@@ -373,10 +373,9 @@ class Checkout
                 }
                 $this->orderData['supply_user_id'] = $check['supplyUserId'];
                 ##获取获得返利的用户和返利金额
-                $rebateUser = \app\common\model\User::getRebateUser($this->user['user_id'], $this->orderData['supply_user_id']);
+                $rebateUser = \app\common\model\User::getRebateUser2($this->user['user_id'], $goods['goods_id'], $goods['total_num'], $this->orderData['supply_user_id']);
                 if(!empty($rebateUser)){
                     $rebateMoney = (float)(GoodsGrade::getGoodsRebate($rebateUser['grade_id'], $goods['goods_id']));
-                    print_r($rebateMoney);
                     $rebateMoney = $rebateMoney * $goods['total_num'];
                 }
                 $this->orderData['rebate_user_id'] = isset($rebateUser['user_id']) ? $rebateUser['user_id'] : 0;

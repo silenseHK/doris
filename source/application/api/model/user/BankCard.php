@@ -17,7 +17,7 @@ class BankCard extends BankCardModel
 
     protected $hidden = ['create_time', 'update_time', 'delete_time', 'user_id', 'wxapp_id'];
 
-    public function __construct($user)
+    public function __construct($user=null)
     {
         parent::__construct($user);
         $this->user = $user;
@@ -89,6 +89,7 @@ class BankCard extends BankCardModel
         if(!$res)throw new Exception($this->valid->getError());
         ##接收参数
         $data = [
+            'card_account' => str_filter($post['card_account']),
             'card_number' => str_filter($post['card_number']),
             'user_id' => $this->user['user_id'],
             'bank_address' => str_filter($post['bank_address']),
@@ -134,6 +135,19 @@ class BankCard extends BankCardModel
         $cardId = intval($post['card_id']);
         ##删除
         return $this->where(['card_id'=>$cardId, 'user_id'=>intval($this->user['user_id'])])->setField('delete_time',time());
+    }
+
+    /**
+     * 获取银行卡信息
+     * @param $user_id
+     * @param $card_id
+     * @return array|false|\PDOStatement|string|\think\Model
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function getInfo($user_id, $card_id){
+        return (new self)->where(compact('user_id','card_id'))->field(['card_account', 'card_number', 'bank_address', 'bank_id'])->with(['bank'])->find();
     }
 
 }

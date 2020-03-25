@@ -97,7 +97,7 @@ class Goods extends GoodsModel
      */
     private function addGradeGoodsInfo($grades, $goods_id, $is_update=false)
     {
-        if(empty($grades))return '请设置会员价格和返利';
+        if(empty($grades))return '请设置会员价格';
         ## 增加会员等级商品信息
         $goodsGradeModel = new GoodsGrade();
         return $goodsGradeModel->addGoodsGradeInfo($grades, $goods_id, $is_update);

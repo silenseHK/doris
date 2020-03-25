@@ -2,6 +2,7 @@
 
 namespace app\common\model\user;
 
+use app\common\enum\user\grade\GradeSize;
 use think\Hook;
 use app\common\model\BaseModel;
 
@@ -139,14 +140,16 @@ class Grade extends BaseModel
     /**
      * 获取用户当前的等级
      * @param $integral  *最新的积分
+     * @param $userInfo
      * @return array|false|\PDOStatement|string|\think\Model
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    public static function getRecentGrade($integral){
-        $gradeInfo = self::where(['upgrade_integral'=>['ELT', $integral], 'is_delete'=>0, 'status'=>1])->order('weight', 'desc')->field(['grade_id', 'weight'])->find();
-        if(!$gradeInfo)$gradeInfo = self::getLowestGrade();
+    public static function getRecentGrade($integral, $userInfo = ['weight'=>10, 'grade_id'=>1]){
+        $gradeInfo = self::where(['upgrade_integral'=>['ELT', $integral], 'is_delete'=>0, 'status'=>1, 'can_upgrade'=>1])->order('weight', 'desc')->field(['grade_id', 'weight', 'grade_type'])->find();
+        #判断用户的等级权重(如果比最新的大,则只可能是用户已经是战略董事及以上)
+        if($userInfo['weight'] > $gradeInfo['weight'])return $userInfo;
         return $gradeInfo;
     }
 
@@ -156,6 +159,8 @@ class Grade extends BaseModel
      * @return mixed
      */
     public static function getApplyGrade($weight){
+        ##董事或者合伙人直接平台发货
+        if($weight == GradeSize::DIRECTOR || $weight == GradeSize::PARTNER)return [];
         return self::where(['weight' => ['GT', $weight], 'is_delete'=>0, 'status'=>1])->order('weight','asc')->column('grade_id');
     }
 
@@ -209,6 +214,15 @@ class Grade extends BaseModel
                 'is_show' => 1
             ]
         )->column('grade_id');
+    }
+
+    /**
+     * 获取各个等级的grade_id
+     * @param $weight
+     * @return mixed
+     */
+    public static function getGradeId($weight){
+        return self::where(compact('weight'))->value('grade_id');
     }
 
 }
