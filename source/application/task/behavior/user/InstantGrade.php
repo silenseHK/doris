@@ -48,12 +48,14 @@ class InstantGrade
         // 用户模型
         $UserModel = new UserModel;
         // 获取所有等级
-        $list = GradeModel::getUsableList(null, ['weight' => 'desc']);
+        $list = GradeModel::getUpgradeUsableList(null, ['weight' => 'desc']);
         if ($list->isEmpty()) {
             return false;
         }
         ##获取用户信息
-        $user = $UserModel->alias('u')->join('user_grade ug','u.grade_id = ug.grade_id','LEFT')->where(['u.user_id'=>$this->userId])->field(['u.integral', 'u.grade_id', 'ug.weight'])->find();
+        $user = $UserModel->alias('u')->join('user_grade ug','u.grade_id = ug.grade_id','LEFT')->where(['u.user_id'=>$this->userId])->field(['u.integral', 'u.grade_id', 'ug.weight', 'ug.can_upgrade'])->find();
+
+        if(!$user['can_upgrade'])return true;
 
         ##获取用户积分
         $integral = $user['integral'];

@@ -98,6 +98,9 @@ class PaySuccess extends Basics
             if ($payType == PayTypeEnum::WECHAT) {
                 $order['transaction_id'] = $payData['transaction_id'];
             }
+            if($this->model['delivery_type']['value'] == 30){ ##补充库存直接完成订单
+                $order['order_status'] = 30;
+            }
             // 更新订单状态
             $this->model->save($order);
             // 累积用户总消费金额

@@ -96,6 +96,26 @@ class Grade extends BaseModel
     }
 
     /**
+     * 获取能够升级的会员等级列表
+     * @param null $wxappId
+     * @param array $order
+     * @return false|\PDOStatement|string|\think\Collection
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function getUpgradeUsableList($wxappId = null, $order = ['weight' => 'asc']){
+        $model = new static;
+        $wxappId = $wxappId ? $wxappId : $model::$wxapp_id;
+        return $model->where('status', '=', '1')
+            ->where('is_delete', '=', '0')
+            ->where('wxapp_id', '=', $wxappId)
+            ->where(['can_upgrade' => 1])
+            ->order($order)
+            ->select();
+    }
+
+    /**
      * 验证等级权重是否存在
      * @param int $weight 验证的权重
      * @param int $gradeId 自身的等级ID
@@ -150,7 +170,7 @@ class Grade extends BaseModel
         $gradeInfo = self::where(['upgrade_integral'=>['ELT', $integral], 'is_delete'=>0, 'status'=>1, 'can_upgrade'=>1])->order('weight', 'desc')->field(['grade_id', 'weight', 'grade_type'])->find();
         #判断用户的等级权重(如果比最新的大,则只可能是用户已经是战略董事及以上)
         if($userInfo['weight'] > $gradeInfo['weight'])return $userInfo;
-        return $gradeInfo;
+        return $gradeInfo->toArray();
     }
 
     /**
@@ -223,6 +243,10 @@ class Grade extends BaseModel
      */
     public static function getGradeId($weight){
         return self::where(compact('weight'))->value('grade_id');
+    }
+
+    public static function getGradeType($grade_id){
+        return self::where(compact('grade_id'))->value('grade_type');
     }
 
 }

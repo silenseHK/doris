@@ -32,9 +32,11 @@ class UserGoodsStock extends BaseModel
      */
     public static function checkStock($user, $goodsId, $num){
         ##获取上级供应商
-        $supplyUserId = User::getSupplyGoodsUser($user['user_id'], $goodsId, $num);
+        $supply_info = User::getSupplyGoodsUser($user['user_id'], $goodsId, $num);
+        $supplyUserId = $supply_info['supply_user_id'];
+        $grade_id = $supply_info['grade_id'];
         $isStockEnough = $supplyUserId ? 1 : GoodsModel::checkAgentGoodsStock($goodsId, $num);
-        return compact('supplyUserId','isStockEnough');
+        return compact('supplyUserId','isStockEnough', 'grade_id');
     }
 
     /**

@@ -3,7 +3,6 @@
 
 namespace app\common\model;
 
-
 class UserGoodsStockLog extends BaseModel
 {
 
@@ -47,6 +46,22 @@ class UserGoodsStockLog extends BaseModel
      */
     public static function insertAllData($data){
         return (new self)->isUpdate(false)->saveAll($data);
+    }
+
+    /**
+     * 一对多 --商品
+     * @return \think\model\relation\BelongsTo
+     */
+    public function goods(){
+        return $this->belongsTo('app\common\model\Goods','goods_id','goods_id');
+    }
+
+    /**
+     * 一对多 --用户
+     * @return \think\model\relation\BelongsTo
+     */
+    public function user(){
+        return $this->belongsTo('app\common\model\User','user_id','user_id');
     }
 
 }

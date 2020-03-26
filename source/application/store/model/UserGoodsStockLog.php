@@ -32,4 +32,9 @@ class UserGoodsStockLog extends UserGoodsStockLogModel
         return (new self)->isUpdate()->save($data);
     }
 
+    public function getLog($params){
+        $user_id = intval($params['user_id']);
+        $list = $this->where(['user_id'=>$user_id])->with()->paginate(10,false,['query' => \request()->request()]);
+    }
+
 }

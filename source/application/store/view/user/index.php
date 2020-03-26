@@ -153,6 +153,12 @@
                                                                href="<?= url('user.balance/log', ['user_id' => $item['user_id']]) ?>">余额明细</a>
                                                         </li>
                                                     <?php endif; ?>
+                                                    <?php if (checkPrivilege('user.balance/log')): ?>
+                                                        <li>
+                                                            <a class="am-dropdown-item" target="_blank"
+                                                               href="<?= url('user.goods/log', ['user_id' => $item['user_id']]) ?>">提货发货</a>
+                                                        </li>
+                                                    <?php endif; ?>
                                                 </ul>
                                             </div>
                                         </div>

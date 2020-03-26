@@ -10,6 +10,7 @@ use app\api\model\Goods as GoodsModel;
 use app\api\model\Setting as SettingModel;
 use app\api\model\GoodsSku as GoodsSkuModel;
 use app\api\model\store\Shop as ShopModel;
+use app\api\model\user\Grade;
 use app\api\model\UserCoupon as UserCouponModel;
 use app\api\model\dealer\Order as DealerOrderModel;
 
@@ -18,6 +19,7 @@ use app\api\service\Payment as PaymentService;
 use app\api\service\coupon\GoodsDeduct as GoodsDeductService;
 use app\api\service\points\GoodsDeduct as PointsDeductService;
 
+use app\common\enum\user\grade\GradeType;
 use app\common\library\helper;
 use app\common\enum\OrderType as OrderTypeEnum;
 use app\common\enum\order\PayType as PayTypeEnum;
@@ -195,6 +197,9 @@ class Checkout
         } elseif ($this->param['delivery'] == DeliveryTypeEnum::EXTRACT) {
             $this->param['shop_id'] > 0 && $this->orderData['extract_shop'] = ShopModel::detail($this->param['shop_id']);
         }
+        ##获取当前的等级权重
+        $grade_type = Grade::getGradeType($this->orderData['grade_id']);
+        $this->orderData['delivery_type'] = $grade_type == GradeType::LOW ? ($this->param['delivery'] < 30 ? $this->param['delivery'] : 10) : 30;
         // 计算订单最终金额
         $this->setOrderPayPrice();
         // 计算订单积分赠送数量
@@ -366,23 +371,51 @@ class Checkout
                 if ($goods['total_num'] > $goods['goods_sku']['stock_num']) {
                     $this->setError("很抱歉，商品 [{$goods['goods_name']}] 库存不足");
                 }
+                if(!isset($this->orderData['grade_id'])){ ##最终等级
+                    $this->orderData['grade_id'] = $this->user['grade_id'];
+                }
             }else{ ##层级代理
                 $check = UserGoodsStock::checkStock($this->user, $goods['goods_id'], $goods['total_num']);
                 if(!$check['isStockEnough']){
                     $this->setError("很抱歉，商品 [{$goods['goods_name']}] 库存不足");
                 }
+                $this->orderData['grade_id'] = $check['grade_id'];
                 $this->orderData['supply_user_id'] = $check['supplyUserId'];
                 ##获取获得返利的用户和返利金额
-                $rebateUser = \app\common\model\User::getRebateUser2($this->user['user_id'], $goods['goods_id'], $goods['total_num'], $this->orderData['supply_user_id']);
+                $rebateUser = \app\common\model\User::getRebateUser($this->user['user_id'], $goods['goods_id'], $goods['total_num'], $this->orderData['supply_user_id']);
                 if(!empty($rebateUser)){
-                    $rebateMoney = (float)(GoodsGrade::getGoodsRebate($rebateUser['grade_id'], $goods['goods_id']));
-                    $rebateMoney = $rebateMoney * $goods['total_num'];
+                    $rebateMoney = self::sumRebate($rebateUser);
+                    $rebateUsers = self::combineRebateUser($rebateUser);
                 }
-                $this->orderData['rebate_user_id'] = isset($rebateUser['user_id']) ? $rebateUser['user_id'] : 0;
+                $this->orderData['rebate_user_id'] = isset($rebateUsers) ? $rebateUsers : "";
                 $this->orderData['rebate_money'] = isset($rebateMoney)? $rebateMoney : 0;
+                $this->orderData['rebate_info'] = !empty($rebateUser)? json_encode($rebateUser) : "";
             }
         }
 
+    }
+
+    /**
+     * 计算返利金额
+     * @param $rebateUser
+     * @return float|int
+     */
+    public static function sumRebate($rebateUser){
+        return array_sum(array_column($rebateUser, 'money'));
+    }
+
+    /**
+     * 生成获利人
+     * @param $rebateUser
+     * @return string
+     */
+    public static function combineRebateUser($rebateUser){
+        $users = array_column($rebateUser, 'user_id');
+        $rtn = "";
+        foreach($users as $v){
+            $rtn .= "[{$v}]";
+        }
+        return $rtn;
     }
 
     /**
@@ -595,6 +628,7 @@ class Checkout
      */
     public function createOrder($order)
     {
+//        print_r(json_decode(json_encode($order),true));die;
         // 表单验证
         if (!$this->validateOrderForm($order, $this->param['linkman'], $this->param['phone'])) {
             return false;
@@ -669,18 +703,32 @@ class Checkout
     private function validateOrderForm(&$order, $linkman, $phone)
     {
         if ($order['delivery'] == DeliveryTypeEnum::EXPRESS) { ##快递
+            if($order['delivery_type'] == DeliveryTypeEnum::STOCK){
+                $this->error = "收货方式选择错误";
+                return false;
+            }
             if (empty($order['address'])) {
                 $this->error = '请先选择收货地址';
                 return false;
             }
         }
         if ($order['delivery'] == DeliveryTypeEnum::EXTRACT) { ##自提
+            if($order['delivery_type'] == DeliveryTypeEnum::STOCK){
+                $this->error = "收货方式选择错误";
+                return false;
+            }
             if (empty($order['extract_shop'])) {
                 $this->error = '请先选择自提门店';
                 return false;
             }
             if (empty($linkman) || empty($phone)) {
                 $this->error = '请填写联系人和电话';
+                return false;
+            }
+        }
+        if($order['delivery'] == DeliveryTypeEnum::STOCK){
+            if($order['delivery_type'] != DeliveryTypeEnum::STOCK){
+                $this->error = "收货方式选择错误";
                 return false;
             }
         }
@@ -734,7 +782,8 @@ class Checkout
             'wxapp_id' => $this->wxapp_id,
             'supply_user_id' => $order['supply_user_id'],
             'rebate_user_id' => $order['rebate_user_id'],
-            'rebate_money' => $order['rebate_money']
+            'rebate_money' => $order['rebate_money'],
+            'rebate_info' => $order['rebate_info']
         ];
         if ($order['delivery'] == DeliveryTypeEnum::EXPRESS) {
             $data['express_price'] = $order['express_price'];
