@@ -4,8 +4,10 @@ namespace app\store\controller;
 
 use app\store\model\Order as OrderModel;
 use app\store\model\Express as ExpressModel;
+use app\store\model\OrderDelivery;
 use app\store\model\store\shop\Clerk as ShopClerkModel;
 use app\store\model\store\Shop as ShopModel;
+use think\Exception;
 
 /**
  * 订单管理
@@ -142,6 +144,83 @@ class Order extends Controller
         // 自提门店列表
         $shopList = ShopModel::getAllList();
         return $this->fetch('index', compact('title', 'dataType', 'list', 'shopList'));
+    }
+
+    /**
+     * 提货发货列表
+     * @return mixed
+     * @throws \think\exception\DbException
+     */
+    public function orderDelivery(){
+        $model = new OrderDelivery();
+        $data = $model->makeData($this->request->param());
+        return $this->fetch('order_delivery', $data);
+    }
+
+    /**
+     * 确认已自提
+     * @return array|bool
+     */
+    public function submitSelfOrder(){
+        try{
+            ##接收参数
+            $deliver_id = input('post.deliver_id',0,'intval');
+            $model = new OrderDelivery();
+            $model->submitSelfOrder($deliver_id);
+            return $this->renderSuccess('操作成功');
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 取消发货/取消自提
+     * @return array|bool
+     */
+    public function cancelOrder(){
+        try{
+            ##接收参数
+            $deliver_id = input('post.deliver_id',0,'intval');
+            $model = new OrderDelivery();
+            $res = $model->cancelOrder($deliver_id);
+            if(true !== $res)throw new Exception($res);
+            return $this->renderSuccess('操作成功');
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 物流订单详情
+     * @param $order_id
+     * @return mixed
+     * @throws \think\exception\DbException
+     */
+    public function deliveryDetail($order_id){
+        // 订单详情
+        $detail = OrderDelivery::detail($order_id);
+//        print_r($detail->toArray());die;
+        // 物流公司列表
+        $expressList = ExpressModel::getAll();
+
+        return $this->fetch('order_delivery_detail', compact(
+            'detail',
+            'expressList'
+        ));
+    }
+
+    /**
+     * 物流订单发货
+     * @return array|bool
+     */
+    public function deliverOrderDeliver(){
+        try{
+            $model = new OrderDelivery();
+            $model->deliver($this->request->param());
+            return $this->renderSuccess('操作成功');
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
     }
 
 }

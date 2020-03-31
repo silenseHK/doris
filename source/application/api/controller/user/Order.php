@@ -159,6 +159,7 @@ class Order extends Controller
      */
     public function extractQrcode($order_id)
     {
+        $order_type = input('order_type',10,'intval');
         // 订单详情
         $order = OrderModel::getUserOrderDetail($order_id, $this->user['user_id']);
         // 判断是否为待核销订单
@@ -169,7 +170,7 @@ class Order extends Controller
             $this->wxapp_id,
             $this->user,
             $order_id,
-            OrderTypeEnum::MASTER
+            $order_type
         );
         return $this->renderSuccess([
             'qrcode' => $Qrcode->getImage(),

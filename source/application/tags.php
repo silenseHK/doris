@@ -68,4 +68,10 @@ return [
         'app\\task\\behavior\\bargain\\Task'
     ],
 
+    // 提货发货自提订单超时自动取消
+    'auto_deliver_order' => [
+        'app\\task\\behavior\\user\\CancelDeliverOrder',
+        'app\\task\\behavior\\user\\CompleteDeliverOrder',
+    ],
+
 ];

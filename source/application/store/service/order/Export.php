@@ -18,6 +18,47 @@ class Export
         '微信支付交易号', '是否已评价'
     ];
 
+    private $deliveryTitleArray = [
+        '订单号', '商品信息', '运费金额', '下单时间',
+        '出货人', '留言', '配送方式', '收货人姓名', '联系电话', '收货人地址', '物流公司', '物流单号',
+        '付款状态', '付款时间', '发货时间', '收货时间', '订单状态',
+        '微信支付交易号'
+    ];
+
+    /**
+     * 提货发货订单导出
+     * @param $list
+     */
+    public function deliveryOrderList($list){
+        ##表格内容
+        $dataArray = [];
+        foreach($list as $order){
+            $dataArray[] = [
+                '订单号' => $this->filterValue($order['order_no']),
+                '商品信息' => $this->filterDeliveryGoodsInfo($order),
+                '运费金额' => $this->filterValue($order['freight_money']),
+                '下单时间' => $this->filterValue($order['create_time']),
+                '买家' => $this->filterValue($order['user']['nickName']),
+                '买家留言' => $this->filterValue($order['remark']),
+                '配送方式' => $this->filterValue($order['deliver_type']['text']),
+                '收货人姓名' => $this->filterValue($order['receiver_user']),
+                '联系电话' => $this->filterValue($order['receiver_mobile']),
+                '收货人地址' => $this->filterValue($order['address']),
+                '物流公司' => $this->filterValue($order['express']['express_name']),
+                '物流单号' => $this->filterValue($order['express_no']),
+                '付款状态' => $this->filterValue($order['pay_status']['text']),
+                '付款时间' => $this->filterTime($order['pay_time']),
+                '发货时间' => $this->filterTime($order['deliver_time']),
+                '收货时间' => $this->filterTime($order['complete_time']),
+                '订单状态' => $this->filterValue($order['deliver_status']['text']),
+                '微信支付交易号' => $this->filterValue($order['transaction_id'])
+            ];
+        }
+        // 导出csv文件
+        $filename = 'delivery-order-' . date('YmdHis');
+        return export_excel($filename . '.csv', $this->deliveryTitleArray, $dataArray);
+    }
+
     /**
      * 订单导出
      * @param $list
@@ -89,6 +130,18 @@ class Export
             $content .= "　购买数量：{$goods['total_num']}\n";
             $content .= "　商品总价：{$goods['total_price']}元\n\n";
         }
+        return $content;
+    }
+
+    /**
+     * 格式化提货发货商品信息
+     * @param $order
+     * @return string
+     */
+    private function filterDeliveryGoodsInfo($order){
+        $content = '';
+        $goods = $order['goods'];
+        $content .= "商品名称：{$goods['goods_name']}\n";
         return $content;
     }
 

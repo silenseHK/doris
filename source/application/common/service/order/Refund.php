@@ -63,6 +63,23 @@ class Refund
     }
 
     /**
+     * 提货返货取消退运费
+     * @param $order
+     * @return bool
+     * @throws \app\common\exception\BaseException
+     * @throws \think\exception\DbException
+     */
+    public function freight(&$order){
+        if($order['deliver_type'] == 10 && $order['freight_money'] > 0){
+            $money = $order['freight_money'];
+            $wxConfig = WxappModel::getWxappCache($order['wxapp_id']);
+            $WxPay = new WxPay($wxConfig);
+            return $WxPay->refund($order['transaction_id'], $order['pay_price'], $money);
+        }
+        return false;
+    }
+
+    /**
      * 微信支付退款
      * @param $order
      * @param double $money

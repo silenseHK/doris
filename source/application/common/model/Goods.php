@@ -404,13 +404,11 @@ class Goods extends BaseModel
     }
 
     /**
-     * 获取商品详情
-     * @param $goodsId
-     * @return static
+     * 商品sku
+     * @return \think\model\relation\HasMany
      */
-    public static function deliverDetail($goodsId)
-    {
-
+    public function specs(){
+        return $this->hasMany('GoodsSku','goods_id','goods_id');
     }
 
 }

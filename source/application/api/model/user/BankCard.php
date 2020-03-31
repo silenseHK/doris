@@ -5,6 +5,7 @@ namespace app\api\model\user;
 
 use app\api\validate\user\BackCardValidate;
 use app\common\model\user\BankCard as BankCardModel;
+use think\Db;
 use think\db\Query;
 use think\Exception;
 
@@ -27,7 +28,7 @@ class BankCard extends BankCardModel
     /**
      * 获取银行卡列表
      * @param $post
-     * @return false|\PDOStatement|string|\think\Collection
+     * @return array
      * @throws Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\ModelNotFoundException
@@ -40,9 +41,11 @@ class BankCard extends BankCardModel
         $filter = [
             'user_id' => $this->user['user_id']
         ];
-        return $this->where($filter)->order('is_default','desc')->with(['bank'=>function(Query $query){
+        $default_id = $this->where($filter)->where(['is_default'=>1])->value('card_id');
+        $list = $this->where($filter)->order('is_default','desc')->with(['bank'=>function(Query $query){
             $query->field('bank_name,bank_id');
         }])->select();
+        return compact('default_id','list');
     }
 
     /**
@@ -61,7 +64,28 @@ class BankCard extends BankCardModel
      * @throws \think\exception\PDOException
      */
     public function add($post){
-        return $this->editOrAdd(__METHOD__, $post);
+        return $this->editOrAdd('add', $post);
+    }
+
+    /**
+     * 获取银行卡详情
+     * @param $params
+     * @return array|false|\PDOStatement|string|\think\Model
+     * @throws Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function detail($params){
+        ##验证
+        $res = $this->valid->scene('detail')->check($params);
+        if(!$res)throw new Exception($this->valid->getError());
+        ##参数
+        $card_id = intval($params['card_id']);
+        ##获取信息
+        $data = $this->where(['card_id'=>$card_id, 'user_id'=>$this->user['user_id']])->field(['card_id', 'card_number', 'card_account', 'bank_address', 'bank_id', 'is_default'])->find();
+        if(!$data)throw new Exception('数据不存在');
+        return $data;
     }
 
     /**
@@ -72,7 +96,7 @@ class BankCard extends BankCardModel
      * @throws \think\exception\PDOException
      */
     public function edit($post){
-        return $this->editOrAdd(__METHOD__, $post);
+        return $this->editOrAdd('edit', $post);
     }
 
     /**
@@ -135,6 +159,33 @@ class BankCard extends BankCardModel
         $cardId = intval($post['card_id']);
         ##删除
         return $this->where(['card_id'=>$cardId, 'user_id'=>intval($this->user['user_id'])])->setField('delete_time',time());
+    }
+
+    /**
+     * 设置默认银行卡
+     * @param $post
+     * @return bool|string
+     * @throws Exception
+     */
+    public function setDefault($post){
+        ##验证
+        $res = $this->valid->scene('set_default')->check($post);
+        if(!$res)throw new Exception($this->valid->getError());
+        ##就收参数
+        $cardId = intval($post['card_id']);
+        ##设置默认
+        Db::startTrans();
+        try{
+            $res = $this->save(['is_default'=>0],['user_id'=>$this->user['user_id']]);
+            if($res === false)throw new Exception('操作失败');
+            $res = $this->save(['is_default'=>1],['card_id'=>$cardId, 'user_id'=>$this->user['user_id']]);
+            if($res === false)throw new Exception('操作失败');
+            Db::commit();
+            return true;
+        }catch(Exception $e){
+            Db::rollback();
+            return $e->getMessage();
+        }
     }
 
     /**

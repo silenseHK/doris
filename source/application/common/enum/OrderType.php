@@ -21,6 +21,9 @@ class OrderType extends EnumBasics
     ## 运费支付
     const FREIGHT = 30;
 
+    ## 提货发货自提(用于核销)
+    const SELF_DELIVERY = 40;
+
     /**
      * 获取订单类型值
      * @return array
@@ -44,6 +47,10 @@ class OrderType extends EnumBasics
                 'name' => '运费支付',
                 'value' => self::FREIGHT,
             ],
+            self::SELF_DELIVERY => [
+                'name' => '提货发货自提',
+                'value' => self::SELF_DELIVERY
+            ]
         ];
     }
 

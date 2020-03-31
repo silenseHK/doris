@@ -24,7 +24,9 @@ class BackCardValidate extends Validate
         'lists' => ['page', 'size'],
         'add' => ['card_number', 'bank_address', 'bank_id', 'is_default', 'card_account'],
         'edit' => ['card_id', 'card_number', 'bank_address', 'bank_id', 'is_default', 'card_account'],
-        'del' => ['card_id']
+        'del' => ['card_id'],
+        'set_default' => ['card_id'],
+        'detail' => ['card_id']
     ];
 
 }

@@ -4,6 +4,7 @@ namespace app\api\controller;
 
 use app\api\model\User as UserModel;
 use think\Exception;
+use think\Hook;
 
 /**
  * 用户管理
@@ -85,14 +86,8 @@ class User extends Controller
     }
 
     public function test(){
-        $arr = [1,2,3,4,5,6,7,8,9];
-        foreach($arr as $v){
-            echo $v . "\r\n";
-            if($v>4){
-                break;
-            }
-            echo $v . "\r\n";
-        }
+        $wxapp_id = '10001';
+        Hook::listen('auto_deliver_order',$wxapp_id);
     }
 
 }

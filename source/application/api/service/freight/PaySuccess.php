@@ -4,9 +4,13 @@
 namespace app\api\service\freight;
 
 
+use app\api\model\user\GoodsStock;
 use app\api\model\user\OrderDeliver;
 use app\api\service\Basics;
 use app\api\model\User as UserModel;
+use app\common\model\UserGoodsStock;
+use think\Db;
+use think\Exception;
 
 class PaySuccess extends Basics
 {
@@ -56,7 +60,21 @@ class PaySuccess extends Basics
             'transaction_id' => $data['transaction_id'],
             'pay_status' => 20
         ];
-        return $this->model->save($data);
+        Db::startTrans();
+        try{
+            ##更新库存
+            $stock = UserGoodsStock::getStock($this->model['user_id'], $this->model['goods_id']);
+            $this->model['stock'] = $stock;
+            $res = GoodsStock::takeStock($this->model);
+            if($res !== true)throw new Exception($res);
+            ##更新状态
+            $this->model->save($data);
+            Db::commit();
+            return true;
+        }catch(Exception $e){
+            Db::rollback();
+            return $e->getMessage();
+        }
     }
 
 }

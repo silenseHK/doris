@@ -372,7 +372,7 @@ class User extends BaseModel
         ##增加购买人库存
         if(!empty($stock)){
             foreach($stock as $key => $sto){
-                UserGoodsStock::editStock($this['user_id'], $key, $sto);
+                UserGoodsStock::incHistoryStock($this['user_id'], $key, $sto);
             }
             UserGoodsStockLog::insertAllData($data);
         }
@@ -393,11 +393,15 @@ class User extends BaseModel
                     'remark' => '出货减库存'
                 ];
                 ##减少库存
-                UserGoodsStock::editStock($model['supply_user_id'], $key, $val, 'dec');
+                if($model['delivery_type']['value'] == 30){ ##补充库存订单 减库存+增加冻结库存
+                    UserGoodsStock::freezeStockByUserGoodsId($model['supply_user_id'], $key, $val,1);
+                }else{ ##非补充库存订单直接减库存
+                    UserGoodsStock::editStock($model['supply_user_id'], $key, $val, 'dec');
+                }
             }
             ##插入库存变更日志
             UserGoodsStockLog::insertAllData($desData);
-            if($model['delivery_type']['value'] == 30){
+            if($model['delivery_type']['value'] == 30){ ##补充库存订单直接增加出货人余额
                 ##增加可用余额
                 self::addBalanceByOrder($model['supply_user_id'], $model['order_id'], $balance, $model['order_no']);
             }
@@ -421,6 +425,7 @@ class User extends BaseModel
                         'remark' => $item['text']
                     ]);
                 }
+                ##出货人返利
                 if($model['supply_user_id'] > 0){
                     self::reduceBalanceByOrder($model['supply_user_id'], $model['order_id'], $model['rebate_money'], $model['order_no']);
                 }

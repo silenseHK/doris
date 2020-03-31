@@ -4,9 +4,12 @@ namespace app\api\controller\shop;
 
 use app\api\controller\Controller;
 use app\api\model\Setting as SettingModel;
+use app\api\model\user\OrderDeliver;
 use app\common\service\Order as OrderService;
 use app\common\enum\OrderType as OrderTypeEnum;
 use app\api\model\store\shop\Clerk as ClerkModel;
+use app\store\model\OrderDelivery;
+use think\Exception;
 
 /**
  * 自提订单管理
@@ -75,6 +78,27 @@ class Order extends Controller
             return $this->renderSuccess([], '订单核销成功');
         }
         return $this->renderError($order->getError() ?: '核销失败');
+    }
+
+    /**
+     * 核销提货发货自提订单
+     * @param $deliver_id
+     * @return array
+     */
+    public function extractDeliver($deliver_id){
+        try{
+            $order = OrderDeliver::get(compact('deliver_id'));
+            // 验证是否为该门店的核销员
+            $ClerkModel = ClerkModel::detail(['user_id' => $this->user['user_id']]);
+            if (!$ClerkModel->checkUser($order['extract_shop_id'])) {
+                return $this->renderError($ClerkModel->getError());
+            }
+            ##执行核销
+            (new OrderDelivery)->submitSelfOrder($deliver_id,30);
+            return $this->renderSuccess('','操作成功');
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
     }
 
 }

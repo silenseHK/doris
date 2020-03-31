@@ -72,4 +72,48 @@ class Goods extends Controller
         }
     }
 
+    /**
+     * 获取提货发货订单列表
+     * @return array
+     */
+    public function orderLists(){
+        try{
+            $user = $this->getUser();
+            $model = new OrderDeliver();
+            return $this->renderSuccess($model->orderList($user));
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 确认收货
+     * @return array
+     */
+    public function complete(){
+        try{
+            $user = $this->getUser();
+            $model = new OrderDeliver();
+            $res = $model->complete($user);
+            if($res !== true)throw new Exception($res);
+            return $this->renderSuccess('','操作成功');
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 订单详情
+     * @return array
+     */
+    public function detail(){
+        try{
+            $user = $this->getUser();
+            $model = new OrderDeliver();
+            return $this->renderSuccess($model->detail($user));
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
 }

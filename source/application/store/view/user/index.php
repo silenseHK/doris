@@ -156,7 +156,7 @@
                                                     <?php if (checkPrivilege('user.balance/log')): ?>
                                                         <li>
                                                             <a class="am-dropdown-item" target="_blank"
-                                                               href="<?= url('user.goods/log', ['user_id' => $item['user_id']]) ?>">提货发货</a>
+                                                               href="<?= url('user.goods/goodsStock', ['user_id' => $item['user_id']]) ?>">库存信息</a>
                                                         </li>
                                                     <?php endif; ?>
                                                 </ul>

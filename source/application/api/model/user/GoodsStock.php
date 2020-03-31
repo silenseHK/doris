@@ -5,6 +5,8 @@ namespace app\api\model\user;
 
 
 use app\common\model\UserGoodsStock;
+use Exception;
+use think\Db;
 use think\db\Query;
 
 class GoodsStock extends UserGoodsStock
@@ -76,6 +78,37 @@ class GoodsStock extends UserGoodsStock
     public static function checkAllStock($user_id){
         $count = self::where(['user_id'=>$user_id, 'stock'=>['LT', 0]])->count('id');
         return $count == 0;
+    }
+
+    /**
+     * 提货发货提交申请
+     * @param $order
+     * @return bool|string
+     */
+    public static function takeStock($order){
+        $user_id = $order['user_id'];
+        $num = $order['goods_num'];
+        $goods_id = $order['goods_id'];
+        $stock = $order['stock'];
+        try{
+            ##减库存 添加冻结库存
+            if(self::freezeStockByUserGoodsId($user_id, $goods_id, $num) === false)throw new Exception('提交申请失败');
+            ##添加库存变更记录
+            $stockLogData = [
+                'user_id' => $user_id,
+                'goods_id' => $goods_id,
+                'balance_stock' => $stock,
+                'change_num' => $num,
+                'remark' => '提货发货',
+                'change_type' => 30,
+                'change_direction' => 20
+            ];
+            if((new GoodsStockLog)->isUpdate(false)->save($stockLogData) === false)throw new Exception('提交申请失败');
+            return true;
+        }catch(Exception $e){
+            Db::rollback();
+            return $e->getMessage();
+        }
     }
 
 }

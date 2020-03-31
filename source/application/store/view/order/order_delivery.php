@@ -15,7 +15,6 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                     <div class="page_toolbar am-margin-bottom-xs am-cf">
                         <form id="form-search" class="toolbar-form" action="">
                             <input type="hidden" name="s" value="/<?= $request->pathinfo() ?>">
-                            <input type="hidden" name="dataType" value="<?= $dataType ?>">
                             <div class="am-u-sm-12 am-u-md-3">
                                 <div class="am-form-group">
                                     <div class="am-btn-toolbar">
@@ -26,14 +25,6 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                                     <i class="iconfont icon-daochu am-margin-right-xs"></i>订单导出
                                                 </a>
                                             <?php endif; ?>
-                                            <?php /* if (checkPrivilege('order.operate/batchdelivery')): ?>
-                                                <?php if (in_array($dataType, ['all', 'delivery'])): ?>
-                                                    <a class="j-export am-btn am-btn-secondary am-radius"
-                                                       href="<?= url('order.operate/batchdelivery') ?>">
-                                                        <i class="iconfont icon-daoru am-margin-right-xs"></i>批量发货
-                                                    </a>
-                                                <?php endif; ?>
-                                            <?php endif; */ ?>
                                         </div>
                                     </div>
                                 </div>
@@ -41,35 +32,21 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                             <div class="am-u-sm-12 am-u-md-9">
                                 <div class="am fr">
                                     <div class="am-form-group am-fl">
-                                        <?php $deliveryType = $request->get('delivery_type'); ?>
-                                        <select name="delivery_type"
+                                        <?php $deliveryType = $request->get('deliver_type'); ?>
+                                        <select name="deliver_type"
                                                 data-am-selected="{btnSize: 'sm', placeholder: '配送方式'}">
                                             <option value=""></option>
                                             <option value="-1"
                                                 <?= $deliveryType === '-1' ? 'selected' : '' ?>>全部
                                             </option>
-                                            <?php foreach (DeliveryTypeEnum::data() as $item): ?>
+                                            <?php foreach ($deliveryTypeList as $key => $item): ?>
                                                 <option value="<?= $item['value'] ?>"
-                                                    <?= $item['value'] == $deliveryType ? 'selected' : '' ?>><?= $item['name'] ?>
+                                                    <?= $item['value'] == $deliveryType ? 'selected' : '' ?>><?= $item['text'] ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
-                                    <div class="am-form-group am-fl">
-                                        <?php $extractShopId = $request->get('extract_shop_id'); ?>
-                                        <select name="extract_shop_id"
-                                                data-am-selected="{btnSize: 'sm', placeholder: '自提门店名称'}">
-                                            <option value=""></option>
-                                            <option value="-1"
-                                                <?= $extractShopId === '-1' ? 'selected' : '' ?>>全部
-                                            </option>
-                                            <?php if (isset($shopList)): foreach ($shopList as $item): ?>
-                                                <option value="<?= $item['shop_id'] ?>"
-                                                    <?= $item['shop_id'] == $extractShopId ? 'selected' : '' ?>><?= $item['shop_name'] ?>
-                                                </option>
-                                            <?php endforeach; endif; ?>
-                                        </select>
-                                    </div>
+
                                     <div class="am-form-group tpl-form-border-form am-fl">
                                         <input type="text" name="start_time"
                                                class="am-form-field"
@@ -82,10 +59,11 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                                value="<?= $request->get('end_time') ?>" placeholder="请选择截止日期"
                                                data-am-datepicker>
                                     </div>
+
                                     <div class="am-form-group am-fl">
                                         <div class="am-input-group am-input-group-sm tpl-form-border-form">
-                                            <input type="text" class="am-form-field" name="search"
-                                                   placeholder="请输入订单号/用户昵称" value="<?= $request->get('search') ?>">
+                                            <input type="text" class="am-form-field" name="keywords"
+                                                   placeholder="请输入用户电话/用户昵称" value="<?= $request->get('keywords') ?>">
                                             <div class="am-input-group-btn">
                                                 <button class="am-btn am-btn-default am-icon-search"
                                                         type="submit"></button>
@@ -102,10 +80,10 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                             <thead>
                             <tr>
                                 <th width="25%" class="goods-detail">商品信息</th>
-                                <th width="10%">单价/数量</th>
+                                <th width="10%">数量</th>
                                 <th width="15%">实付款</th>
-                                <th>买家</th>
-                                <th>支付方式</th>
+                                <th>发货人</th>
+                                <th>收货人</th>
                                 <th>配送方式</th>
                                 <th>交易状态</th>
                                 <th>操作</th>
@@ -123,42 +101,45 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                         <span class="am-margin-right-lg">订单号：<?= $order['order_no'] ?></span>
                                     </td>
                                 </tr>
-                                <?php $i = 0;
-                                foreach ($order['goods'] as $goods): $i++; ?>
+                                <?php $goods = $order['goods'] ?>
                                     <tr>
                                         <td class="goods-detail am-text-middle">
                                             <div class="goods-image">
-                                                <img src="<?= $goods['image']['file_path'] ?>" alt="">
+                                                <img src="<?= $goods['image'][0]['file_path'] ?>" alt="">
                                             </div>
                                             <div class="goods-info">
                                                 <p class="goods-title"><?= $goods['goods_name'] ?></p>
-                                                <p class="goods-spec am-link-muted"><?= $goods['goods_attr'] ?></p>
                                             </div>
                                         </td>
                                         <td class="am-text-middle">
-                                            <p>￥<?= $goods['goods_price'] ?></p>
-                                            <p>×<?= $goods['total_num'] ?></p>
+                                            <p>×<?= $order['goods_num'] ?></p>
                                         </td>
-                                        <?php if ($i === 1) : $goodsCount = count($order['goods']); ?>
-                                            <td class="am-text-middle" rowspan="<?= $goodsCount ?>">
-                                                <p>￥<?= $order['pay_price'] ?></p>
-                                                <p class="am-link-muted">(含运费：￥<?= $order['express_price'] ?>)</p>
+
+                                            <td class="am-text-middle" rowspan="">
+                                                <p class="am-link-muted">运费：￥<?= $order['freight_money'] ?></p>
                                             </td>
-                                            <td class="am-text-middle" rowspan="<?= $goodsCount ?>">
-                                                <p><?= $order['user']['nickName'] ?></p>
-                                                <p class="am-link-muted">(用户id：<?= $order['user']['user_id'] ?>)</p>
+                                            <td class="am-text-middle" rowspan="">
+                                                <p><?= $order['nickName'] ?></p>
+                                                <p><?= $order['mobile'] ?></p>
+                                                <p class="am-link-muted">(用户id：<?= $order['user_id'] ?>)</p>
                                             </td>
-                                            <td class="am-text-middle" rowspan="<?= $goodsCount ?>">
+
+                                        <td class="am-text-middle" rowspan="">
+                                            <?php if($order['deliver_type']['value'] == 10): ?>
+                                                <p><?= $order['receiver_user'] ?></p>
+                                                <p><?= $order['receiver_mobile'] ?></p>
+                                                <p><?= $order['address'] ?></p>
+                                            <?php else: ?>
+                                                <p class="am-link-muted">用户自提</p>
+                                            <?php endif ?>
+                                        </td>
+
+                                            <td class="am-text-middle" rowspan="">
                                                 <span class="am-badge am-badge-secondary">
-                                                    <?= $order['pay_type']['text'] ?>
+                                                    <?= $order['deliver_type']['text'] ?>
                                                 </span>
                                             </td>
-                                            <td class="am-text-middle" rowspan="<?= $goodsCount ?>">
-                                                <span class="am-badge am-badge-secondary">
-                                                    <?= $order['delivery_type']['text'] ?>
-                                                </span>
-                                            </td>
-                                            <td class="am-text-middle" rowspan="<?= $goodsCount ?>">
+                                            <td class="am-text-middle" rowspan="">
                                                 <p>付款状态：
                                                     <span class="am-badge
                                                 <?= $order['pay_status']['value'] == 20 ? 'am-badge-success' : '' ?>">
@@ -166,54 +147,51 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                                 </p>
                                                 <p>发货状态：
                                                     <span class="am-badge
-                                                <?= $order['delivery_status']['value'] == 20 ? 'am-badge-success' : '' ?>">
-                                                        <?= $order['delivery_status']['text'] ?></span>
+                                                <?= $order['deliver_status']['value'] == 20 ? 'am-badge-success' : '' ?>">
+                                                        <?= $order['deliver_status']['text'] ?></span>
                                                 </p>
-                                                <p>收货状态：
-                                                    <span class="am-badge
-                                                <?= $order['receipt_status']['value'] == 20 ? 'am-badge-success' : '' ?>">
-                                                        <?= $order['receipt_status']['text'] ?></span>
-                                                </p>
-                                                <?php if ($order['order_status']['value'] == 20 || $order['order_status']['value'] == 21): ?>
-                                                    <p>订单状态：
-                                                        <span class="am-badge am-badge-warning"><?= $order['order_status']['text'] ?></span>
-                                                    </p>
-                                                <?php endif; ?>
                                             </td>
-                                            <td class="am-text-middle" rowspan="<?= $goodsCount ?>">
+                                            <td class="am-text-middle" rowspan="">
                                                 <div class="tpl-table-black-operation">
                                                     <?php if (checkPrivilege('order/detail')): ?>
                                                         <a class="tpl-table-black-operation-green"
-                                                           href="<?= url('order/detail', ['order_id' => $order['order_id']]) ?>">
+                                                           href="<?= url('order/deliveryDetail', ['order_id' => $order['deliver_id']]) ?>">
                                                             订单详情</a>
                                                     <?php endif; ?>
-                                                    <?php if($order['delivery_type']['value'] != 30): ?>
-
-                                                        <?php if (checkPrivilege(['order/detail', 'order/delivery'])): ?>
-                                                            <?php if ($order['pay_status']['value'] == 20
-                                                                && $order['delivery_status']['value'] == 10
-                                                                && $order['order_status']['value'] != 20
-                                                                && $order['order_status']['value'] != 21
-                                                            ): ?>
-                                                                <a class="tpl-table-black-operation"
-                                                                   href="<?= url('order/detail#delivery',
-                                                                       ['order_id' => $order['order_id']]) ?>">去发货</a>
-                                                            <?php endif; ?>
+                                                    <?php if (checkPrivilege(['order/detail', 'order/delivery'])): ?>
+                                                        <?php if ($order['pay_status']['value'] == 20
+                                                            && $order['deliver_status']['value'] == 10
+                                                            && $order['deliver_type']['value'] == 10
+                                                        ): ?>
+                                                            <a class="tpl-table-black-operation"
+                                                               href="<?= url('order/deliveryDetail#delivery',
+                                                                   ['order_id' => $order['deliver_id']]) ?>"> 去发货 </a>
                                                         <?php endif; ?>
-                                                        <?php if (checkPrivilege(['order/detail', 'order.operate/confirmcancel'])): ?>
-                                                            <?php if ($order['order_status']['value'] == 21): ?>
-                                                                <a class="tpl-table-black-operation-del"
-                                                                   href="<?= url('order/detail#cancel',
-                                                                       ['order_id' => $order['order_id']]) ?>">去审核</a>
-                                                            <?php endif; ?>
+                                                    <?php endif; ?>
+                                                    <?php if (checkPrivilege(['order/detail', 'order/delivery'])): ?>
+                                                        <?php if ($order['pay_status']['value'] == 20
+                                                            && $order['deliver_status']['value'] == 10
+                                                            && $order['deliver_type']['value'] == 20
+                                                        ): ?>
+                                                            <a style="cursor: pointer" javascript:void(0); class="tpl-table-black-operation"
+                                                               onclick="submitSelfOrder(<?= $order['deliver_id'] ?>)"
+                                                               > 确认提货 </a>
                                                         <?php endif; ?>
-
+                                                    <?php endif; ?>
+                                                    <?php if (checkPrivilege(['order/detail', 'order/delivery'])): ?>
+                                                        <?php if ($order['pay_status']['value'] == 20
+                                                            && $order['deliver_status']['value'] == 10
+                                                        ): ?>
+                                                            <a style="cursor: pointer" javascript:void(0); class="tpl-table-black-operation"
+                                                               onclick="cancelOrder(<?= $order['deliver_id'] ?>)"
+                                                            > <?= $order['deliver_type']['value'] == 10 ? "取消发货" : "取消提货" ?> </a>
+                                                        <?php endif; ?>
                                                     <?php endif; ?>
                                                 </div>
                                             </td>
-                                        <?php endif; ?>
+
                                     </tr>
-                                <?php endforeach; ?>
+
                             <?php endforeach; else: ?>
                                 <tr>
                                     <td colspan="<?= $colspan ?>" class="am-text-center">暂无记录</td>
@@ -246,10 +224,52 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
             $.each(formData, function () {
                 this.name !== 's' && (data[this.name] = this.value);
             });
-            window.location = "<?= url('order.operate/export') ?>" + '&' + $.urlEncode(data);
+            window.location = "<?= url('order.delivery/export') ?>" + '&' + $.urlEncode(data);
         });
 
+
+
     });
+
+    /**
+     * 确认已提货
+     * @param deliver_id
+     */
+    function submitSelfOrder(deliver_id){
+        var idx = layer.confirm('确认客户已提货?', {
+            btn: ['确定','取消'] //按钮
+        }, function(){
+            layer.close(idx);
+            $.post("<?= url('order/submitSelfOrder') ?>", {deliver_id}, function(res){
+                layer.msg(res.msg);
+                setTimeout(function(){
+                    location.reload();
+                }, 1500)
+            }, 'json')
+        }, function(){
+            layer.close(idx);
+        });
+    }
+
+    /**
+     * 确认取消订单
+     * @param deliver_id
+     */
+    function cancelOrder(deliver_id){
+        var idx = layer.confirm('确认取消发货[自提]?', {
+            btn: ['确定','取消'] //按钮
+        }, function(){
+            layer.close(idx);
+            $.post("<?= url('order/cancelOrder') ?>", {deliver_id}, function(res){
+                layer.msg(res.msg);
+                // setTimeout(function(){
+                //     location.reload();
+                // }, 1500)
+            }, 'json')
+        }, function(){
+            layer.close(idx);
+        });
+    }
 
 </script>
 

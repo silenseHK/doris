@@ -105,6 +105,10 @@ return [
                 'index' => 'order/cancel_list',
             ],
             [
+                'name' => '提货发货',
+                'index' => 'order/orderDelivery',
+            ],
+            [
                 'name' => '售后管理',
                 'index' => 'order.refund/index',
                 'uris' => [

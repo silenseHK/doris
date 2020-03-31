@@ -35,7 +35,7 @@ class UserGoodsStockLog extends BaseModel
      * @return mixed
      */
     public function setWxappIdAttr(){
-        return static::$wxapp_id;
+        return self::$wxapp_id ? : '10001';
     }
 
     /**
@@ -46,6 +46,15 @@ class UserGoodsStockLog extends BaseModel
      */
     public static function insertAllData($data){
         return (new self)->isUpdate(false)->saveAll($data);
+    }
+
+    /**
+     * 插入单条库存修改记录
+     * @param $data
+     * @return false|int
+     */
+    public static function insertData($data){
+        return (new self)->isUpdate(false)->save($data);
     }
 
     /**
@@ -60,8 +69,8 @@ class UserGoodsStockLog extends BaseModel
      * 一对多 --用户
      * @return \think\model\relation\BelongsTo
      */
-    public function user(){
-        return $this->belongsTo('app\common\model\User','user_id','user_id');
+    public function oppositeUser(){
+        return $this->belongsTo('app\common\model\User','opposite_user_id','user_id');
     }
 
 }

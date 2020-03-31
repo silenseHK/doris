@@ -3,9 +3,12 @@
 
 namespace app\store\model;
 
+use app\common\enum\user\StockChangeScene;
 use app\common\model\UserGoodsStock as UserGoodsStockModel;
 use think\Db;
+use think\db\Query;
 use think\Exception;
+use app\common\model\UserGoodsStockLog;
 
 class UserGoodsStock extends UserGoodsStockModel
 {
@@ -124,6 +127,64 @@ class UserGoodsStock extends UserGoodsStockModel
             'wxapp_id' => static::$wxapp_id
         ];
         return (new self)->save($data);
+    }
+
+    /**
+     * 获取库存列表
+     * @param $params
+     * @return false|\PDOStatement|string|\think\Collection
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getList($params){
+        $user_id = intval($params['user_id']);
+        $list = $this->where(['user_id'=>$user_id])->with(
+            [
+                'goods' => function(Query $query){
+                    $query->field(['goods_id', 'goods_name', 'sales_initial', 'sales_actual'])->with(
+                        ['image.file']
+                    );
+                }
+            ]
+        )->select();
+        return $list;
+    }
+
+    /**
+     * 返还提货发货库存
+     * @param $order
+     * @param $remark
+     * @return bool|string
+     */
+    public static function backStock($order, $remark='提货发货后台取消发货'){
+        Db::startTrans();
+        try{
+            $user_id = $order['user_id'];
+            $goods_id = $order['goods_id'];
+            $num = $order['goods_num'];
+            ##减少冻结库存并恢复库存
+            $res = self::disFreezeStockByUserGoodsId($user_id, $goods_id, $num, 2);
+            if($res === false)throw new Exception('库存返还失败1');
+            ##增加库存变动log
+            $data = [
+                'user_id' => $user_id,
+                'goods_id' => $goods_id,
+                'balance_stock' => self::getStock($user_id, $goods_id),
+                'change_num' => $num,
+                'opposite_user_id' => 0,  //发货人id
+                'remark' => $remark,
+                'change_type' => StockChangeScene::SEND,  //提货发货
+                'change_direction' => 10  //增加
+            ];
+            $res = UserGoodsStockLog::insertData($data);
+            if($res === false)throw new Exception('库存返还失败');
+            Db::commit();
+            return true;
+        }catch(Exception $e){
+            Db::rollback();
+            return $e->getMessage();
+        }
     }
 
 }

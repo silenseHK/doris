@@ -79,7 +79,7 @@ class Team extends Controller
     public function memberList(){
         try{
             $user = $this->getUser();
-            return $this->renderSuccess($user->getMemberList($this->request->post()));
+            return $this->renderSuccess($user->getMemberList($this->request->get()));
         }catch(Exception $e){
             return $this->renderError($e->getMessage());
         }

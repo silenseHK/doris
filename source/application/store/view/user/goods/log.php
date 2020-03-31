@@ -3,7 +3,7 @@
         <div class="am-u-sm-12 am-u-md-12 am-u-lg-12">
             <div class="widget am-cf">
                 <div class="widget-head am-cf">
-                    <div class="widget-title am-cf">余额明细</div>
+                    <div class="widget-title am-cf">库存明细</div>
                 </div>
                 <div class="widget-body am-fr">
                     <!-- 工具栏 -->
@@ -14,17 +14,14 @@
                                 <div class="am-form-group am-fl">
                                     <?php $scene = $request->get('scene'); ?>
                                     <select name="scene"
-                                            data-am-selected="{btnSize: 'sm', placeholder: '余额变动场景'}">
+                                            data-am-selected="{btnSize: 'sm', placeholder: '库存变动场景'}">
                                         <option value=""></option>
                                         <option value="-1"
                                             <?= $scene === '-1' ? 'selected' : '' ?>>全部
                                         </option>
-                                        <?php foreach ($attributes['scene'] as $attr): ?>
-                                            <option value="<?= $attr['value'] ?>"
-                                                <?= $scene === (string)$attr['value'] ? 'selected' : '' ?>>
-                                                <?= $attr['name'] ?>
-                                            </option>
-                                        <?php endforeach; ?>
+                                        <?php foreach($sceneList as $k => $v){ ?>
+                                            <option value="<?=$k?>" <?= $k==$scene? "selected" : "" ?> ><?= $v['text'] ?></option>
+                                        <?php } ?>
                                     </select>
                                 </div>
                                 <div class="am-form-group tpl-form-border-form am-fl">
@@ -41,11 +38,11 @@
                                 </div>
                                 <div class="am-form-group am-fl">
                                     <div class="am-input-group am-input-group-sm tpl-form-border-form">
-                                        <input type="text" class="am-form-field" name="search" placeholder="请输入用户昵称"
-                                               value="<?= $request->get('search') ?>">
-                                        <div class="am-input-group-btn">
+                                        <div class="am-input-group-btn" style="width:auto;">
+
                                             <button class="am-btn am-btn-default am-icon-search" type="submit"></button>
                                         </div>
+
                                     </div>
                                 </div>
                             </div>
@@ -57,35 +54,38 @@
                             <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>微信头像</th>
-                                <th>微信昵称</th>
-                                <th>余额变动场景</th>
-                                <th>变动金额</th>
+                                <th>商品名</th>
+                                <th>商品图片</th>
+                                <th>变动库存</th>
+                                <th>变动前库存</th>
+                                <th>库存变动场景</th>
+                                <th>收货人/出货人</th>
                                 <th>描述/说明</th>
-                                <th>管理员备注</th>
-                                <th>创建时间</th>
+                                <th>变动时间</th>
                             </tr>
                             </thead>
                             <tbody>
                             <?php if (!$list->isEmpty()): foreach ($list as $item): ?>
                                 <tr>
-                                    <td class="am-text-middle"><?= $item['log_id'] ?></td>
+                                    <td class="am-text-middle"><?= $item['id'] ?></td>
+                                    <td class="am-text-middle"><?= $item['goods']['goods_name'] ?></td>
                                     <td class="am-text-middle">
-                                        <a href="<?= $item['user']['avatarUrl'] ?>" title="点击查看大图" target="_blank">
-                                            <img src="<?= $item['user']['avatarUrl'] ?>" width="72" height="72" alt="">
+                                        <a href="<?= $item['goods']['image'][0]['file_path'] ?>" title="点击查看大图" target="_blank">
+                                            <img src="<?= $item['goods']['image'][0]['file_path'] ?>" width="72" height="72" alt="">
                                         </a>
                                     </td>
                                     <td class="am-text-middle">
-                                        <p class=""><?= $item['user']['nickName'] ?></p>
-                                        <p class="am-link-muted">(用户ID：<?= $item['user']['user_id'] ?>)</p>
+                                        <p class=""><?= $item['change_num'] ?></p>
                                     </td>
                                     <td class="am-text-middle">
-                                        <span class="am-badge am-badge-secondary"><?= $item['scene']['text'] ?></span>
+                                        <p class=""><?= $item['balance_stock'] ?></p>
                                     </td>
                                     <td class="am-text-middle">
-                                        <?= $item['money'] > 0 ? '+' : '' ?><?= $item['money'] ?>
+                                        <span class="am-badge am-badge-secondary"><?= $item['change_type']['text'] ?></span>
                                     </td>
-                                    <td class="am-text-middle"><?= $item['describe'] ?: '--' ?></td>
+                                    <td class="am-text-middle">
+                                        <?= !$item['opposite_user']? '--' : ($item['opposite_user']['nickName'] ."[".$item['opposite_user']['grade']['name']) . "]" ?>
+                                    </td>
                                     <td class="am-text-middle"><?= $item['remark'] ?: '--' ?></td>
                                     <td class="am-text-middle"><?= $item['create_time'] ?></td>
                                 </tr>
