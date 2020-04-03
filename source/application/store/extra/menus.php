@@ -80,41 +80,51 @@ return [
         'index' => 'order/all_list',
         'submenu' => [
             [
-                'name' => '全部订单',
-                'index' => 'order/all_list',
-            ],
-            [
-                'name' => '待发货',
-                'index' => 'order/delivery_list',
-            ],
-            [
-                'name' => '待收货',
-                'index' => 'order/receipt_list',
-            ],
-            [
-                'name' => '待付款',
-                'index' => 'order/pay_list',
-            ],
-            [
-                'name' => '已完成',
-                'index' => 'order/complete_list',
+                'name' => '消费订单',
+                'active' => true,
+                'submenu' => [
+                    [
+                        'name' => '全部订单',
+                        'index' => 'order/all_list',
+                    ],
+                    [
+                        'name' => '待发货',
+                        'index' => 'order/delivery_list',
+                    ],
+                    [
+                        'name' => '待收货',
+                        'index' => 'order/receipt_list',
+                    ],
+                    [
+                        'name' => '待付款',
+                        'index' => 'order/pay_list',
+                    ],
+                    [
+                        'name' => '已完成',
+                        'index' => 'order/complete_list',
 
+                    ],
+                    [
+                        'name' => '已取消',
+                        'index' => 'order/cancel_list',
+                    ],
+                    [
+                        'name' => '售后管理',
+                        'index' => 'order.refund/index',
+                        'uris' => [
+                            'order.refund/index',
+                            'order.refund/detail',
+                        ]
+                    ],
+                ]
             ],
             [
-                'name' => '已取消',
-                'index' => 'order/cancel_list',
+                'name' => '补货订单',
+                'index' => 'order/order_stock',
             ],
             [
                 'name' => '提货发货',
-                'index' => 'order/orderDelivery',
-            ],
-            [
-                'name' => '售后管理',
-                'index' => 'order.refund/index',
-                'uris' => [
-                    'order.refund/index',
-                    'order.refund/detail',
-                ]
+                'index' => 'order/order_delivery',
             ],
         ]
     ],
@@ -154,6 +164,20 @@ return [
                     [
                         'name' => '余额明细',
                         'index' => 'user.balance/log',
+                    ],
+                ]
+            ],
+            [
+                'name' => '团队管理',
+                'active' => true,
+                'submenu' => [
+                    [
+                        'name' => '转换团队',
+                        'index' => 'user.team/exchange',
+                    ],
+                    [
+                        'name' => '团队转换记录',
+                        'index' => 'user.team/exchange_log',
                     ],
                 ]
             ],

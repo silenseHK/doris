@@ -2,6 +2,7 @@
 
 namespace app\common\model;
 
+use app\api\model\User as UserModel;
 use think\Hook;
 use app\common\model\store\shop\Order as ShopOrder;
 use app\common\service\Order as OrderService;
@@ -108,6 +109,30 @@ class Order extends BaseModel
     {
         $module = self::getCalledModule() ?: 'common';
         return $this->belongsTo("app\\{$module}\\model\\Express");
+    }
+
+    /**
+     * 关联出货人
+     * @return \think\model\relation\BelongsTo
+     */
+    public function SupplyUser(){
+        $module = self::getCalledModule() ?: 'common';
+        return $this->belongsTo("app\\{$module}\\model\\User",'supply_user_id','user_id');
+    }
+
+    /**
+     * 获利人信息
+     * @param $value
+     * @param $data
+     * @return array|mixed
+     */
+    public function getRebateInfoAttr($value, $data){
+        if($data['delivery_type'] != 30 || !$value)return [];
+        $rebateInfo = json_decode($value,true);
+        foreach($rebateInfo as &$item){
+            $item['user'] = User::getUserInfo($item['user_id']);
+        }
+        return $rebateInfo;
     }
 
     /**
@@ -351,6 +376,10 @@ class Order extends BaseModel
             );
             // 获取已完成的订单
             $completed = self::detail($this['order_id'], ['user', 'address', 'goods', 'express']);
+
+            ## 增加积分、返利、出货人余额
+            UserModel::doIntegralRebate($completed);
+
             // 更新好物圈订单状态
             (new WowService(self::$wxapp_id))->update([$completed]);
             return $status;

@@ -86,8 +86,14 @@ class User extends Controller
     }
 
     public function test(){
-        $wxapp_id = '10001';
-        Hook::listen('auto_deliver_order',$wxapp_id);
+//        $str = 'E5FCDG3HQA4B1NOPIJ2RSTUV67MWX89KLYZ';
+//        $arr = str_split($str);
+//        shuffle($arr);
+//        $new_str = implode("", $arr);
+//        echo $new_str;
+//        print_r($arr);die;
+        echo $res = createCode(19001);
+        echo decode($res);
     }
 
 }

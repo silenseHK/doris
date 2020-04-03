@@ -23,7 +23,7 @@ class Scene extends EnumBasics
     // 订单退款
     const REFUND = 40;
 
-    // 出货
+    // 出货收益
     const SALE = 50;
 
     // 收到返利

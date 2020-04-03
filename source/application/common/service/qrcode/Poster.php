@@ -2,6 +2,7 @@
 
 namespace app\common\service\qrcode;
 
+use app\common\model\User;
 use Grafika\Color;
 use Grafika\Grafika;
 use app\common\model\dealer\Setting;
@@ -18,6 +19,9 @@ class Poster extends Base
 
     /* @var array $config 分销商海报设置 */
     private $config;
+
+    /* @var User */
+    public $user;
 
     /**
      * 构造方法
@@ -53,7 +57,7 @@ class Poster extends Base
         // 2. 下载用户头像
         $avatarUrl = $this->saveTempImage($wxappId, $this->dealer['user']['avatarUrl'], 'avatar');
         // 3. 下载小程序码
-        $qrcode = $this->saveQrcode($wxappId, 'uid:' . $this->dealer['user_id']);
+        $qrcode = $this->saveQrcode($wxappId, 'referee_id:' . createCode($this->user['user_id']));
         // 4. 拼接海报图
         return $this->savePoster($backdrop, $avatarUrl, $qrcode);
     }

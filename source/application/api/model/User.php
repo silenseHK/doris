@@ -27,6 +27,7 @@ use app\common\model\Goods as GoodsModel;
 use app\api\validate\user\Check;
 use app\common\enum\VerifyCode as verifyCodeEnum;
 use app\common\model\Setting as SettingModel;
+use app\api\model\user\Grade as ApiGrade;
 
 /**
  * 用户模型类
@@ -60,7 +61,7 @@ class User extends UserModel
         if(!isset($data['invitation_user_id']))return "";
         $inviteUserId = $data['invitation_user_id'];
         $relation = $inviteUserId ? (self::getUserRelation($inviteUserId)) : "";
-        return $inviteUserId ? "_" . trim($inviteUserId . '_' . trim($relation,'_'),'_') . "_" : "";
+        return $inviteUserId ? "-" . trim($inviteUserId . '-' . trim($relation,'-'),'-') . "-" : "";
     }
 
     private $token;
@@ -307,8 +308,8 @@ class User extends UserModel
             if(!$check)throw new Exception($validate->getError());
 
             ##接收参数
-            $goodsId = input('post.goods_id', 0,'intval');
-            $num = input('post.num',1,'intval');
+            $goodsId = input('get.goods_id', 0,'intval');
+            $num = input('get.num',1,'intval');
 
             ##逻辑
             ## 价格
@@ -398,11 +399,21 @@ class User extends UserModel
 
         ##返利
         if($model['rebate_money'] > 0){
-            ### 返利给用户
-            self::addBalanceByOrder($model['rebate_user_id'], $model['order_id'], $model['rebate_money'], $model['order_no'], Scene::REBATE);
+            $rebate_info = json_decode($model['rebate_info'],true);
+            foreach($rebate_info as $item){
+                ### 返利给用户
+                self::addBalanceByOrder($item['user_id'], $model['order_id'], $item['money'], $model['order_no'], Scene::REBATE);
+            }
             if($model['supply_user_id'] > 0){
                 ### 扣除出货人返利金额
                 self::reduceBalanceByOrder($model['supply_user_id'], $model['order_id'], $model['rebate_money'], $model['order_no']);
+            }
+        }
+
+        ##减少用户冻结库存
+        if($model['supply_user_id'] > 0){
+            foreach($model['goods'] as $goods){
+                UserGoodsStock::disFreezeStockByUserGoodsId($model['supply_user_id'], $goods['goods_id'], $goods['total_num'],1);
             }
         }
 
@@ -573,7 +584,7 @@ class User extends UserModel
      */
     public function memberList($user_id, $grade_id, $keywords, $page, $size){
         if($keywords)$where['nickName|mobile'] = ['LIKE', "%{$keywords}%"];
-        $where['relation'] = ['LIKE', "%_{$user_id}_%"];
+        $where['relation'] = ['LIKE', "%-{$user_id}-%"];
         if($grade_id > 0){
             $where['grade_id'] = $grade_id;
         }else{
@@ -640,6 +651,59 @@ class User extends UserModel
             Db::rollback();
             return $e->getMessage();
         }
+    }
+
+    /**
+     * 代理商中心数据
+     * @return $this
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getAgentData(){
+
+        ##获取下一级可升级会员等级信息
+        $next_grade = ApiGrade::getNextGradeInfo($this['grade']['weight']);
+        if($next_grade){
+            $grade['rate'] = (int)$this['integral'] .'/'. (int)$next_grade['upgrade_integral'];
+            $grade['cha'] = (int)$next_grade['upgrade_integral'] - (int)$this['integral'];
+            $grade['next_grade'] = $next_grade['name'];
+        }else{
+            ##获取最高等级
+            $high_grade = ApiGrade::getHighestGradeInfo();
+            $grade['rate'] = (int)$high_grade['upgrade_integral'] . '/' . (int)$high_grade['upgrade_integral'];
+            $grade['cha'] = 0;
+            $grade['next_grade'] = '';
+        }
+        $this['grade']['next'] = $grade;
+
+        ##获取销售量、销售额
+        $sale_info = Order::getAgentSaleInfo($this['user_id']);
+        $sale_money = $sale_num = 0;
+        if(!empty($sale_info)){
+            foreach($sale_info as $item){
+                $sale_money += $item['pay_price'] - $item['express_price'];
+                foreach($item['goods'] as $it){
+                    $sale_num += $it['total_num'];
+                }
+            }
+        }
+        $this['sale_num'] = $sale_num;
+        $this['sale_money'] = $sale_money;
+
+        ##获取推荐人
+        $this['invitation_user_info'] = ['mobile' => self::getUserMobile($this['invitation_user_id'])];
+
+        return $this;
+    }
+
+    /**
+     * 获取用户手机号
+     * @param $user_id
+     * @return mixed
+     */
+    public static function getUserMobile($user_id){
+        return self::where(['user_id'=>$user_id])->value('mobile');
     }
 
 }

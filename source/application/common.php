@@ -381,4 +381,64 @@ function get_last_month_end_timestamp(){
     return strtotime(date("Y-m-d 23:59:59", strtotime(-date('d').'day')));
 }
 
+/**
+ * 创建邀请码
+ * @param $user_id
+ * @return string
+ */
+function createCode($user_id) {
+
+    static $source_string = '6W3U4PV7SZ9YJ52AK1MTDGFOHNB8ELRICQX';
+
+    $num = $user_id;
+
+    $code = '';
+
+    while ( $num > 0) {
+
+        $mod = $num % 35;
+
+        $num = ($num - $mod) / 35;
+
+        $code = $source_string[$mod].$code;
+
+    }
+
+    if(empty($code[3]))
+
+        $code = str_pad($code,4,'0',STR_PAD_LEFT);
+
+    return $code;
+
+}
+
+/**
+ * 解码邀请码
+ * @param $code
+ * @return float|int
+ */
+function decode($code) {
+
+    static $source_string = '6W3U4PV7SZ9YJ52AK1MTDGFOHNB8ELRICQX';
+
+    if (strrpos($code, '0') !== false)
+
+        $code = substr($code, strrpos($code, '0')+1);
+
+    $len = strlen($code);
+
+    $code = strrev($code);
+
+    $num = 0;
+
+    for ($i=0; $i < $len; $i++) {
+
+        $num += strpos($source_string, $code[$i]) * pow(35, $i);
+
+    }
+
+    return $num;
+
+}
+
 

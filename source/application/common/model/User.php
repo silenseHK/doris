@@ -7,9 +7,11 @@ use app\common\enum\user\grade\GradeSize;
 use app\common\enum\user\grade\GradeType;
 use app\common\enum\user\grade\RebateConfig;
 use app\common\model\user\BalanceLog;
+use app\common\model\user\ExchangeTeamLog;
 use app\common\model\user\Grade;
 use app\common\model\user\IntegralLog;
 use app\common\model\user\PointsLog as PointsLogModel;
+use think\Db;
 use think\db\Query;
 use think\Exception;
 use think\Hook;
@@ -62,6 +64,16 @@ class User extends BaseModel
     public function getGenderAttr($value)
     {
         return $this->gender[$value];
+    }
+
+    /**
+     * 邀请码
+     * @param $value
+     * @param $data
+     * @return string
+     */
+    public function getInvitationCodeAttr($value, $data){
+        return $value?:createCode($data['user_id']);
     }
 
     /**
@@ -177,7 +189,7 @@ class User extends BaseModel
     public static function getRecentUserInfo($userId, $goodsId, $num){
         #获取商品信息
         $goodsInfo = Goods::getGoodsAgentInfo($goodsId);
-        if($goodsInfo['sale_type'] != 1)throw new Exception('商品销售类型非层及代理');
+        if($goodsInfo['sale_type'] != 1)throw new Exception('商品销售类型非层级代理');
         ##计算获取的积分
         $addIntegral = 0;
         if($goodsInfo['is_add_integral'] == 1){
@@ -278,12 +290,12 @@ class User extends BaseModel
      * @return bool|int  返回0表示由平台发货
      */
     public static function getSupplyUserId($relation, $weight){
-        $relation = trim($relation,'_');
+        $relation = trim($relation,'-');
         if(!$relation)return 0;
         ##获取供货人的等级id
         $applyGradeIds = Grade::getApplyGrade($weight);
         if(empty($applyGradeIds))return 0;
-        $relation = explode('_', $relation);
+        $relation = explode('-', $relation);
         ##获取供应人id
         $relation_ids = implode(',', $relation);
         $user_id = self::where(['user_id'=>['IN', $relation], 'grade_id'=>['IN', $applyGradeIds], 'is_delete'=>0])->orderRaw("field(user_id," . $relation_ids . ")")->value('user_id');
@@ -369,6 +381,8 @@ class User extends BaseModel
                 }
             }
         }
+        ##货款扣除运费
+        if($balance)$balance = $balance - $model['express_price'];
         ##增加购买人库存
         if(!empty($stock)){
             foreach($stock as $key => $sto){
@@ -393,10 +407,10 @@ class User extends BaseModel
                     'remark' => '出货减库存'
                 ];
                 ##减少库存
-                if($model['delivery_type']['value'] == 30){ ##补充库存订单 减库存+增加冻结库存
-                    UserGoodsStock::freezeStockByUserGoodsId($model['supply_user_id'], $key, $val,1);
-                }else{ ##非补充库存订单直接减库存
+                if($model['delivery_type']['value'] == 30){ ##非补充库存订单直接减库存
                     UserGoodsStock::editStock($model['supply_user_id'], $key, $val, 'dec');
+                }else{  ##补充库存订单 减库存+增加冻结库存
+                    UserGoodsStock::freezeStockByUserGoodsId($model['supply_user_id'], $key, $val,1);
                 }
             }
             ##插入库存变更日志
@@ -410,7 +424,7 @@ class User extends BaseModel
         ##返利 (补货的情况下)
         $rebate = $model['rebate_info'];
         if($rebate && $model['delivery_type']['value'] == 30){
-            $rebate = json_decode($rebate,true);
+//            $rebate = json_decode($rebate,true);
             if(!empty($rebate)){
                 foreach($rebate as $item){
                     ##返利给用户
@@ -453,14 +467,14 @@ class User extends BaseModel
 //        }
 
         ##刷新用户等级
-        if($model['delivery_type']['value'] == 30){
+//        if($model['delivery_type']['value'] == 30){
             $options = [
                 'user_id' => $this['user_id'],
                 'integral_log_id' => $integralLogId
             ];
             ### 刷新用户会员等级
             Hook::listen('user_instant_grade',$options);
-        }
+//        }
 
     }
 
@@ -520,7 +534,7 @@ class User extends BaseModel
             ->field(['u.relation', 'ug.grade_type', 'u.grade_id', 'ug.weight'])
             ->find();
         if(!$userData['relation'])return [];
-        $relation = explode('_',trim($userData['relation'],'_'));
+        $relation = explode('-',trim($userData['relation'],'-'));
         if(!$relation[0])return [];
         ##获取
         if($supplyUserId > 0){
@@ -757,9 +771,9 @@ class User extends BaseModel
      * @throws \think\exception\DbException
      */
     public static function VIPGetRebate($relation, $supply_user_id){
-        $relation = trim($relation,'_');
+        $relation = trim($relation,'-');
         if(!$relation)return 0;
-        $relation = explode('_', $relation);
+        $relation = explode('-', $relation);
         if(!$relation[0])return 0;
         ##获取
         $filter = self::initFilter($relation, $supply_user_id);
@@ -783,9 +797,9 @@ class User extends BaseModel
      * @throws \think\exception\DbException
      */
     public static function agentGetRebate($relation, $user_id, $type){
-        $relation = trim($relation,'_');
+        $relation = trim($relation,'-');
         if(!$relation)return 0;
-        $relation = explode('_', $relation);
+        $relation = explode('-', $relation);
         if(!$relation[0])return 0;
         ##获取
         $filter = self::initFilter($relation, $user_id);
@@ -813,9 +827,9 @@ class User extends BaseModel
      * @throws \think\exception\DbException
      */
     public static function strategyGetRebate($relation, $user_id, $type){
-        $relation = trim($relation,'_');
+        $relation = trim($relation,'-');
         if(!$relation)return 0;
-        $relation = explode('_', $relation);
+        $relation = explode('-', $relation);
         if(!$relation[0])return 0;
         ##获取
         $filter = self::initFilter($relation, $user_id);
@@ -869,9 +883,9 @@ class User extends BaseModel
      * @throws \think\exception\DbException
      */
     public static function hideGetRebate($relation){
-        $relation = trim($relation,'_');
+        $relation = trim($relation,'-');
         if(!$relation)return 0;
-        $relation = explode('_', $relation);
+        $relation = explode('-', $relation);
         if(!$relation[0])return 0;
         ##董事 grade_id and 合伙人 grade_id
         $grade_id_1 = Grade::getGradeId(GradeSize::DIRECTOR);
@@ -912,6 +926,117 @@ class User extends BaseModel
             $filter = $relation;
         }
         return $filter;
+    }
+
+    /**
+     * 获取用户信息
+     * @param $user_id
+     * @return array|false|\PDOStatement|string|\think\Model
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function getUserInfo($user_id){
+        return self::where(['user_id'=>$user_id])->with(['grade'=>function(Query $query){$query->field(['grade_id', 'name']);}])->field(['user_id', 'mobile', 'nickName', 'grade_id'])->find()->toArray();
+    }
+
+    /**
+     * 转换团队预备逻辑
+     * @param $user_id
+     * @param $new_invitation_user_id
+     * @return bool|string
+     * @throws Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function doExchangeTeam($user_id, $new_invitation_user_id){
+        ##获取原来的邀请人
+        $userInfo = self::where(['user_id'=>$user_id, 'is_delete'=>0])->field(['user_id', 'invitation_user_id', 'relation'])->find();
+        if(!$user_id)throw new Exception('用户不存在');
+        ##获取新邀请人信息
+        $invitationUserInfo = self::where(['user_id'=>$new_invitation_user_id, 'is_delete'=>0])->field(['user_id', 'relation'])->find();
+        if(!$invitationUserInfo)throw new Exception('邀请人信息不存在');
+        ##判断新邀请人是否为申请人的下级
+        if($invitationUserInfo['relation']){
+            $id_arr = explode('-', trim($invitationUserInfo['relation'],"-"));
+            if(in_array($user_id, $id_arr))throw new Exception('该操作不被允许');
+        }
+        ##最新的关系网
+        $relation = "-" . trim($new_invitation_user_id . $invitationUserInfo['relation'],'-') . "-";
+        ##查找申请人的下级团队
+        $lowerLevelTeam = self::getLowerLevelTeam($user_id);
+        $newRelationArr = self::createNewRelation($lowerLevelTeam, $user_id, $relation);
+        ##执行操作
+        Db::startTrans();
+        try{
+            ##更新下级的关系网
+            self::updateLowerLevelRelation($newRelationArr);
+            ##更新当前用户的信息并生成转团队记录
+            self::changeTeam($user_id, $relation, $new_invitation_user_id, $userInfo['relation'], $userInfo['invitation_user_id']);
+            Db::commit();
+            return true;
+        }catch(Exception $e){
+            Db::rollback();
+            return $e->getMessage();
+        }
+    }
+
+    /**
+     * 获取下级团队
+     * @param $user_id
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function getLowerLevelTeam($user_id){
+        return self::where(['relation'=>['LIKE', "%-{$user_id}-%"]])->field(['user_id', 'relation'])->select()->toArray();
+    }
+
+    /**
+     * 重新组合relation
+     * @param $arr
+     * @param $user_id
+     * @param $relation
+     * @return mixed
+     */
+    public static function createNewRelation($arr, $user_id, $relation){
+        foreach($arr as &$v){
+            $v['relation'] = str_replace(strstr($v['relation'],"-{$user_id}-"),"-{$user_id}" . $relation, $v['relation']);
+        }
+        return $arr;
+    }
+
+    /**
+     * 更新下级代理的关系网
+     * @param $list
+     * @throws Exception
+     */
+    public static function updateLowerLevelRelation($list){
+        foreach($list as $item){
+            $res = self::update(['relation'=>$item['relation']], ['user_id'=>$item['user_id']]);
+            if($res === false)throw new Exception('操作失败');
+        }
+    }
+
+    /**
+     * 转换团队
+     * @param $user_id
+     * @param $relation
+     * @param $new_invitation_user_id
+     * @param $old_relation
+     * @param $old_invitation_user_id
+     * @throws Exception
+     */
+    public static function changeTeam($user_id, $relation, $new_invitation_user_id, $old_relation, $old_invitation_user_id){
+        ##更新用户信息
+        $res = self::update(['invitation_user_id'=>$new_invitation_user_id, 'relation'=>$relation], ['user_id'=>$user_id]);
+        if($res === false)throw new Exception('操作失败');
+        ##添加团队转换记录
+        $data = compact('user_id','old_invitation_user_id','new_invitation_user_id','old_relation');
+        $res = (new ExchangeTeamLog)->isUpdate(false)->save($data);
+        if($res === false)throw new Exception('操作失败');
     }
 
 }

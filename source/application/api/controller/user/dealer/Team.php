@@ -76,6 +76,10 @@ class Team extends Controller
         }
     }
 
+    /**
+     * 团队列表
+     * @return array
+     */
     public function memberList(){
         try{
             $user = $this->getUser();

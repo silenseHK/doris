@@ -14,6 +14,7 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
 use app\common\service\Message as MessageService;
 use app\common\service\order\Refund as RefundService;
 use app\common\service\wechat\wow\Order as WowService;
+use think\db\Query;
 
 /**
  * 订单管理
@@ -26,11 +27,18 @@ class Order extends OrderModel
      * 订单列表
      * @param string $dataType
      * @param array $query
+     * @param int $deliveryType
      * @return \think\Paginator
      * @throws \think\exception\DbException
      */
-    public function getList($dataType, $query = [])
+    public function getList($dataType, $query = [], $deliveryType=10)
     {
+        if($deliveryType == 30){
+            $this->where('delivery_type',30);
+        }else{
+            $this->where('delivery_type','neq','30');
+        }
+
         // 检索查询条件
         !empty($query) && $this->setWhere($query);
         // 获取数据列表
@@ -47,16 +55,62 @@ class Order extends OrderModel
     }
 
     /**
+     * 订单列表
+     * @param array $query
+     * @param int $deliveryType
+     * @return \think\Paginator
+     * @throws \think\exception\DbException
+     */
+    public function getStockList($query = [], $deliveryType=10)
+    {
+        if($deliveryType == 30){
+            $this->where('delivery_type',30);
+        }else{
+            $this->where('delivery_type','neq','30');
+        }
+
+        // 检索查询条件
+        !empty($query) && $this->setStockWhere($query);
+        // 获取数据列表
+        return $this
+            ->with(
+                [
+                    'goods.image',
+                    'address',
+                    'user' => function(Query $query){
+                        $query->with(['grade']);
+                    },
+                    'supplyUser.grade'
+                ]
+            )
+            ->alias('order')
+            ->field('order.*')
+            ->join('user', 'user.user_id = order.user_id')
+            ->where('order.is_delete', '=', 0)
+            ->order(['order.create_time' => 'desc'])
+            ->paginate(10, false, [
+                'query' => \request()->request()
+            ]);
+    }
+
+    /**
      * 订单列表(全部)
      * @param $dataType
      * @param array $query
+     * @param int $deliveryType
      * @return false|\PDOStatement|string|\think\Collection
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    public function getListAll($dataType, $query = [])
+    public function getListAll($dataType, $query = [], $deliveryType=10)
     {
+        if($deliveryType == 30){
+            $this->where('delivery_type',30);
+        }else{
+            $this->where('delivery_type','neq','30');
+        }
+
         // 检索查询条件
         !empty($query) && $this->setWhere($query);
         // 获取数据列表
@@ -118,6 +172,37 @@ class Order extends OrderModel
         // 用户id
         if (isset($query['user_id']) && $query['user_id'] > 0) {
             $this->where('order.user_id', '=', (int)$query['user_id']);
+        }
+    }
+
+    public function setStockWhere($query){
+        if(isset($query['order_status']) && !empty($query['order_status'])){
+            $query['order_status'] > 0 && $this->where(['pay_status'=>$query['order_status']]);
+        }
+        if (isset($query['start_time']) && !empty($query['start_time'])) {
+            $this->where('order.create_time', '>=', strtotime($query['start_time']));
+        }
+        if (isset($query['end_time']) && !empty($query['end_time'])) {
+            $this->where('order.create_time', '<', strtotime($query['end_time']) + 86400);
+        }
+        if(isset($query['search']) && !empty($query['search'])){
+            $keywords = str_filter($query['search']);
+            $search_type = intval($query['search_type']);
+            switch($search_type){
+                case 10: #订单号
+                    $this->where(['order_no'=>['LIKE', "%{$keywords}%"]]);
+                    break;
+                case 20: #发货人
+                    ##先查找user_id
+                    $like_user_ids = UserModel::getLikeUserByName($keywords);
+                    $this->where(['supply_user_id'=>['IN', $like_user_ids]]);
+                    break;
+                case 30: #进货人
+                    ##先查user_id
+                    $like_user_ids = UserModel::getLikeUserByName($keywords);
+                    $this->where(['user_id'=>['IN', $like_user_ids]]);
+                    break;
+            }
         }
     }
 

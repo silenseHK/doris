@@ -88,6 +88,7 @@ class Goods extends GoodsModel
             $this->error = '很抱歉，商品信息不存在或已下架';
             return false;
         }
+        $detail['agent_init_price'] = 0;
         ##操作商品价格[层级代理]
         if($detail['sale_type'] == 1){
             if($userInfo){
@@ -96,7 +97,9 @@ class Goods extends GoodsModel
                 $price = GoodsGrade::getLowestGradeGoodsPrice($goodsId);
             }
             $detail['sku'][0]['goods_price'] = $price;
+            $detail['agent_init_price'] = $price;
         }
+
         // 设置商品展示的数据
         $detail = $this->setGoodsListDataFromApi($detail, false, ['userInfo' => $userInfo]);
         // 多规格商品sku信息

@@ -114,8 +114,9 @@ class UserGoodsStock extends BaseModel
      */
     public static function incHistoryStock($userId, $goodsId, $stock){
         $stockId = self::checkExist($userId, $goodsId);
+        echo $stockId;
         if($stockId){ ##更新
-            $where = ['stock_id'=>$stockId];
+            $where = ['id'=>$stockId];
             self::update(['stock'=>['inc', $stock], 'history_stock'=>['inc', $stock]], $where);
         }else{ ##新增
             UserGoodsStock::insertData([

@@ -53,7 +53,7 @@ class CompleteDeliverOrder
                 if($res === false)throw new Exception('任务执行失败');
             }
             ##修改订单状态为已完成
-            $res = $model->where(['deliver_id'=>['in', $deliver_ids]])->save(['deliver_status'=>40, 'complete_time'=>time(), 'complete_type'=>10]);
+            $res = $model->save(['deliver_status'=>40, 'complete_time'=>time(), 'complete_type'=>10], ['deliver_id'=>['in', $deliver_ids]]);
             if($res === false)throw new Exception('任务执行失败');
             Db::commit();
             return true;

@@ -2,6 +2,7 @@
 
 namespace app\store\controller;
 
+use app\common\enum\DeliveryType;
 use app\store\model\Order as OrderModel;
 use app\store\model\Express as ExpressModel;
 use app\store\model\OrderDelivery;
@@ -133,17 +134,28 @@ class Order extends Controller
      * 订单列表
      * @param string $title
      * @param string $dataType
+     * @param int $deliveryType
      * @return mixed
      * @throws \think\exception\DbException
      */
-    private function getList($title, $dataType)
+    private function getList($title, $dataType, $deliveryType=10)
     {
         // 订单列表
         $model = new OrderModel;
-        $list = $model->getList($dataType, $this->request->param());
+        $list = $model->getList($dataType, $this->request->param(), $deliveryType);
         // 自提门店列表
         $shopList = ShopModel::getAllList();
         return $this->fetch('index', compact('title', 'dataType', 'list', 'shopList'));
+    }
+
+    public function getStockList($title, $deliveryType=30){
+        // 订单列表
+        $model = new OrderModel;
+        $list = $model->getStockList($this->request->param(), $deliveryType);
+//        print_r($list->toArray());die;
+        // 自提门店列表
+        $shopList = ShopModel::getAllList();
+        return $this->fetch('order_stock', compact('title', 'dataType', 'list', 'shopList'));
     }
 
     /**
@@ -151,7 +163,7 @@ class Order extends Controller
      * @return mixed
      * @throws \think\exception\DbException
      */
-    public function orderDelivery(){
+    public function order_delivery(){
         $model = new OrderDelivery();
         $data = $model->makeData($this->request->param());
         return $this->fetch('order_delivery', $data);
@@ -199,7 +211,6 @@ class Order extends Controller
     public function deliveryDetail($order_id){
         // 订单详情
         $detail = OrderDelivery::detail($order_id);
-//        print_r($detail->toArray());die;
         // 物流公司列表
         $expressList = ExpressModel::getAll();
 
@@ -221,6 +232,10 @@ class Order extends Controller
         }catch(Exception $e){
             return $this->renderError($e->getMessage());
         }
+    }
+
+    public function order_stock(){
+        return $this->getStockList('补货订单', DeliveryType::STOCK);
     }
 
 }

@@ -84,12 +84,16 @@ class OrderDeliver extends OrderDeliverModel
                 'receiver_mobile' => $addressInfo['phone'],
                 'receiver_user' => $addressInfo['name'],
             ]);
-            if($freight == 0)$data['pay_status'] = 20;
+            if($freight == 0){
+                $data['pay_status'] = 20;
+                $data['pay_time'] = time();
+            }
         }else{ ##自提
             $freight = 0;
             $data = array_merge($data, [
                 'freight_money' => 0,
                 'pay_status' => 20,
+                'pay_time' => time(),
                 'deliver_status' => 20,
                 'deliver_time' => time()
             ]);

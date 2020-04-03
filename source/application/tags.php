@@ -72,6 +72,7 @@ return [
     'auto_deliver_order' => [
         'app\\task\\behavior\\user\\CancelDeliverOrder',
         'app\\task\\behavior\\user\\CompleteDeliverOrder',
+        'app\\task\\behavior\\user\\CompleteOrder',
     ],
 
 ];

@@ -14,6 +14,7 @@ use app\store\model\user\PointsLog as PointsLogModel;
 use app\common\enum\user\balanceLog\Scene as SceneEnum;
 use app\common\enum\user\grade\log\ChangeType as ChangeTypeEnum;
 use app\common\library\helper;
+use app\store\validate\UserValid;
 use think\Db;
 use think\Exception;
 use think\Hook;
@@ -326,6 +327,36 @@ class User extends UserModel
     public static function totalMoney($user_id, $money){
         ##增加用户已提现金额,减少用户冻结中余额
         self::update(['balance'=>['inc', $money], 'freeze_money'=>['dec', $money]], compact('user_id'));
+    }
+
+    /**
+     * 通过昵称模糊查询用户id
+     * @param $nick_name
+     * @return array
+     */
+    public static function getLikeUserByName($nick_name){
+        return self::where(['nickName'=>['LIKE', "%{$nick_name}%"]])->column('user_id');
+    }
+
+    /**
+     * 转换团队
+     * @return bool|string
+     * @throws Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function exchangeTeam(){
+        ##验证
+        $validate = new UserValid();
+        $res = $validate->scene('exchange_team')->check(request()->post());
+        if(!$res)throw new Exception($validate->getError());
+        ##参数
+        $user_id = input('post.user_id',0,'intval');
+        $exchange_user_id = input('post.exchange_user_id',0,'intval');
+        if($user_id == $exchange_user_id)throw new Exception('非法操作');
+        ##执行操作
+        return self::doExchangeTeam($user_id, $exchange_user_id);
     }
 
 }

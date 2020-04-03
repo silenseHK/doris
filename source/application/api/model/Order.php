@@ -21,6 +21,7 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
 use app\common\service\wechat\wow\Order as WowService;
 use app\common\service\order\Complete as OrderCompleteService;
 use app\common\exception\BaseException;
+use think\db\Query;
 
 /**
  * 订单模型
@@ -288,6 +289,7 @@ class Order extends OrderModel
             $status = $this->save([
                 'receipt_status' => 20,
                 'receipt_time' => time(),
+                'receipt_type' => 10,
                 'order_status' => 30
             ]);
             // 获取已完成的订单
@@ -453,6 +455,24 @@ class Order extends OrderModel
     public function hasError()
     {
         return !empty($this->error);
+    }
+
+    /**
+     * 获取代理销售信息
+     * @param $supply_user_id
+     * @return false|\PDOStatement|string|\think\Collection
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function getAgentSaleInfo($supply_user_id){
+        return self::where(['supply_user_id'=>$supply_user_id, 'order_status'=>30])->with(
+            [
+                'goods' => function(Query $query){
+                    $query->field(['order_goods_id', 'order_id', 'total_num']);
+                }
+            ]
+        )->field(['order_id', 'pay_price', 'express_price', 'order_status'])->select();
     }
 
 }

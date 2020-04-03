@@ -249,4 +249,15 @@ class Grade extends BaseModel
         return self::where(compact('grade_id'))->value('grade_type');
     }
 
+    /**
+     * 获取最高可升级的等级信息
+     * @return array|false|\PDOStatement|string|\think\Model
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function getHighestGradeInfo(){
+        return self::where(['can_upgrade'=>1])->order('weight','desc')->field(['upgrade_integral'])->find();
+    }
+
 }

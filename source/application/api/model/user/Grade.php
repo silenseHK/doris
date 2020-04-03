@@ -27,4 +27,16 @@ class Grade extends GradeModel
         ])->field(['grade_id', 'name'])->order('weight','desc')->select();
     }
 
+    /**
+     * 获取下一等级的信息
+     * @param $weight
+     * @return array|false|\PDOStatement|string|\think\Model
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function getNextGradeInfo($weight){
+        return self::where(['weight'=>['GT', $weight], 'can_upgrade'=>1, 'is_delete'=>0])->order('weight','asc')->field(['name', 'upgrade_integral'])->find();
+    }
+
 }
