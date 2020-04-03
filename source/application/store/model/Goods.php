@@ -13,13 +13,62 @@ use think\Exception;
  */
 class Goods extends GoodsModel
 {
+
+    public function add(array $data)
+    {
+        if (!isset($data['images']) || empty($data['images'])) {
+            $this->error = '请上传商品图片';
+            return false;
+        }
+        $data['content'] = isset($data['content']) ? htmlspecialchars($data['content']) : '';
+        $data['wxapp_id'] = $data['sku']['wxapp_id'] = self::$wxapp_id;
+
+        // 开启事务
+        $this->startTrans();
+        try {
+            // 添加商品
+            ##处理总库存
+            $total_stock = 0;
+            if($data['spec_type'] == 20){ //多规格
+                foreach($data['spec_many']['spec_list'] as $v){
+                    $total_stock += $v['form']['stock_num'];
+                }
+            }else{
+                $total_stock = $data['sku']['stock_num'];
+            }
+            $data['stock'] = $total_stock;
+            $this->allowField(true)->save($data);
+            $goods_id = $this->getLastInsID();
+
+            // 商品规格
+            $res = $this->addGoodsSpec($data);
+            if(!is_bool($res) || $res !== true)throw new Exception($res);
+            // 商品图片
+            $this->addGoodsImages($data['images']);
+            // 销售类型为层级代理的商品设置会员价格和返利
+            if(isset($data['sale_type']) && $data['sale_type'] == 1){
+                $res = $this->addGradeGoodsInfo(input('post.grade_goods/a'), $goods_id);
+                if($res !== true)throw new Exception($res);
+                ##获取游客价
+                $tourist_price = GoodsGrade::getTouristPrice($goods_id);
+                GoodsSku::updateGoodsSpecPrice($goods_id, $tourist_price);
+            }
+            $this->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->error = $e->getMessage();
+            $this->rollback();
+            return false;
+        }
+    }
+
     /**
      * 添加商品
      * @param array $data
      * @return bool
      * @throws \think\exception\PDOException
      */
-    public function add(array $data)
+    public function add2(array $data)
     {
         if (!isset($data['images']) || empty($data['images'])) {
             $this->error = '请上传商品图片';
@@ -125,12 +174,8 @@ class Goods extends GoodsModel
             ##处理总库存
             $total_stock = 0;
             if($data['spec_type'] == 20){ //多规格
-                if($data['sale_type'] == 2){//平台自营
-                    foreach($data['spec_many']['spec_list'] as $v){
-                        $total_stock += $v['form']['stock_num'];
-                    }
-                }else{ //多级代理
-                    $total_stock = $data['sku2']['stock_num'];
+                foreach($data['spec_many']['spec_list'] as $v){
+                    $total_stock += $v['form']['stock_num'];
                 }
             }else{
                 $total_stock = $data['sku']['stock_num'];
@@ -169,25 +214,25 @@ class Goods extends GoodsModel
         try{
             // 更新模式: 先删除所有规格
             $model = new GoodsSku;
-            $isUpdate && $model->removeAll($this['goods_id']);
+            $isUpdate && $model->removeAll($this['goods_id']);  ##删除goods_spec_rel
             // 添加规格数据
             if ($data['spec_type'] == '10') {
                 // 单规格
                 $this->sku()->save($data['sku']);
-            } else if ($data['spec_type'] == '20') {
-                if($data['sale_type'] == 2){
+            } else if ($data['spec_type'] == '20'){
+//                if($data['sale_type'] == 2){
                     // 添加商品与规格关系记录
                     $model->addGoodsSpecRel($this['goods_id'], $data['spec_many']['spec_attr']);
                     // 添加商品sku
                     $model->addSkuList($this['goods_id'], $data['spec_many']['spec_list']);
-                }else{
-                    $specs = input('post.specs/a');
-                    if(!isset($specs['spec_val_id']) || empty($specs['spec_val_id']))throw new Exception('请设置商品规格');
-                    // 添加商品与规格关系记录
-                    $model->addAgentGoodsSpecRel($this['goods_id'], $specs);
-                    // 添加商品sku
-                    $model->addAgentSkuList($this['goods_id'], $data, $specs);
-                }
+//                }else{
+//                    $specs = input('post.specs/a');
+//                    if(!isset($specs['spec_val_id']) || empty($specs['spec_val_id']))throw new Exception('请设置商品规格');
+//                    // 添加商品与规格关系记录
+//                    $model->addAgentGoodsSpecRel($this['goods_id'], $specs);
+//                    // 添加商品sku
+//                    $model->addAgentSkuList($this['goods_id'], $data, $specs);
+//                }
             }
             return true;
         }catch(Exception $e){

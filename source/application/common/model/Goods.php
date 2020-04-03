@@ -45,6 +45,10 @@ class Goods extends BaseModel
         return json_encode($data);
     }
 
+    public function getContentAttr($value){
+        return htmlspecialchars_decode($value);
+    }
+
     /**
      * 关联商品分类表
      * @return \think\model\relation\BelongsTo
@@ -250,6 +254,7 @@ class Goods extends BaseModel
                 'spec_sku_id' => $item['spec_sku_id'],
                 'rows' => [],
                 'form' => [
+                    'goods_sku_id' => $item['goods_sku_id'],
                     'image_id' => $image['file_id'],
                     'image_path' => $image['file_path'],
                     'goods_no' => $item['goods_no'],

@@ -33,6 +33,8 @@
             if (typeof setting.baseData !== 'undefined' && setting.baseData !== null) {
                 spec_attr = setting.baseData['spec_attr'];
                 spec_list = setting.baseData['spec_list'];
+                console.log(spec_list);
+                console.log(spec_attr);
             }
 
             // 实例化vue对象
@@ -204,7 +206,7 @@
                         // 遍历tr 行
                         var specList = [];
                         for (i = 0; i < totalRow; i++) {
-                            var rowData = [], rowCount = 1, specSkuIdAttr = [];
+                            var rowData = [], rowCount = 1, specSkuIdAttr = [], goodsSkuIdAttr = [];
                             // 遍历td 列
                             for (var j = 0; j < _this.spec_attr.length; j++) {
                                 var skuValues = _this.spec_attr[j].spec_items;
@@ -219,6 +221,7 @@
                                     });
                                 }
                                 specSkuIdAttr.push(skuValues[parseInt(point.toString())].item_id);
+                                goodsSkuIdAttr.push(skuValues[parseInt(point.toString())].item_id);
                             }
                             specList.push({
                                 spec_sku_id: specSkuIdAttr.join('_'),

@@ -4,6 +4,7 @@
 namespace app\store\model;
 
 use app\common\model\GoodsGrade as GoodsGradeModel;
+use app\store\model\user\Grade;
 use think\Exception;
 use traits\model\SoftDelete;
 
@@ -113,6 +114,17 @@ class GoodsGrade extends GoodsGradeModel
             ->order('ug.weight','asc')
             ->select()
             ->toArray();
+    }
+
+    /**
+     * 获取代理商品的游客价
+     * @param $goods_id
+     * @return mixed
+     */
+    public static function getTouristPrice($goods_id){
+        ##获取游客等级id
+        $grade_id = Grade::where(['is_delete'=>0, 'status'=>1])->order('weight','asc')->value('grade_id');
+        return self::where(compact('goods_id','grade_id'))->value('price');
     }
 
 }

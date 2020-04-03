@@ -142,6 +142,21 @@
                             </div>
 
                             <div class="am-form-group">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">库存计算方式 </label>
+                                <div class="am-u-sm-9 am-u-end">
+                                    <!--                                    <label class="am-radio-inline">-->
+                                    <!--                                        <input type="radio" name="goods[deduct_stock_type]" value="10" data-am-ucheck>-->
+                                    <!--                                        下单减库存-->
+                                    <!--                                    </label>-->
+                                    <label class="am-radio-inline">
+                                        <input type="radio" name="goods[deduct_stock_type]" value="20" data-am-ucheck
+                                               checked>
+                                        付款减库存
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="am-form-group">
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">商品规格 </label>
                                 <div class="am-u-sm-9 am-u-end">
                                     <label class="am-radio-inline">
@@ -152,14 +167,11 @@
                                         <input type="radio" name="goods[spec_type]" value="20" data-am-ucheck>
                                         <span>多规格</span>
                                     </label>
-                                    <div class="help-block">
-                                        <small>注意：多级代理商品价格由会员价格控制</small>
-                                    </div>
                                 </div>
                             </div>
 
                             <!-- 商品多规格 -->
-                            <div id="many-app" v-cloak class="goods-spec-many am-form-group">
+                            <div id="many-app" v-cloak class="goods-spec-many spec-wrap1 am-form-group">
                                 <div class="goods-spec-box am-u-sm-9 am-u-sm-push-2 am-u-end">
                                     <!-- 规格属性 -->
                                     <div class="spec-attr">
@@ -304,6 +316,134 @@
                                 </div>
                             </div>
 
+                            <!-- 商品多规格2 -->
+                            <div id="many-app2" v-cloak class="goods-spec-many spec-wrap2 am-form-group">
+
+                                <div class="am-form-group">
+                                    <label class="am-u-sm-3 am-u-lg-2 am-form-label">商品编码 </label>
+                                    <div class="am-u-sm-9 am-u-end">
+                                        <input type="text" class="tpl-form-input" name="goods[sku2][goods_no]"
+                                               value="">
+                                    </div>
+                                </div>
+                                <div class="am-form-group">
+                                    <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">商品价格 </label>
+                                    <div class="am-u-sm-9 am-u-end">
+                                        <input type="number" class="tpl-form-input" name="goods[sku2][goods_price]"
+                                               required>
+                                    </div>
+                                </div>
+                                <div class="am-form-group">
+                                    <label class="am-u-sm-3 am-u-lg-2 am-form-label">商品划线价 </label>
+                                    <div class="am-u-sm-9 am-u-end">
+                                        <input type="number" class="tpl-form-input" name="goods[sku2][line_price]">
+                                    </div>
+                                </div>
+                                <div class="am-form-group">
+                                    <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">当前库存数量 </label>
+                                    <div class="am-u-sm-9 am-u-end">
+                                        <input type="number" class="tpl-form-input" name="goods[sku2][stock_num]"
+                                               required>
+                                    </div>
+                                </div>
+                                <div class="am-form-group">
+                                    <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">商品重量(Kg) </label>
+                                    <div class="am-u-sm-9 am-u-end">
+                                        <input type="number" class="tpl-form-input" name="goods[sku2][goods_weight]"
+                                               required>
+                                    </div>
+                                </div>
+
+                                <div class="goods-spec-box am-u-sm-9 am-u-sm-push-2 am-u-end">
+                                    <!-- 规格属性 -->
+                                    <div class="spec-attr spec-attr-wrap">
+<!--                                        <div class="spec-group-item">-->
+<!--                                            <div class="spec-group-name">-->
+<!--                                                <span>aaa</span>-->
+<!--                                                <i class="spec-group-delete iconfont icon-shanchu1" title="点击删除"></i>-->
+<!--                                            </div>-->
+<!--                                            <div class="spec-list am-cf">-->
+<!--                                                <div class="spec-item am-fl">-->
+<!--                                                    <span>ddd</span>-->
+<!--                                                    <i class="spec-item-delete iconfont icon-shanchu1" title="点击删除"></i>-->
+<!--                                                </div>-->
+<!--                                                <div class="spec-item-add am-cf am-fl">-->
+<!--                                                    <input type="text" class="ipt-specItem am-fl am-field-valid">-->
+<!--                                                    <button type="button"-->
+<!--                                                            class="am-btn am-fl">添加-->
+<!--                                                    </button>-->
+<!--                                                </div>-->
+<!--                                            </div>-->
+<!--                                        </div>-->
+                                    </div>
+
+                                    <!-- 添加规格组：按钮 -->
+                                    <div class="spec-group-button spec-group-button2">
+                                        <button onclick="showAddAttrWrap()" type="button"
+                                                class="am-btn">添加规格
+                                        </button>
+                                    </div>
+
+                                    <!-- 添加规格：表单 -->
+                                    <div class="spec-group-add spec-group-add2 hide">
+                                        <div class="spec-group-add-item am-form-group">
+                                            <label class="am-form-label form-require">规格名 </label>
+                                            <input type="text" class="input-specName tpl-form-input ipt-attr-key"
+                                                   placeholder="请输入规格名称">
+                                        </div>
+                                        <div class="spec-group-add-item am-form-group">
+                                            <label class="am-form-label form-require">规格值 </label>
+                                            <input type="text" class="input-specValue tpl-form-input ipt-attr-val"
+                                                   placeholder="请输入规格值">
+                                        </div>
+                                        <div class="spec-group-add-item am-margin-top">
+                                            <button type="button"
+                                                    onclick="addAttr.call(this)"
+                                                    class="am-btn am-btn-xs am-btn-secondary"> 确定
+                                            </button>
+                                            <button type="button"
+                                                    class="am-btn am-btn-xs am-btn-default"> 取消
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- 商品多规格sku信息 -->
+                                    <div v-if="spec_list.length > 0" class="goods-sku am-scrollable-horizontal">
+                                        <!-- 分割线 -->
+                                        <div class="goods-spec-line am-margin-top-lg am-margin-bottom-lg"></div>
+                                        <!-- sku table -->
+                                        <table class="spec-sku-tabel am-table am-table-bordered am-table-centered
+                                     am-margin-bottom-xs am-text-nowrap">
+                                            <tbody>
+                                            <tr>
+                                                <th v-for="item in spec_attr">{{ item.group_name }}</th>
+                                                <th>规格图片</th>
+                                            </tr>
+                                            <tr v-for="(item, index) in spec_list">
+                                                <td v-for="td in item.rows" class="td-spec-value am-text-middle"
+                                                    :rowspan="td.rowspan">
+                                                    {{ td.spec_value }}
+                                                </td>
+                                                <td class="am-text-middle spec-image">
+                                                    <div v-if="item.form.image_id" class="j-selectImg data-image"
+                                                         v-bind:data-index="index">
+                                                        <img :src="item.form.image_path" alt="">
+                                                        <i class="iconfont icon-shanchu image-delete"
+                                                           @click.stop="onDeleteSkuImage(index)"></i>
+                                                    </div>
+                                                    <div v-else class="j-selectImg upload-image"
+                                                         v-bind:data-index="index">
+                                                        <i class="iconfont icon-add"></i>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                            </div>
+
                             <!-- 商品单规格 -->
                             <div class="goods-spec-single">
                                 <div class="am-form-group">
@@ -342,16 +482,11 @@
                                 </div>
                             </div>
 
-                            <div class="am-form-group">
-                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">库存计算方式 </label>
-                                <div class="am-u-sm-9 am-u-end">
-                                    <label class="am-radio-inline">
-                                        <input type="radio" name="goods[deduct_stock_type]" value="20" data-am-ucheck
-                                               checked>
-                                        付款减库存
-                                    </label>
-                                </div>
-                            </div>
+                            <!-- 会员价格设置 -->
+<!--                            <div class="widget-head am-cf">-->
+<!--                                <div class="widget-title am-fl">会员价格设置</div>-->
+<!--                            </div>-->
+
 
                             <div class="widget-head am-cf">
                                 <div class="widget-title am-fl">商品详情</div>
@@ -437,6 +572,116 @@
                                 </div>
                             </div>
 
+                            <!-- 商品积分设置 -->
+<!--                            <div class="widget-head am-cf">-->
+<!--                                <div class="widget-title am-fl">积分设置</div>-->
+<!--                            </div>-->
+<!--                            <div class="am-form-group">-->
+<!--                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require"> 是否开启积分赠送 </label>-->
+<!--                                <div class="am-u-sm-9 am-u-end">-->
+<!--                                    <label class="am-radio-inline">-->
+<!--                                        <input type="radio" name="goods[is_points_gift]" value="1" data-am-ucheck-->
+<!--                                               checked>-->
+<!--                                        开启-->
+<!--                                    </label>-->
+<!--                                    <label class="am-radio-inline">-->
+<!--                                        <input type="radio" name="goods[is_points_gift]" value="0" data-am-ucheck>-->
+<!--                                        关闭-->
+<!--                                    </label>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                            <div class="am-form-group">-->
+<!--                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require"> 是否允许使用积分抵扣 </label>-->
+<!--                                <div class="am-u-sm-9 am-u-end">-->
+<!--                                    <label class="am-radio-inline">-->
+<!--                                        <input type="radio" name="goods[is_points_discount]" value="1" data-am-ucheck-->
+<!--                                               checked>-->
+<!--                                        允许-->
+<!--                                    </label>-->
+<!--                                    <label class="am-radio-inline">-->
+<!--                                        <input type="radio" name="goods[is_points_discount]" value="0" data-am-ucheck>-->
+<!--                                        不允许-->
+<!--                                    </label>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                            <div class="am-form-group">-->
+<!--                                <label class="am-u-sm-3 am-u-lg-2 am-form-label"></label>-->
+<!--                                <div class="am-u-sm-9 am-u-end">-->
+<!--                                    <div class="help-block">-->
+<!--                                        <small>注：如需使用积分功能必须在 [营销管理 - 积分设置] 中开启</small>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                            </div>-->
+
+
+                            <!-- 返利设置 -->
+                            <!--<div class="widget-head am-cf">
+                                <div class="widget-title am-fl">返利设置</div>
+                            </div>-->
+<!--                            <div class="am-form-group">-->
+<!--                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">是否开启单独分销 </label>-->
+<!--                                <div class="am-u-sm-9 am-u-end">-->
+<!--                                    <label class="am-radio-inline">-->
+<!--                                        <input type="radio" name="goods[is_ind_dealer]" value="0" data-am-ucheck-->
+<!--                                               checked>-->
+<!--                                        关闭-->
+<!--                                    </label>-->
+<!--                                    <label class="am-radio-inline">-->
+<!--                                        <input type="radio" name="goods[is_ind_dealer]" value="1" data-am-ucheck>-->
+<!--                                        开启-->
+<!--                                    </label>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                            <div class="panel-dealer__content hide">-->
+<!--                                <div class="am-form-group">-->
+<!--                                    <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">分销佣金类型 </label>-->
+<!--                                    <div class="am-u-sm-9 am-u-end">-->
+<!--                                        <label class="am-radio-inline">-->
+<!--                                            <input type="radio" name="goods[dealer_money_type]" value="10"-->
+<!--                                                   data-am-ucheck-->
+<!--                                                   checked>-->
+<!--                                            百分比-->
+<!--                                        </label>-->
+<!--                                        <label class="am-radio-inline">-->
+<!--                                            <input type="radio" name="goods[dealer_money_type]" value="20"-->
+<!--                                                   data-am-ucheck>-->
+<!--                                            固定金额-->
+<!--                                        </label>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                                <div class="am-form-group">-->
+<!--                                    <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">单独分销设置 </label>-->
+<!--                                    <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">-->
+<!--                                        <div class="am-input-group am-margin-bottom">-->
+<!--                                            <span class="am-input-group-label am-input-group-label__left">一级佣金：</span>-->
+<!--                                            <input type="text" name="goods[first_money]" value=""-->
+<!--                                                   class="am-form-field">-->
+<!--                                            <span class="widget-dealer__unit am-input-group-label am-input-group-label__right">%</span>-->
+<!--                                        </div>-->
+<!--                                        <div class="am-input-group am-margin-bottom">-->
+<!--                                            <span class="am-input-group-label am-input-group-label__left">二级佣金：</span>-->
+<!--                                            <input type="text" name="goods[second_money]" value=""-->
+<!--                                                   class="am-form-field">-->
+<!--                                            <span class="widget-dealer__unit am-input-group-label am-input-group-label__right">%</span>-->
+<!--                                        </div>-->
+<!--                                        <div class="am-input-group am-margin-bottom">-->
+<!--                                            <span class="am-input-group-label am-input-group-label__left">三级佣金：</span>-->
+<!--                                            <input type="text" name="goods[third_money]" value=""-->
+<!--                                                   class="am-form-field">-->
+<!--                                            <span class="widget-dealer__unit am-input-group-label am-input-group-label__right">%</span>-->
+<!--                                        </div>-->
+<!--                                        <div class="help-block">-->
+<!--                                            <p>-->
+<!--                                                <small>注：如需使用分销功能必须在 [分销中心 - 分销设置] 中开启</small>-->
+<!--                                            </p>-->
+<!--                                            <p>-->
+<!--                                                <small>注：如不开启单独分销则默认使用全局分销比例</small>-->
+<!--                                            </p>-->
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                            </div>-->
+
                             <!-- 表单提交按钮 -->
                             <div class="am-form-group">
                                 <div class="am-u-sm-9 am-u-sm-push-3 am-margin-top-lg">
@@ -492,18 +737,30 @@
 
         // 切换单/多规格
         $('input:radio[name="goods[spec_type]"]').change(function (e) {
-            var $goodsSpecMany = $('.goods-spec-many')
-                , $goodsSpecSingle = $('.goods-spec-single');
+            var $goodsSpecMany = $('.spec-wrap1')
+                , $goodsSpecMany2 = $('.spec-wrap2')
+                , $goodsSpecSingle = $('.goods-spec-single')
+                , $goodsSaleType = $('input:radio[name="goods[sale_type]"]:checked');
             if (e.currentTarget.value === '10') {
-                $goodsSpecMany.hide() && $goodsSpecSingle.show();
+                $goodsSpecMany.hide() && $goodsSpecSingle.show() &&$goodsSpecMany2.hide() ;
             } else {
-                $goodsSpecMany.show() && $goodsSpecSingle.hide();
+                if($goodsSaleType.val() === '1'){  //层级代理
+                    $goodsSpecMany.hide() && $goodsSpecSingle.hide() && $goodsSpecMany2.show();
+                }else{  //平台直营
+                    $goodsSpecMany.show() && $goodsSpecSingle.hide() && $goodsSpecMany2.hide();
+                }
+
             }
         });
 
         // 注册商品多规格组件
         var specMany = new GoodsSpec({
             el: '#many-app'
+        });
+
+        // 注册商品多规格组件
+        var specMany2 = new GoodsSpec({
+            el: '#many-app2'
         });
 
         /**
@@ -520,13 +777,18 @@
                             spec_attr: specData.spec_attr,
                             spec_list: specData.spec_list
                         }
+                    },
+                    specs:{
+                        spec_val_id,
+                        spec_id
                     }
                 };
             },
             // 自定义验证
             validation: function () {
                 var specType = $('input:radio[name="goods[spec_type]"]:checked').val();
-                if (specType === '20') {
+                var saleType = $('input:radio[name="goods[sale_type]"]:checked').val();
+                if (specType === '20' && saleType === '2') {
                     var isEmpty = specMany.appVue.isEmptySkuList();
                     isEmpty === true && layer.msg('商品规格不能为空');
                     return !isEmpty;
@@ -567,13 +829,6 @@
             }
         });
 
-        // 是否开启会员折扣
-        var $panelGrade = $('.panel-grade__content');
-        $("input:radio[name='goods[is_enable_grade]']").change(function (e) {
-            // e.currentTarget.value === '0' ? $panelGrade.toggle() : $panelGrade.toggle();
-            $panelGrade.toggle();
-        });
-
         // 单独设置折扣
         var $panelGradeAlone = $('.panel-grade-alone__content');
         $("input:radio[name='goods[is_alone_grade]']").change(function (e) {
@@ -581,5 +836,115 @@
             $panelGradeAlone.toggle();
         });
 
+        // 累计积分
+        var $integralWeightContent = $('.integral_weight_content');
+        $("input:radio[name='goods[is_add_integral]']").change(function(e){
+            $integralWeightContent.toggle();
+        })
+
+        $('.spec-make-add-btn').on('click', function(){
+            console.log(1)
+            $('.spec-add-btn').hide();
+        })
+
+        $('.add-spec-btn2').on('click', function(){
+            $('.spec-group-add2').show();
+        })
+
     });
+
+    var spec_id = 0;
+    var spec_val_id = [];
+    var spec_key = "";
+    var spec_val = [];
+    //设置规格
+    function addAttr(){
+        var $attrKey = $('.ipt-attr-key').val(),
+            $attrVal = $('.ipt-attr-val').val();
+        if(!$.trim($attrKey) || !$.trim($attrVal))
+            return layer.msg('规格名或规格值不能为空');
+        $.post('index.php/?s=/store/goods.spec/addSpec', {spec_name:$attrKey,spec_value:$attrVal}, function(res){
+            if(res.code === 1){
+                spec_id = res.data.spec_id;
+                spec_val_id.push(res.data.spec_value_id);
+                spec_key = $attrKey;
+                spec_val.push($attrVal)
+                initAttr();
+                $('.spec-group-add2').hide();
+                $('.ipt-attr-key').val('')
+                $('.ipt-attr-val').val('')
+            }else{
+                layer.msg(res.msg)
+            }
+        }, 'json')
+    }
+
+    function initAttr(){
+
+        var spec_html = "";
+        if(spec_val.length > 0){
+            spec_html = '<div class="spec-group-item">\n' +
+                '                                            <div class="spec-group-name">\n' +
+                '                                                <span>'+ spec_key +'</span>\n' +
+                '                                                <i class="spec-group-delete iconfont icon-shanchu1" title="点击删除" onclick="delAttr()"></i>\n' +
+                '                                            </div>\n' +
+                '                                            <div class="spec-list am-cf">\n';
+
+            $.each(spec_val, function(i, n){
+                spec_html += '                                                <div class="spec-item am-fl">\n' +
+                    '                                                    <span>'+ n +'</span>\n' +
+                    '                                                    <i data-idx="'+ i +'" class="spec-item-delete iconfont icon-shanchu1" title="点击删除" onclick="delAttrVal.call(this)"></i>\n' +
+                    '                                                </div>\n'
+            });
+            spec_html +=
+                '                                                <div class="spec-item-add am-cf am-fl">\n' +
+                '                                                    <input type="text" class="ipt-specItem am-fl am-field-valid ipt-new-spec-val">\n' +
+                '                                                    <button type="button"\n' +
+                '                                                            class="am-btn am-fl" onclick="addSpecVal()">添加\n' +
+                '                                                    </button>\n' +
+                '                                                </div>\n' +
+                '                                            </div>\n' +
+                '                                        </div>';
+        }
+
+        $('.spec-attr-wrap').html(spec_html);
+
+    }
+
+    function showAddAttrWrap(){
+        $('.spec-group-button2').hide()
+        $('.spec-group-add2').show()
+    }
+
+    function addSpecVal(){
+        var iptNewSpecVal = $('.ipt-new-spec-val');
+        var specVal = iptNewSpecVal.val();
+        if(!$.trim(specVal))return layer.msg('请输入属性值');
+        $.post('index.php?s=/store/goods.spec/addSpecValue', {spec_id:spec_id, spec_value:specVal}, function(res){
+            if(res.code === 1){
+                spec_val_id.push(res.data.spec_value_id);
+                spec_val.push(specVal)
+                initAttr();
+            }else{
+                layer.msg(res.msg)
+            }
+        }, 'json')
+    }
+
+    function delAttrVal(){
+        var idx = $(this).data('idx');
+        spec_val.splice(idx, 1)
+        spec_val_id.splice(idx, 1)
+        initAttr();
+    }
+
+    function delAttr(){
+         spec_id = 0;
+         spec_val_id = [];
+         spec_key = "";
+         spec_val = [];
+        initAttr();
+        $('.spec-group-add2').show();
+    }
+
 </script>

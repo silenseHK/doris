@@ -50,24 +50,24 @@ class Goods extends Bases
             }
         }
         ##修改商品时：商品的sale_type=>1 并且 spec_type=>20
-        $specData2 = [];
-        $spec_val = [
-            'spec_id' => 0,
-            'spec_val_id' => [],
-            'spec_key' => 0,
-            'spec_val' => []
-        ];
-        if(!is_null($model) && $model['sale_type'] == 1 && $model['spec_type'] == 20){
-            ##商品价格
-            $specData2 = json_decode($specData,true);
-            ##规格数组
-            $spec_val = GoodsSpecRel::getAgentSpecData($model['goods_id']);
-            $specData = 'null';
-        }
+//        $specData2 = [];
+//        $spec_val = [
+//            'spec_id' => 0,
+//            'spec_val_id' => [],
+//            'spec_key' => 0,
+//            'spec_val' => []
+//        ];
+//        if(!is_null($model) && $model['sale_type'] == 1 && $model['spec_type'] == 20){
+//            ##商品价格
+//            $specData2 = json_decode($specData,true);
+//            ##规格数组
+//            $spec_val = GoodsSpecRel::getAgentSpecData($model['goods_id']);
+//            $specData = 'null';
+//        }
 
 //        print_r(compact('catgory', 'delivery', 'gradeList', 'specData', 'goodsGradeList', 'specData2', 'spec_val'));die;
 
-        return compact('catgory', 'delivery', 'gradeList', 'specData', 'goodsGradeList', 'specData2', 'spec_val');
+        return compact('catgory', 'delivery', 'gradeList', 'specData', 'goodsGradeList');
     }
 
 

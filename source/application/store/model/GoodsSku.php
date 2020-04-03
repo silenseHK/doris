@@ -20,15 +20,30 @@ class GoodsSku extends GoodsSkuModel
      */
     public function addSkuList($goods_id, $spec_list)
     {
-        $data = [];
+        $ids = [];
         foreach ($spec_list as $item) {
-            $data[] = array_merge($item['form'], [
-                'spec_sku_id' => $item['spec_sku_id'],
-                'goods_id' => $goods_id,
-                'wxapp_id' => self::$wxapp_id,
-            ]);
+            $form = $item['form'];
+            if(isset($form['goods_sku_id'])){ ##修改
+                $data = array_merge($form, [
+                    'spec_sku_id' => $item['spec_sku_id'],
+                ]);
+                unset($data['goods_sku_id']);
+                $id = $form['goods_sku_id'];
+                $this->allowField(true)->isUpdate(true)->save($data, ['goods_sku_id'=>$id]);
+                $ids[] = $id;
+            }else{ ##新增
+                $data = array_merge($form, [
+                    'spec_sku_id' => $item['spec_sku_id'],
+                    'goods_id' => $goods_id,
+                    'wxapp_id' => self::$wxapp_id,
+                ]);
+                $this->allowField(true)->isUpdate(false)->save($data);
+                $ids[] = $this->getLastInsID();
+            }
         }
-        return $this->allowField(true)->saveAll($data);
+        ##删除
+        $this->where(['goods_id'=>$goods_id, 'goods_sku_id'=>['NOT IN', $ids]])->delete();
+        return true;
     }
 
     /**
@@ -108,8 +123,18 @@ class GoodsSku extends GoodsSkuModel
     public function removeAll($goods_id)
     {
         $model = new GoodsSpecRel;
-        $model->where('goods_id','=', $goods_id)->delete();
-        return $this->where('goods_id','=', $goods_id)->delete();
+        return $model->where('goods_id','=', $goods_id)->delete();
+//        return $this->where('goods_id','=', $goods_id)->delete();
+    }
+
+    /**
+     * 更新商品规格价格
+     * @param $goods_id
+     * @param $price
+     * @return GoodsSku
+     */
+    public static function updateGoodsSpecPrice($goods_id, $price){
+        return self::update(['goods_price'=>$price], ['goods_id'=>$goods_id]);
     }
 
 }

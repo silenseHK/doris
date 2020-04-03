@@ -14,7 +14,7 @@
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">商品名称 </label>
                                 <div class="am-u-sm-9 am-u-end">
                                     <input type="text" class="tpl-form-input" name="goods[goods_name]"
-                                           value="" required>
+                                           value="<?= $model['goods_name'] ?>" required>
                                 </div>
                             </div>
                             <div class="am-form-group">
@@ -25,12 +25,16 @@
                                              placeholder:'请选择商品分类', maxHeight: 400}">
                                         <option value=""></option>
                                         <?php if (isset($catgory)): foreach ($catgory as $first): ?>
-                                            <option value="<?= $first['category_id'] ?>"><?= $first['name'] ?></option>
+                                            <option value="<?= $first['category_id'] ?>"
+                                                <?= $model['category_id'] == $first['category_id'] ? 'selected' : '' ?>>
+                                                <?= $first['name'] ?></option>
                                             <?php if (isset($first['child'])): foreach ($first['child'] as $two): ?>
-                                                <option value="<?= $two['category_id'] ?>">
+                                                <option value="<?= $two['category_id'] ?>"
+                                                    <?= $model['category_id'] == $two['category_id'] ? 'selected' : '' ?>>
                                                     　　<?= $two['name'] ?></option>
                                                 <?php if (isset($two['child'])): foreach ($two['child'] as $three): ?>
-                                                    <option value="<?= $three['category_id'] ?>">
+                                                    <option value="<?= $three['category_id'] ?>"
+                                                        <?= $model['category_id'] == $three['category_id'] ? 'selected' : '' ?>>
                                                         　　　<?= $three['name'] ?></option>
                                                 <?php endforeach; endif; ?>
                                             <?php endforeach; endif; ?>
@@ -51,6 +55,16 @@
                                                 <i class="am-icon-cloud-upload"></i> 选择图片
                                             </button>
                                             <div class="uploader-list am-cf">
+                                                <?php foreach ($model['image'] as $key => $item): ?>
+                                                    <div class="file-item">
+                                                        <a href="<?= $item['file_path'] ?>" title="点击查看大图" target="_blank">
+                                                            <img src="<?= $item['file_path'] ?>">
+                                                        </a>
+                                                        <input type="hidden" name="goods[images][]"
+                                                               value="<?= $item['image_id'] ?>">
+                                                        <i class="iconfont icon-shanchu file-item-delete"></i>
+                                                    </div>
+                                                <?php endforeach; ?>
                                             </div>
                                         </div>
                                         <div class="help-block am-margin-top-sm">
@@ -62,7 +76,7 @@
                             <div class="am-form-group">
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label">商品卖点 </label>
                                 <div class="am-u-sm-9 am-u-end">
-                                    <input type="text" class="tpl-form-input" name="goods[selling_point]" value="">
+                                    <input type="text" class="tpl-form-input" name="goods[selling_point]" value="<?= $model['selling_point'] ?>">
                                     <small>选填，商品卖点简述，例如：此款商品美观大方 性价比较高 不容错过</small>
                                 </div>
                             </div>
@@ -74,13 +88,14 @@
                             <div class="am-form-group">
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require"> 商品销售类型 </label>
                                 <div class="am-u-sm-9 am-u-end">
+                                    <input type="hidden" name="goods[sale_type]" value="<?= $model['sale_type'] ?>" />
                                     <label class="am-radio-inline">
-                                        <input type="radio" name="goods[sale_type]" value="1" data-am-ucheck
-                                               checked>
+                                        <input disabled type="radio" name="goods[sale_type]" value="1" data-am-ucheck
+                                            <?= $model['sale_type'] == 1 ? 'checked' : '' ?>>
                                         层级代理
                                     </label>
                                     <label class="am-radio-inline">
-                                        <input type="radio" name="goods[sale_type]" value="2" data-am-ucheck>
+                                        <input disabled type="radio" name="goods[sale_type]" value="2" data-am-ucheck <?= $model['sale_type'] == 2 ? 'checked' : '' ?>>
                                         平台直营（零售）
                                     </label>
                                     <div class="help-block">
@@ -88,7 +103,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="panel-grade__content">
+                            <div class="panel-grade__content <?= $model['sale_type'] == 2 ? 'hide' : '' ?>">
                                 <div class="am-form-group">
                                     <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require"> 会员价格设置 </label>
                                     <div class="am-u-sm-9 am-u-end">
@@ -119,14 +134,14 @@
                                         </div>
                                         <div class="am-u-sm-9 am-u-md-6 am-u-lg-3 am-u-end">
                                             <!-- 会员价格列表-->
-                                            <?php foreach ($gradeList as $item): ?>
+                                            <?php foreach ($gradeList as $k => $item): ?>
                                                 <div class="am-input-group am-margin-bottom-sm">
                                                     <span class="am-input-group-label am-input-group-label__left">
                                                         价格
                                                     </span>
                                                     <input type="number" class="am-form-field"
                                                            name="grade_goods[<?= $item['grade_id'] ?>][price]"
-                                                           value="" min="0.01" max="100000" required>
+                                                           value="<?= isset($goodsGradeList[$k])?$goodsGradeList[$k]['price']:'' ?>" min="0.01" max="100000" required>
                                                     <span class="am-input-group-label am-input-group-label__right">元</span>
 
                                                 </div>
@@ -141,15 +156,17 @@
                                 </div>
                             </div>
 
+                            <!-- 商品多规格 -->
                             <div class="am-form-group">
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">商品规格 </label>
                                 <div class="am-u-sm-9 am-u-end">
+                                    <input type="hidden" name="goods[spec_type]" value="<?= $model['spec_type'] ?>" />
                                     <label class="am-radio-inline">
-                                        <input type="radio" name="goods[spec_type]" value="10" data-am-ucheck checked>
+                                        <input <?= $model['sale_type'] == 1? "disabled" : ""?> type="radio" name="goods[spec_type]" value="10" data-am-ucheck <?= $model['spec_type'] == 10 ? 'checked' : '' ?> >
                                         单规格
                                     </label>
                                     <label class="am-radio-inline">
-                                        <input type="radio" name="goods[spec_type]" value="20" data-am-ucheck>
+                                        <input <?= $model['sale_type'] == 1? "disabled" : ""?> type="radio" name="goods[spec_type]" value="20" data-am-ucheck <?= $model['spec_type'] == 20 ? 'checked' : '' ?> >
                                         <span>多规格</span>
                                     </label>
                                     <div class="help-block">
@@ -158,8 +175,8 @@
                                 </div>
                             </div>
 
-                            <!-- 商品多规格 -->
-                            <div id="many-app" v-cloak class="goods-spec-many am-form-group">
+                            <div id="many-app" v-cloak class="goods-spec-many am-form-group"
+                                 v-bind:style="{display: '<?= $model['spec_type'] == 20 ? 'block' : 'none' ?>'}">
                                 <div class="goods-spec-box am-u-sm-9 am-u-sm-push-2 am-u-end">
                                     <!-- 规格属性 -->
                                     <div class="spec-attr">
@@ -305,39 +322,41 @@
                             </div>
 
                             <!-- 商品单规格 -->
-                            <div class="goods-spec-single">
+                            <div class="goods-spec-single"
+                                 style="display: <?= $model['spec_type'] == 10 ? 'block' : 'none' ?>;">
                                 <div class="am-form-group">
                                     <label class="am-u-sm-3 am-u-lg-2 am-form-label">商品编码 </label>
                                     <div class="am-u-sm-9 am-u-end">
                                         <input type="text" class="tpl-form-input" name="goods[sku][goods_no]"
-                                               value="">
+                                               value="<?= $model['sku'][0]['goods_no'] ?>">
                                     </div>
                                 </div>
                                 <div class="am-form-group">
                                     <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">商品价格 </label>
                                     <div class="am-u-sm-9 am-u-end">
                                         <input type="number" class="tpl-form-input" name="goods[sku][goods_price]"
-                                               required>
+                                               value="<?= $model['sku'][0]['goods_price'] ?>" required>
                                     </div>
                                 </div>
                                 <div class="am-form-group">
                                     <label class="am-u-sm-3 am-u-lg-2 am-form-label">商品划线价 </label>
                                     <div class="am-u-sm-9 am-u-end">
-                                        <input type="number" class="tpl-form-input" name="goods[sku][line_price]">
+                                        <input type="number" class="tpl-form-input" name="goods[sku][line_price]"
+                                               value="<?= $model['sku'][0]['line_price'] ?>">
                                     </div>
                                 </div>
                                 <div class="am-form-group">
                                     <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">当前库存数量 </label>
                                     <div class="am-u-sm-9 am-u-end">
                                         <input type="number" class="tpl-form-input" name="goods[sku][stock_num]"
-                                               required>
+                                               value="<?= $model['sku'][0]['stock_num'] ?>" required>
                                     </div>
                                 </div>
                                 <div class="am-form-group">
                                     <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">商品重量(Kg) </label>
                                     <div class="am-u-sm-9 am-u-end">
                                         <input type="number" class="tpl-form-input" name="goods[sku][goods_weight]"
-                                               required>
+                                               value="<?= $model['sku'][0]['goods_weight'] ?>" required>
                                     </div>
                                 </div>
                             </div>
@@ -360,7 +379,7 @@
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">商品详情 </label>
                                 <div class="am-u-sm-9 am-u-end">
                                     <!-- 加载编辑器的容器 -->
-                                    <textarea id="container" name="goods[content]" type="text/plain"></textarea>
+                                    <textarea id="container" name="goods[content]" type="text/plain"><?= $model['content'] ?></textarea>
                                 </div>
                             </div>
                             <div class="widget-head am-cf">
@@ -373,7 +392,8 @@
                                             data-am-selected="{searchBox: 1, btnSize: 'sm',  placeholder:'请选择运费模板'}">
                                         <option value="">请选择运费模板</option>
                                         <?php foreach ($delivery as $item): ?>
-                                            <option value="<?= $item['delivery_id'] ?>">
+                                            <option value="<?= $item['delivery_id'] ?>"
+                                                <?= $model['delivery_id'] == $item['delivery_id'] ? 'selected' : '' ?>>
                                                 <?= $item['name'] ?> (<?= $item['method']['text'] ?>)
                                             </option>
                                         <?php endforeach; ?>
@@ -388,11 +408,12 @@
                                 <div class="am-u-sm-9 am-u-end">
                                     <label class="am-radio-inline">
                                         <input type="radio" name="goods[goods_status]" value="10" data-am-ucheck
-                                               checked>
+                                            <?= $model['goods_status']['value'] == 10 ? 'checked' : '' ?> >
                                         上架
                                     </label>
                                     <label class="am-radio-inline">
-                                        <input type="radio" name="goods[goods_status]" value="20" data-am-ucheck>
+                                        <input type="radio" name="goods[goods_status]" value="20" data-am-ucheck
+                                            <?= $model['goods_status']['value'] == 20 ? 'checked' : '' ?> >
                                         下架
                                     </label>
                                 </div>
@@ -401,14 +422,14 @@
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label">初始销量</label>
                                 <div class="am-u-sm-9 am-u-end">
                                     <input type="number" class="tpl-form-input" name="goods[sales_initial]"
-                                           value="0">
+                                           value="<?= $model['sales_initial'] ?>">
                                 </div>
                             </div>
                             <div class="am-form-group">
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">商品排序 </label>
                                 <div class="am-u-sm-9 am-u-end">
                                     <input type="number" class="tpl-form-input" name="goods[goods_sort]"
-                                           value="100" required>
+                                           value="<?= $model['goods_sort'] ?>" required>
                                     <small>数字越小越靠前</small>
                                 </div>
                             </div>
@@ -418,11 +439,12 @@
                                 <div class="am-u-sm-9 am-u-end">
                                     <label class="am-radio-inline">
                                         <input type="radio" name="goods[is_add_integral]" value="1" data-am-ucheck
-                                               checked>
+                                            <?= $model['is_add_integral'] == 1 ? 'checked' : '' ?> >
                                         是
                                     </label>
                                     <label class="am-radio-inline">
-                                        <input type="radio" name="goods[is_add_integral]" value="0" data-am-ucheck>
+                                        <input type="radio" name="goods[is_add_integral]" value="0" data-am-ucheck
+                                            <?= $model['is_add_integral'] == 0 ? 'checked' : '' ?> >
                                         否
                                     </label>
                                 </div>
@@ -432,7 +454,7 @@
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label">每件商品积分</label>
                                 <div class="am-u-sm-9 am-u-end">
                                     <input type="number" class="tpl-form-input" name="goods[integral_weight]"
-                                           value="0" min="0">
+                                           value="<?= $model['integral_weight'] ?>" min="0">
                                     <small>积分用于提升会员等级</small>
                                 </div>
                             </div>
@@ -503,7 +525,8 @@
 
         // 注册商品多规格组件
         var specMany = new GoodsSpec({
-            el: '#many-app'
+            el: '#many-app',
+            baseData: <?= $specData ?>
         });
 
         /**
@@ -514,6 +537,7 @@
             // 获取多规格sku数据
             buildData: function () {
                 var specData = specMany.appVue.getData();
+                console.log(specData);
                 return {
                     goods: {
                         spec_many: {
@@ -565,13 +589,6 @@
             }else{
                 $goodsSpecMany.hide() && $goodsSpecSingle.show() &&$goodsSpecMany2.hide() ;
             }
-        });
-
-        // 是否开启会员折扣
-        var $panelGrade = $('.panel-grade__content');
-        $("input:radio[name='goods[is_enable_grade]']").change(function (e) {
-            // e.currentTarget.value === '0' ? $panelGrade.toggle() : $panelGrade.toggle();
-            $panelGrade.toggle();
         });
 
         // 单独设置折扣

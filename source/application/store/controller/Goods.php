@@ -80,10 +80,11 @@ class Goods extends Controller
         $model = GoodsModel::detail($goods_id);
         if (!$this->request->isAjax()) {
             return $this->fetch(
-                'edit3',
+                'edit4',
                 array_merge(GoodsService::getEditData($model), compact('model'))
             );
         }
+//        print_r($this->postData('goods'));die;
         // 更新记录
         if ($model->edit($this->postData('goods'))) {
             return $this->renderSuccess('更新成功', url('goods/index'));
