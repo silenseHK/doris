@@ -39,7 +39,7 @@ class Order extends OrderModel
     public static function getAutoCompleteList(){
         $model = new self;
         $model->setAutoCompleteWhere();
-        return $model->field(['order_id', 'order_no', 'pay_price', 'express_price', 'supply_user_id', 'order_status', 'pay_status', 'delivery_status', 'receipt_status'])->with(['goods'=>function(Query $query){$query->field(['order_id', 'total_num', 'goods_id']);}])->select();
+        return $model->field(['order_id', 'order_no', 'pay_price', 'express_price', 'supply_user_id', 'order_status', 'pay_status', 'delivery_status', 'receipt_status'])->with(['goods'=>function(Query $query){$query->field(['order_id', 'total_num', 'goods_id', 'goods_sku_id']);}])->select();
     }
 
     /**

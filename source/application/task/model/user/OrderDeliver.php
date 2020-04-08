@@ -18,7 +18,7 @@ class OrderDeliver extends OrderDeliverModel
     public static function getAutoCancelList(){
         $model = new self;
         $model->setAutoCancelWhere();
-        return $model->field(['deliver_id', 'goods_id', 'user_id', 'goods_num'])->select();
+        return $model->field(['deliver_id', 'goods_id', 'user_id', 'goods_num', 'goods_sku_id'])->select();
     }
 
     /**
@@ -40,7 +40,7 @@ class OrderDeliver extends OrderDeliverModel
     public static function getAutoCompleteList(){
         $model = new self;
         $model->setAutoCompleteWhere();
-        return $model->field(['deliver_id', 'goods_id', 'user_id', 'goods_num'])->select();
+        return $model->field(['deliver_id', 'goods_id', 'user_id', 'goods_num', 'goods_sku_id'])->select();
     }
 
     /**

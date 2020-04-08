@@ -51,13 +51,14 @@ class OrderDeliver extends OrderDeliverModel
         ##获取参数
         $addressId = intval($post['address_id']);
         $goodsId = intval($post['goods_id']);
+        $goodsSkuId = intval($post['goods_sku_id']);
         $goodsNum = intval($post['goods_num']);
         $userId = $this->user['user_id'];
         $deliverType = intval($post['deliver_type']);
         $extract_shop_id = isset($post['shop_id'])? intval($post['shop_id']) : 0;
         if($deliverType == 20 && !$extract_shop_id)throw new Exception('请选择提货门店');
         ##判断库存
-        $stock = GoodsStock::getStock($userId, $goodsId);
+        $stock = GoodsStock::getStock($userId, $goodsSkuId);
         if($stock < $goodsNum)throw new Exception('商品库存不足');
 
         $orderNo = $this->makeOrderNo($deliverType);
@@ -66,6 +67,7 @@ class OrderDeliver extends OrderDeliverModel
             'deliver_type' => $deliverType,
             'goods_num' => $goodsNum,
             'goods_id' => $goodsId,
+            'goods_sku_id' => $goodsSkuId,
             'user_id' => $userId,
             'order_no' => $orderNo,
             'extract_shop_id' => $extract_shop_id
@@ -226,9 +228,12 @@ class OrderDeliver extends OrderDeliverModel
                 },
                 'express' => function(Query $query){
                     $query->field(['express_id', 'express_name', 'express_code']);
+                },
+                'spec' => function(Query $query){
+                    $query->field(['goods_sku_id', 'spec_sku_id', 'image_id'])->with(['image'=>function(Query $query){$query->field(['file_id', 'file_name', 'storage']);}]);
                 }
             ]
-        )->page($params['page'], $params['size'])->field(['deliver_id', 'order_no', 'goods_id', 'goods_num', 'address', 'receiver_user' ,'receiver_mobile', 'express_id', 'express_no', 'freight_money', 'remark', 'create_time', 'deliver_type', 'deliver_status', 'pay_status', 'pay_time', 'deliver_time', 'complete_time'])->select();
+        )->page($params['page'], $params['size'])->field(['deliver_id', 'order_no', 'goods_id', 'goods_sku_id', 'goods_num', 'address', 'receiver_user' ,'receiver_mobile', 'express_id', 'express_no', 'freight_money', 'remark', 'create_time', 'deliver_type', 'deliver_status', 'pay_status', 'pay_time', 'deliver_time', 'complete_time'])->select();
         return $list;
     }
 
@@ -273,7 +278,7 @@ class OrderDeliver extends OrderDeliverModel
             $res = $order->isUpdate(true)->save($data);
             if($res === false)throw new Exception('操作失败');
             ##减少冻结的库存
-            if(GoodsStock::disFreezeStockByUserGoodsId($user['user_id'], $order['goods_id'], $order['goods_num'],1) === false)throw new Exception('操作失败');
+            if(GoodsStock::disFreezeStockByUserGoodsId($user['user_id'], $order['goods_sku_id'], $order['goods_num'],1) === false)throw new Exception('操作失败');
             Db::commit();
             return true;
         }catch(Exception $e){
@@ -302,17 +307,20 @@ class OrderDeliver extends OrderDeliverModel
             ->with(
                 [
                     'goods' => function(Query $query){
-                        $query->field(['goods_id', 'goods_name', 'sales_initial', 'sales_actual'])->with(['image.file']);
+                        $query->field(['goods_id', 'goods_name', 'sales_initial', 'sales_actual']);
                     },
                     'express' => function(Query $query){
                         $query->field(['express_id', 'express_name', 'express_code']);
                     },
                     'extract' => function(Query $query){
                         $query->field(['shop_id', 'shop_name', 'linkman', 'phone', 'address', 'province_id', 'city_id', 'region_id']);
+                    },
+                    'spec' => function(Query $query){
+                        $query->field(['goods_sku_id', 'spec_sku_id', 'image_id'])->with(['image'=>function(Query $query){$query->field(['file_id', 'file_name', 'storage']);}]);
                     }
                 ]
             )
-            ->field(['deliver_id', 'goods_id', 'express_id', 'goods_num', 'address', 'receiver_user', 'receiver_mobile', 'express_id', 'express_no', 'freight_money', 'remark', 'create_time', 'deliver_type', 'deliver_status', 'pay_status', 'pay_time', 'deliver_time', 'complete_time', 'extract_shop_id', 'complete_type'])
+            ->field(['deliver_id', 'goods_id', 'express_id', 'goods_num', 'address', 'receiver_user', 'receiver_mobile', 'express_id', 'express_no', 'freight_money', 'remark', 'create_time', 'deliver_type', 'deliver_status', 'pay_status', 'pay_time', 'deliver_time', 'complete_time', 'extract_shop_id', 'complete_type', 'goods_sku_id'])
             ->find();
         if(!$order)throw new Exception('订单信息不存在');
         return $order;

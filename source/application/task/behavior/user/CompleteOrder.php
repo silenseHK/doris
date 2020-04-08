@@ -25,11 +25,11 @@ class CompleteOrder
      */
     public function run($wxapp_id){
         $cacheKey = "__task_space__[user/completeOrder]__{$wxapp_id}";
-//        if (!Cache::has($cacheKey)) {
+        if (!Cache::has($cacheKey)) {
             // 设置用户的会员等级
             $this->completeOrder();
             Cache::set($cacheKey, time(), 60 * 10);
-//        }
+        }
     }
 
     /**
@@ -50,13 +50,12 @@ class CompleteOrder
         $order_ids = array_column($list->toArray(), 'order_id');
         Db::startTrans();
         try{
-
             foreach($list as $item){
                 if($item['supply_user_id']){
                     $user_id = $item['supply_user_id'];
                     ##减少冻结库存
                     foreach($item['goods'] as $v){
-                        $res = UserGoodsStock::disFreezeStockByUserGoodsId($user_id, $v['goods_id'], $v['total_num']);
+                        $res = UserGoodsStock::disFreezeStockByUserGoodsId($user_id, $v['goods_sku_id'], $v['total_num']);
                         if($res === false)throw new Exception('任务执行失败1');
                     }
 

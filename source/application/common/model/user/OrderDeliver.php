@@ -136,4 +136,12 @@ class OrderDeliver extends BaseModel
         return $this->belongsTo('\app\common\model\store\Shop','extract_shop_id','shop_id');
     }
 
+    /**
+     * 一对多 --获取商品规格
+     * @return \think\model\relation\BelongsTo
+     */
+    public function spec(){
+        return $this->belongsTo('app\common\model\GoodsSku','goods_sku_id','goods_sku_id');
+    }
+
 }

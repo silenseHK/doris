@@ -13,18 +13,16 @@ class Agent extends Controller
 {
     protected $user;
 
-    public function __construct(Request $request = null)
-    {
-        parent::__construct($request);
-        $this->user = $this->getUser();
-    }
-
     /**
      * 代理中心
      * @return array
      */
     public function index(){
         try{
+            if (!$token = $this->request->param('token')) {
+                return $this->renderSuccess('');
+            }
+            $this->user = $this->getUser();
             return $this->renderSuccess($this->user->getAgentData());
         }catch(Exception $e){
             return $this->renderError($e->getMessage());

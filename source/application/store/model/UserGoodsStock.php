@@ -16,21 +16,21 @@ class UserGoodsStock extends UserGoodsStockModel
     /**
      * 获取用户代理商品库存
      * @param int $user_id
-     * @param int $goods_id
+     * @param int $goods_sku_id
      * @return int|string
      */
-    public static function getUserGoodsStock($user_id=0, $goods_id=0){
+    public static function getUserGoodsStock($user_id=0, $goods_sku_id=0){
         try{
             ##接收参数
-            if(!$user_id || !$goods_id){
+            if(!$user_id || !$goods_sku_id){
                 $user_id = input('post.user_id', 0,'intval');
-                $goods_id = input('post.goods_id', 0,'intval');
+                $goods_sku_id = input('post.goods_sku_id', 0,'intval');
             }
-            if($user_id <= 0 || $goods_id < 0)throw new Exception('参数错误');
+            if($user_id <= 0 || $goods_sku_id < 0)throw new Exception('参数错误');
 
             $stock = self::where([
                     'user_id' => $user_id,
-                    'goods_id' => $goods_id
+                    'goods_sku_id' => $goods_sku_id
                 ])
                 ->value('stock');
             return (int)$stock;
@@ -42,14 +42,14 @@ class UserGoodsStock extends UserGoodsStockModel
     /**
      * 检查用户代理商品数据是否存在
      * @param $user_id
-     * @param $goods_id
+     * @param $goods_sku_id
      * @return int|string
      * @throws Exception
      */
-    public static function checkDataExist($user_id, $goods_id){
+    public static function checkDataExist($user_id, $goods_sku_id){
         return (new self)->where([
                 'user_id' => $user_id,
-                'goods_id' => $goods_id
+                'goods_sku_id' => $goods_sku_id
             ])
             ->value('id');
     }
@@ -58,6 +58,7 @@ class UserGoodsStock extends UserGoodsStockModel
      * 更新用户代理商品库存
      * @param $userId
      * @param $goodsId
+     * @param $goodsSkuId
      * @param $finalStock
      * @param $diffStock
      * @param $changeType
@@ -65,17 +66,17 @@ class UserGoodsStock extends UserGoodsStockModel
      * @param int $oppositeUserId
      * @return bool|string
      */
-    public static function updateUserGoodsStock($userId, $goodsId, $finalStock, $diffStock, $changeType, $remark, $oppositeUserId=0){
+    public static function updateUserGoodsStock($userId, $goodsId, $goodsSkuId, $finalStock, $diffStock, $changeType, $remark, $oppositeUserId=0){
         Db::startTrans();
         try{
             ##变更库存
-            $userGoodsStockId = self::checkDataExist($userId, $goodsId);
+            $userGoodsStockId = self::checkDataExist($userId, $goodsSkuId);
             if($userGoodsStockId){
                 ##更新
                 $res = self::where(['id' => $userGoodsStockId])->setField('stock', $finalStock);
             }else{
                 ##新增
-                $res = UserGoodsStock::insertUserGoodsStock($userId, $goodsId, $finalStock);
+                $res = UserGoodsStock::insertUserGoodsStock($userId, $goodsId, $goodsSkuId, $finalStock);
             }
             if($res === false)throw new Exception('库存变更失败');
             ##增加变更记录
@@ -83,9 +84,10 @@ class UserGoodsStock extends UserGoodsStockModel
 
             ##获取商品积分信息
             $goodsInfo = Goods::getAgentGoodsInfo($goodsId);
-            $res = UserGoodsStockLog::addLog([
+            $res = \app\store\model\UserGoodsStockLog::addLog([
                 'user_id' => $userId,
                 'goods_id' => $goodsId,
+                'goods_sku_id' => $goodsSkuId,
                 'balance_stock' =>$balanceStock,
                 'diff_stock' => $diffStock,
                 'change_type' => $changeType,
@@ -95,14 +97,14 @@ class UserGoodsStock extends UserGoodsStockModel
                 'wxapp_id' => static::$wxapp_id
             ]);
             if($res === false)throw new Exception('库存变更日志添加失败');
-            $stockLogId = (new UserGoodsStockLog)->getLastInsID();
+            $stockLogId = (new \app\store\model\UserGoodsStockLog)->getLastInsID();
 
             ##增加用户会员积分&&更新会员等级
             if($diffStock > 0){
                 $integralLogId = User::incUserIntegralByGoodsId($userId, $goodsId, $diffStock);
                 if(is_string($integralLogId))throw new Exception($integralLogId);
                 ##回填库存变更记录的积分变更表id
-                if($integralLogId > 0)UserGoodsStockLog::editIntegralLogId(['id'=>$stockLogId, 'integral_log_id'=>$integralLogId]);
+                if($integralLogId > 0)\app\store\model\UserGoodsStockLog::editIntegralLogId(['id'=>$stockLogId, 'integral_log_id'=>$integralLogId]);
             }
             Db::commit();
             return true;
@@ -116,13 +118,15 @@ class UserGoodsStock extends UserGoodsStockModel
      * 新增用户代理商品库存数据
      * @param $userId
      * @param $goodsId
+     * @param $goodsSkuId
      * @param $stock
      * @return false|int
      */
-    protected static function insertUserGoodsStock($userId, $goodsId, $stock){
+    protected static function insertUserGoodsStock($userId, $goodsId, $goodsSkuId, $stock){
         $data = [
             'user_id' => $userId,
             'goods_id' => $goodsId,
+            'goods_sku_id' => $goodsSkuId,
             'stock' => $stock,
             'wxapp_id' => static::$wxapp_id
         ];
@@ -162,15 +166,17 @@ class UserGoodsStock extends UserGoodsStockModel
         try{
             $user_id = $order['user_id'];
             $goods_id = $order['goods_id'];
+            $goods_sku_id = $order['goods_sku_id'];
             $num = $order['goods_num'];
             ##减少冻结库存并恢复库存
-            $res = self::disFreezeStockByUserGoodsId($user_id, $goods_id, $num, 2);
+            $res = self::disFreezeStockByUserGoodsId($user_id, $goods_sku_id, $num, 2);
             if($res === false)throw new Exception('库存返还失败1');
             ##增加库存变动log
             $data = [
                 'user_id' => $user_id,
                 'goods_id' => $goods_id,
-                'balance_stock' => self::getStock($user_id, $goods_id),
+                'goods_sku_id' => $goods_sku_id,
+                'balance_stock' => self::getStock($user_id, $goods_sku_id),
                 'change_num' => $num,
                 'opposite_user_id' => 0,  //发货人id
                 'remark' => $remark,

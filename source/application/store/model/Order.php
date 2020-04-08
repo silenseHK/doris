@@ -15,6 +15,7 @@ use app\common\service\Message as MessageService;
 use app\common\service\order\Refund as RefundService;
 use app\common\service\wechat\wow\Order as WowService;
 use think\db\Query;
+use think\Exception;
 
 /**
  * 订单管理
@@ -470,7 +471,8 @@ class Order extends OrderModel
                 // 执行退款操作
                 (new RefundService)->execute($this);
                 // 回退商品库存
-                (new OrderGoods)->backGoodsStock($this['goods'], true);
+                $res = (new OrderGoods)->backGoodsStock($this, true);
+                if($res !== true)throw new Exception($res);
                 // 回退用户优惠券
                 $this['coupon_id'] > 0 && UserCouponModel::setIsUse($this['coupon_id'], false);
                 // 回退用户积分

@@ -36,6 +36,9 @@ class Checkout extends Validate
 //            'require',
 //        ],
 
+        'order_type' => 'require|number|in:0,10,20,30',
+        'page' => 'number|>=:1',
+        'size' => 'number|>=:1',
     ];
 
     /**
@@ -45,6 +48,7 @@ class Checkout extends Validate
     protected $scene = [
         'buyNow' => ['goods_id', 'goods_num', 'goods_sku_id'],
 //        'cart' => ['cart_ids'],
+        'agent_sale_order' => ['order_type', 'page', 'size']
     ];
 
 }

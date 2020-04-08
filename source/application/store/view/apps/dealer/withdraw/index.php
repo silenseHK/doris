@@ -73,7 +73,7 @@
                                 <th>微信头像</th>
                                 <th>微信昵称</th>
                                 <th>
-                                    <p>姓名</p>
+<!--                                    <p>姓名</p>-->
                                     <p>手机号</p>
                                 </th>
                                 <th>提现金额</th>
@@ -99,12 +99,7 @@
                                         <p><span><?= $item['nickName'] ?></span></p>
                                     </td>
                                     <td class="am-text-middle">
-                                        <?php if (!empty($item['real_name']) || !empty($item['mobile'])): ?>
-                                            <p><?= $item['real_name'] ?: '--' ?></p>
-                                            <p><?= $item['mobile'] ?: '--' ?></p>
-                                        <?php else: ?>
-                                            <p>--</p>
-                                        <?php endif; ?>
+                                        <p><?= $item['mobile'] ?: '--' ?></p>
                                     </td>
                                     <td class="am-text-middle">
                                         <p><span><?= $item['money'] ?></span></p>

@@ -4,6 +4,7 @@ namespace app\store\controller;
 
 use app\store\model\Goods as GoodsModel;
 use app\store\model\Category as CategoryModel;
+use app\store\model\GoodsSku;
 use app\store\service\Goods as GoodsService;
 
 /**
@@ -121,6 +122,18 @@ class Goods extends Controller
             return $this->renderError('删除失败');
         }
         return $this->renderSuccess('删除成功');
+    }
+
+    /**
+     * 商品规格
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getGoodsSpec(){
+        $model = new GoodsSku();
+        return $this->renderSuccess('','', $model->getGoodsSpec());
     }
 
 }

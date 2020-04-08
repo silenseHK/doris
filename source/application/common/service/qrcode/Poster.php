@@ -51,11 +51,11 @@ class Poster extends Base
             return $this->getPosterUrl();
         }
         // 小程序id
-        $wxappId = $this->dealer['wxapp_id'];
+        $wxappId = $this->user['wxapp_id'];
         // 1. 下载背景图
         $backdrop = $this->saveTempImage($wxappId, $this->config['backdrop']['src'], 'backdrop');
         // 2. 下载用户头像
-        $avatarUrl = $this->saveTempImage($wxappId, $this->dealer['user']['avatarUrl'], 'avatar');
+        $avatarUrl = $this->saveTempImage($wxappId, $this->user['avatarUrl'], 'avatar');
         // 3. 下载小程序码
         $qrcode = $this->saveQrcode($wxappId, 'referee_id:' . createCode($this->user['user_id']));
         // 4. 拼接海报图
@@ -80,7 +80,7 @@ class Poster extends Base
      */
     private function getPosterName()
     {
-        return md5('poster_' . $this->dealer['user_id']) . '.png';
+        return md5('poster_' . $this->user['user_id']) . '.png';
     }
 
     /**

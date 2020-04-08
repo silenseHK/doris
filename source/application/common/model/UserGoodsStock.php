@@ -12,14 +12,24 @@ class UserGoodsStock extends BaseModel
 
     protected $autoWriteTimestamp = false;
 
+    protected $insert = ['wxapp_id'];
+
+    /**
+     * 设置wxapp_id
+     * @return mixed
+     */
+    public function setWxappIdAttr(){
+        return static::$wxapp_id;
+    }
+
     /**
      * 获取用户代理商品库存
      * @param $userId
-     * @param $goodsId
+     * @param $goodsSkuId
      * @return int
      */
-    public static function getStock($userId, $goodsId){
-        $stock = self::where(['user_id'=>$userId, 'goods_id'=>$goodsId])->value('stock');
+    public static function getStock($userId, $goodsSkuId){
+        $stock = self::where(['user_id'=>$userId, 'goods_sku_id'=>$goodsSkuId])->value('stock');
         return $stock ? : 0;
     }
 
@@ -27,28 +37,29 @@ class UserGoodsStock extends BaseModel
      * 检查代理商品库存
      * @param $user
      * @param $goodsId
+     * @param $goods_sku_id
      * @param $num
      * @return array
      */
-    public static function checkStock($user, $goodsId, $num){
+    public static function checkStock($user, $goodsId, $goods_sku_id, $num){
         ##获取上级供应商
         $supply_info = User::getSupplyGoodsUser($user['user_id'], $goodsId, $num);
         $supplyUserId = $supply_info['supply_user_id'];
         $grade_id = $supply_info['grade_id'];
-        $isStockEnough = $supplyUserId ? 1 : GoodsModel::checkAgentGoodsStock($goodsId, $num);
+        $isStockEnough = $supplyUserId ? 1 : GoodsModel::checkAgentGoodsStock($goods_sku_id, $num);
         return compact('supplyUserId','isStockEnough', 'grade_id');
     }
 
     /**
      * 检查用户代理商品数据是否存在
      * @param $user_id
-     * @param $goods_id
+     * @param $goodsSkuId
      * @return int|string
      */
-    public static function checkExist($user_id, $goods_id){
+    public static function checkExist($user_id, $goodsSkuId){
         return (new self)->where([
                 'user_id' => $user_id,
-                'goods_id' => $goods_id
+                'goods_sku_id' => $goodsSkuId
             ])
             ->value('id');
     }
@@ -89,18 +100,21 @@ class UserGoodsStock extends BaseModel
      * 编辑库存
      * @param $userId
      * @param $goodsId
+     * @param $goodsSkuId
      * @param $stock
      * @param $direction
      * @throws \think\Exception
      */
-    public static function editStock($userId, $goodsId, $stock, $direction='inc'){
-        $stockId = self::checkExist($userId, $goodsId);
+    public static function editStock($userId, $goodsId, $goodsSkuId, $stock, $direction='inc'){
+        $stockId = self::checkExist($userId, $goodsSkuId);
         if($stockId){ ##修改
             $direction == 'inc' ? self::incStock($stockId, $stock) : self::decStock($stockId, $stock);
         }else{ ##添加
+            if($direction == 'dec')$stock = -$stock;
             UserGoodsStock::insertData([
                 'user_id' => $userId,
                 'goods_id' => $goodsId,
+                'goods_sku_id' => $goodsSkuId,
                 'stock' => $stock
             ]);
         }
@@ -110,11 +124,11 @@ class UserGoodsStock extends BaseModel
      * 新增库存并且和历史库存
      * @param $userId
      * @param $goodsId
+     * @param $goodsSkuId
      * @param $stock
      */
-    public static function incHistoryStock($userId, $goodsId, $stock){
-        $stockId = self::checkExist($userId, $goodsId);
-        echo $stockId;
+    public static function incHistoryStock($userId, $goodsId, $goodsSkuId, $stock){
+        $stockId = self::checkExist($userId, $goodsSkuId);
         if($stockId){ ##更新
             $where = ['id'=>$stockId];
             self::update(['stock'=>['inc', $stock], 'history_stock'=>['inc', $stock]], $where);
@@ -122,6 +136,7 @@ class UserGoodsStock extends BaseModel
             UserGoodsStock::insertData([
                 'user_id' => $userId,
                 'goods_id' => $goodsId,
+                'goods_sku_id' => $goodsSkuId,
                 'stock' => $stock,
                 'history_stock' => $stock
             ]);
@@ -156,21 +171,32 @@ class UserGoodsStock extends BaseModel
      * 通过user_id 和goods_id 增加冻结商品数量
      * @param $user_id
      * @param $goods_id
+     * @param $goods_sku_id
      * @param $stock
      * @param $flag
      * @return int|true
      * @throws \think\Exception
      */
-    public static function freezeStockByUserGoodsId($user_id, $goods_id, $stock, $flag=0){
-        $where = compact('user_id','goods_id');
+    public static function freezeStockByUserGoodsId($user_id, $goods_id, $goods_sku_id, $stock, $flag=0){
+        $stockId = self::checkExist($user_id, $goods_sku_id);
         $res = false;
-        switch($flag){
-            case 0:  ##单纯冻结商品
-                $res = self::where($where)->setInc('freeze_stock', $stock);
-                break;
-            case 1: ##冻结商品 并且 减少可用库存
-                $res = self::update(['freeze_stock'=>['inc', $stock], 'stock'=>['dec', $stock]], $where);
-                break;
+        if($stockId){ ##更新
+            $where = ['id' => $stockId];
+            switch($flag){
+                case 0:  ##单纯冻结商品
+                    $res = self::where($where)->setInc('freeze_stock', $stock);
+                    break;
+                case 1: ##冻结商品 并且 减少可用库存
+                    $res = self::update(['freeze_stock'=>['inc', $stock], 'stock'=>['dec', $stock]], $where);
+                    break;
+            }
+        }else{ ##新增
+            $data = compact('user_id','goods_id','goods_sku_id');
+            $data['stock'] = -$stock;
+            if($flag == 1){
+                $data['freeze_stock'] = $stock;
+            }
+            $res = (new self)->isUpdate(false)->save($data);
         }
         return $res;
     }
@@ -178,15 +204,15 @@ class UserGoodsStock extends BaseModel
     /**
      * 通过user_id 和goods_id 减少冻结商品数量
      * @param $user_id
-     * @param $goods_id
+     * @param $goods_sku_id
      * @param $stock
      * @param $flag
      * @return int|true
      * @throws \think\Exception
      */
-    public static function disFreezeStockByUserGoodsId($user_id, $goods_id, $stock, $flag=0){
+    public static function disFreezeStockByUserGoodsId($user_id, $goods_sku_id, $stock, $flag=0){
         $res = false;
-        $where = compact('user_id','goods_id');
+        $where = compact('user_id','goods_sku_id');
         switch($flag){
             case 0: ##单纯减少冻结库存
                 $res = self::where($where)->setDec('freeze_stock', $stock);
@@ -207,6 +233,14 @@ class UserGoodsStock extends BaseModel
      */
     public function goods(){
         return $this->belongsTo('app\common\model\Goods','goods_id','goods_id');
+    }
+
+    /**
+     * 一对多 --获取商品规格
+     * @return \think\model\relation\BelongsTo
+     */
+    public function spec(){
+        return $this->belongsTo('app\common\model\GoodsSku','goods_sku_id','goods_sku_id');
     }
 
 }

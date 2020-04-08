@@ -7,6 +7,7 @@ use app\common\model\Goods as GoodsModel;
 use app\common\model\GoodsGrade;
 use app\common\model\User as UserModel;
 use app\common\model\user\Grade;
+use think\Db;
 
 /**
  * 商品模型
@@ -175,21 +176,21 @@ class Goods extends GoodsModel
 
     /**
      * 获取代理商品库存
-     * @param $goodsId
+     * @param $goodsSkuId
      * @return mixed
      */
-    public static function getAgentStock($goodsId){
-        return self::where(['goods_id'=>$goodsId])->value('stock');
+    public static function getAgentStock($goodsSkuId){
+        return Db::name('goods_sku')->where(['goods_sku_id'=>$goodsSkuId])->value('stock_num');
     }
 
     /**
      * 判断代理商品平台库存是否充足
-     * @param $goodsId
+     * @param $goodsSkuId
      * @param $num
      * @return bool
      */
-    public static function checkAgentGoodsStock($goodsId, $num){
-        $stock = self::getAgentStock($goodsId);
+    public static function checkAgentGoodsStock($goodsSkuId, $num){
+        $stock = self::getAgentStock($goodsSkuId);
         return $stock >= $num ? 1 : 0;
     }
 

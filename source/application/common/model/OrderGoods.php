@@ -2,8 +2,12 @@
 
 namespace app\common\model;
 
+use app\common\enum\user\StockChangeScene;
 use app\common\model\GoodsSku as GoodsSkuModel;
 use app\common\enum\goods\DeductStockType as DeductStockTypeEnum;
+use app\common\model\Order as OrderModel;
+use think\Db;
+use think\Exception;
 use think\Log;
 
 /**
@@ -45,6 +49,14 @@ class OrderGoods extends BaseModel
     }
 
     /**
+     * 关联商品规格
+     * @return \think\model\relation\BelongsTo
+     */
+    public function spec(){
+        return $this->belongsTo('app\common\model\GoodsSku','goods_sku_id','goods_sku_id');
+    }
+
+    /**
      * 关联订单主表
      * @return \think\model\relation\BelongsTo
      */
@@ -76,13 +88,14 @@ class OrderGoods extends BaseModel
     /**
      * 回退商品库存
      * @param $goodsList
-     * @param $isPayOrder
+     * @param $isPayOrder  *是否支付
      * @return array|false
      * @throws \Exception
      */
-    public function backGoodsStock($goodsList, $isPayOrder = false)
+    public function backGoodsStock2($goodsList, $isPayOrder = false)
     {
         $data = $agentData = [];
+
         foreach ($goodsList as $goods) {
             if($goods['sale_type'] == 1){ ##层级代理商品
                 $item = [
@@ -153,6 +166,66 @@ class OrderGoods extends BaseModel
         }
 
         return isset($res) ? $res : true;
+    }
+
+    /**
+     * 返还库存
+     * @param $order
+     * @param bool $isPayOrder
+     * @return bool|string
+     */
+    public function backGoodsStock($order, $isPayOrder = false){
+        ##未支付不返库存
+        if(!$isPayOrder)return true;
+        $goodsList = $order['goods'];
+        $stockData = [];
+        foreach($goodsList as $goods){
+            if(!isset($stockData[$goods['goods_sku_id']])){
+                $stockData[$goods['goods_sku_id']] = [
+                    'stock' => 0,
+                    'goods_id' => $goods['goods_id']
+                ];
+            }
+            $stockData[$goods['goods_sku_id']]['stock'] += $goods['total_num'];
+        }
+        Db::startTrans();
+        try{
+            if($order['supply_user_id'] > 0){ ##代理人出货
+                $supply_user_id = $order['supply_user_id'];
+                foreach($stockData as $key => $item){
+                    ##增加库存变化记录
+                    $data = [
+                        'user_id' => $supply_user_id,
+                        'goods_id' => $item['goods_id'],
+                        'goods_sku_id' => $key,
+                        'balance_stock' => UserGoodsStock::getStock($supply_user_id, $key),
+                        'change_num' => $item['stock'],
+                        'opposite_user_id' => 0,  //发货人id
+                        'remark' => '用户取消订单返还库存',
+                        'change_type' => StockChangeScene::SALE,  //出货取消返库存
+                        'change_direction' => 10  //增加
+                    ];
+                    $res = UserGoodsStockLog::insertData($data);
+                    if($res === false)throw new Exception('库存返还失败');
+                    ##返回代理人库存 减少代理库存
+                    $res = UserGoodsStock::disFreezeStockByUserGoodsId($supply_user_id, $key, $item['stock'],2);
+                    if($res === false)throw new Exception('操作失败');
+                }
+
+            }else{ ##平台出货
+                ##直接恢复库存
+                foreach($stockData as $key => $item){
+                    $res = GoodsSku::update(['stock_num'=>['inc', $item['stock']]], ['goods_sku_id'=>$key]);
+                    if($res === false)throw new Exception('操作失败');
+                }
+            }
+
+            Db::commit();
+            return true;
+        }catch(Exception $e){
+            Db::rollback();;
+            return $e->getMessage();
+        }
     }
 
 }

@@ -291,11 +291,11 @@ class Goods extends GoodsModel
 
     /**
      * 获取代理商品的库存
-     * @param $goodsId
+     * @param $goodsSkuId
      * @return mixed
      */
-    public static function getAgentGoodsStock($goodsId){
-        return self::where(['goods_id'=>$goodsId])->value('stock');
+    public static function getAgentGoodsStock($goodsSkuId){
+        return Db::name('goods_sku')->where(['goods_sku_id'=>$goodsSkuId])->value('stock_num');
     }
 
     /**

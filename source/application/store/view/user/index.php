@@ -295,8 +295,8 @@
                             <label class="am-u-sm-3 am-form-label">
                                 补充库存商品
                             </label>
-                            <div class="am-u-sm-8 am-u-end">
-                                <select id="doc-select-1" name="recharge[points][goods_id]" onchange="chooseGoods.call(this)">
+                            <div class="am-u-sm-8 am-u-end wrap-goods">
+                                <select id="doc-select-1" name="recharge[points][goods_id]" onchange="goodsSku.call(this)">
                                     <option value="0">请选择商品</option>
                                     <?php if(!empty($goodsList)){ ?>
                                         <?php foreach($goodsList as $goods){ ?>
@@ -305,7 +305,17 @@
                                     <?php } ?>
                                 </select>
                             </div>
+                        </div>
 
+                        <div class="am-form-group wrap-attr">
+                            <label class="am-u-sm-3 am-form-label">
+                                规格
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <select id="doc-select-attr" name="recharge[points][goods_sku_id]" onchange="chooseGoods.call(this)">
+                                    <option value="0">请选择规格</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="am-form-group">
@@ -446,13 +456,41 @@
 
     });
 
-    function chooseGoods(){
-        var goods_id = $(this).val()
+    function chooseGoods(goods_sku_id){
+        goods_sku_id = goods_sku_id||$(this).val()
         var user_id = $('#wrap-tbody').data('cur-user-id');
-        if(goods_id){
-            $.post('index.php?s=/store/user/getUserGoodsStock', {goods_id, user_id}, function(res){
+        if(goods_sku_id){
+            $.post('index.php?s=/store/user/getUserGoodsStock', {goods_sku_id, user_id}, function(res){
                 if(res.code == 1){
                     $('.stock-wrap').text(res.data)
+                }else{
+                    layer.msg(res.msg)
+                }
+            }, 'json')
+        }
+    }
+
+    function goodsSku(){
+        var goods_id = $(this).val()
+        if(goods_id){
+            $.post('index.php?s=/store/goods/getGoodsSpec', {goods_id}, function(res){
+                if(res.code == 1){
+                    if(res.data.spec_id == 0){
+                        var html_ = '';
+                        $.each(res.data.list, function(i,v){
+                            html_ += '<option value="'+v.goods_sku_id+'">'+v.attr+'</option>';
+                        })
+                        $('.wrap-attr').show();
+                        $("#doc-select-attr").html(html_);
+                        $('input.ipt-goods-sku-id').remove();
+                        chooseGoods(res.data.list[0]['goods_sku_id']);
+                    }else{
+                        var ipt = $('<input class="ipt-goods-sku-id" type="hidden" name="recharge[points][goods_sku_id]" value="'+res.data.spec_id+'">');
+                        $('.wrap-attr').hide();
+                        $('input.ipt-goods-sku-id').remove();
+                        $('.wrap-goods').append(ipt);
+                        chooseGoods(res.data.spec_id);
+                    }
                 }else{
                     layer.msg(res.msg)
                 }

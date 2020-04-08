@@ -19,14 +19,15 @@ class Check extends Validate
         'verify_code|验证码' => 'require',
         'wxapp_id' => 'require',
         'code_type|验证码类型' => 'require|in:10',
-        'goods_id|商品id' => 'require|number|>=:0'
+        'goods_id|商品id' => 'require|number|>=:1',
+        'goods_sku_id|商品规格' => 'require|number|>=:1'
     ];
 
     protected $scene = [
         'register' => ['code', 'user_info', 'referee_id', 'mobile', 'password', 'password_confirm', 'wxapp_id'],
         'send_verify_code' => ['mobile', 'wxapp_id', 'code_type'],
         'login' => ['mobile', 'password'],
-        'goods_send_data' => ['goods_id'],
+        'goods_send_data' => ['goods_sku_id'],
         'bind_mobile' => ['mobile', 'verify_code']
     ];
 

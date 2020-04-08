@@ -137,4 +137,30 @@ class GoodsSku extends GoodsSkuModel
         return self::update(['goods_price'=>$price], ['goods_id'=>$goods_id]);
     }
 
+    /**
+     * 商品规格信息
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getGoodsSpec(){
+        $goods_id = input('post.goods_id',0,'intval');
+        ##获取规格
+        $list = $this->where(['goods_id'=>$goods_id])->field(['goods_sku_id', 'spec_sku_id'])->select();
+        $spec_id = 0;
+        foreach($list as &$item){
+            if($item['sku_list']){
+                $attr = "";
+                foreach($item['sku_list'] as $vi){
+                    $attr .= "{$vi['spec_name']}:{$vi['spec_value']},";
+                }
+                $item['attr'] = trim($attr,',');
+            }else{
+                $spec_id = $item['goods_sku_id'];
+            }
+        }
+        return compact('list','spec_id');
+    }
+
 }

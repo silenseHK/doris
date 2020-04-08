@@ -49,7 +49,7 @@ class CompleteDeliverOrder
         try{
             foreach($list as $v){
                 ##减少冻结库存
-                $res = UserGoodsStock::disFreezeStockByUserGoodsId($v['user_id'],$v['goods_id'],$v['goods_num']);
+                $res = UserGoodsStock::disFreezeStockByUserGoodsId($v['user_id'],$v['goods_sku_id'],$v['goods_num']);
                 if($res === false)throw new Exception('任务执行失败');
             }
             ##修改订单状态为已完成

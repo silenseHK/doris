@@ -366,7 +366,6 @@ class Goods extends BaseModel
         $goodsSpecSave = [];
         if($model['supply_user_id'] == 0){
             ##更新库存和销量(直营商品 || 平台发货的代理商品)
-            ##代理商品改变商品库存,不改变规格的库存
             foreach ($goodsList as $goods) {
                 $goodsData = [
                     'goods_id' => $goods['goods_id'],
@@ -375,16 +374,14 @@ class Goods extends BaseModel
 
                 // 付款减库存
                 if ($goods['deduct_stock_type'] == 20) {
-                    if($goods['sale_type'] == 2){ // 平台直营
-                        $specData = [
-                            'goods_sku_id' => $goods['goods_sku_id'],
-                            'goods_sales' => ['inc', $goods['total_num']],
-                            'stock_num' => ['dec', $goods['total_num']]
-                        ];
-                    }
+                    $specData = [
+                        'goods_sku_id' => $goods['goods_sku_id'],
+                        'goods_sales' => ['inc', $goods['total_num']],
+                        'stock_num' => ['dec', $goods['total_num']]
+                    ];
+                    $goodsSpecSave[] = $specData;
                     $goodsData['stock'] = ['dec', $goods['total_num']];
                 }
-                if(isset($specData))$goodsSpecSave[] = $specData;
                 $goodsSave[] = $goodsData;
             }
             // 更新商品总销量

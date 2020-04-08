@@ -145,7 +145,7 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                                 <?= $order['pay_status']['value'] == 20 ? 'am-badge-success' : '' ?>">
                                                         <?= $order['pay_status']['text'] ?></span>
                                                 </p>
-                                                <p>发货状态：
+                                                <p>订单状态：
                                                     <span class="am-badge
                                                 <?= $order['deliver_status']['value'] == 20 ? 'am-badge-success' : '' ?>">
                                                         <?= $order['deliver_status']['text'] ?></span>

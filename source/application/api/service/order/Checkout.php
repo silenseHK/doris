@@ -199,7 +199,13 @@ class Checkout
         }
         ##获取当前的等级权重
         $grade_type = Grade::getGradeType($this->orderData['grade_id']);
-        $this->orderData['delivery_type'] = $grade_type == GradeType::LOW ? ($this->param['delivery'] < 30 ? $this->param['delivery'] : 10) : 30;
+        $this->orderData['is_agent'] = $grade_type>10?1:0;
+        if($this->orderData['sale_type'] == 1){
+            $this->orderData['delivery_type'] = $grade_type == GradeType::LOW ? ($this->param['delivery'] < 30 ? $this->param['delivery'] : 10) : 30;
+        }else{
+            $this->orderData['delivery_type'] = $this->param['delivery'];
+        }
+
         // 计算订单最终金额
         $this->setOrderPayPrice();
         // 计算订单积分赠送数量
@@ -360,7 +366,6 @@ class Checkout
      */
     private function validateGoodsList()
     {
-
         foreach ($this->goodsList as $k => $goods) {
             // 判断商品是否下架
             if ($goods['goods_status']['value'] != 10) {
@@ -375,7 +380,7 @@ class Checkout
                     $this->orderData['grade_id'] = $this->user['grade_id'];
                 }
             }else{ ##层级代理
-                $check = UserGoodsStock::checkStock($this->user, $goods['goods_id'], $goods['total_num']);
+                $check = UserGoodsStock::checkStock($this->user, $goods['goods_id'], $goods['goods_sku']['goods_sku_id'], $goods['total_num']);
                 if(!$check['isStockEnough']){
                     $this->setError("很抱歉，商品 [{$goods['goods_name']}] 库存不足");
                 }
@@ -391,6 +396,7 @@ class Checkout
                 $this->orderData['rebate_money'] = isset($rebateMoney)? $rebateMoney : 0;
                 $this->orderData['rebate_info'] = !empty($rebateUser)? json_encode($rebateUser) : "";
             }
+            $this->orderData['sale_type'] = $goods['sale_type']; ##商品类型
         }
 
     }

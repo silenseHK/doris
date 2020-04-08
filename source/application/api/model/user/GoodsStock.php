@@ -23,9 +23,12 @@ class GoodsStock extends UserGoodsStock
     public static function getSendLists($userId){
         return self::where(['user_id'=> $userId, 'stock'=> ['GT', 0]])
             ->with([
-                'goods.image.file'
+                'goods',
+                'spec' => function(Query $query){
+                    $query->field(['goods_sku_id', 'spec_sku_id', 'image_id'])->with(['image'=>function(Query $query){$query->field(['file_id', 'file_name', 'storage']);}]);
+                }
             ])
-            ->field(['stock','goods_id'])
+            ->field(['stock','goods_id','goods_sku_id'])
             ->select();
     }
 
@@ -89,13 +92,15 @@ class GoodsStock extends UserGoodsStock
         $user_id = $order['user_id'];
         $num = $order['goods_num'];
         $goods_id = $order['goods_id'];
+        $goods_sku_id = $order['goods_sku_id'];
         $stock = $order['stock'];
         try{
             ##减库存 添加冻结库存
-            if(self::freezeStockByUserGoodsId($user_id, $goods_id, $num) === false)throw new Exception('提交申请失败');
+            if(self::freezeStockByUserGoodsId($user_id, $goods_id, $goods_sku_id, $num,1) === false)throw new Exception('提交申请失败');
             ##添加库存变更记录
             $stockLogData = [
                 'user_id' => $user_id,
+                'goods_sku_id' => $goods_sku_id,
                 'goods_id' => $goods_id,
                 'balance_stock' => $stock,
                 'change_num' => $num,

@@ -146,12 +146,13 @@ class User extends UserModel
         }
 
         $goodsId = intval($data['goods_id']);
-        if(!$goodsId || $goodsId < 0){
+        $goodsSkuId = intval($data['goods_sku_id']);
+        if(!$goodsSkuId || $goodsSkuId < 0){
             $this->error = '请选择代理商品';
             return false;
         }
         ##获取当前库存
-        $oldStock = UserGoodsStock::getUserGoodsStock($this['user_id'], $goodsId);
+        $oldStock = UserGoodsStock::getUserGoodsStock($this['user_id'], $goodsSkuId);
 
         // 判断充值方式，计算最终库存
         if ($data['mode'] === 'inc') {
@@ -165,14 +166,14 @@ class User extends UserModel
 
         ##如果是增加用户库存则判断平台商品库存是否充足
         if($diffStock > 0){
-            $goodsStock = Goods::getAgentGoodsStock($goodsId);
+            $goodsStock = Goods::getAgentGoodsStock($goodsSkuId);
             if(!$goodsStock || $goodsStock < $diffStock){
                 $this->error = "商品库存不足,请补充商品库存后再充值";
                 return false;
             }
         }
         ## 变更用户商品库存
-        $res = UserGoodsStock::updateUserGoodsStock($this['user_id'], $goodsId, $finalStock, $diffStock ,'ADMIN', $data['remark']);
+        $res = UserGoodsStock::updateUserGoodsStock($this['user_id'], $goodsId, $goodsSkuId, $finalStock, $diffStock ,'ADMIN', $data['remark']);
         if($res !== true){
             $this->error = $res;
             return false;

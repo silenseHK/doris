@@ -3,6 +3,7 @@
 namespace app\api\model;
 
 use app\api\service\order\PaySuccess;
+use app\api\validate\order\Checkout;
 use app\common\model\Order as OrderModel;
 
 use app\api\model\User as UserModel;
@@ -22,6 +23,7 @@ use app\common\service\wechat\wow\Order as WowService;
 use app\common\service\order\Complete as OrderCompleteService;
 use app\common\exception\BaseException;
 use think\db\Query;
+use think\Exception;
 
 /**
  * 订单模型
@@ -61,7 +63,7 @@ class Order extends OrderModel
         ##更新发货人
         $this->updateSupplyUser();
         // 判断商品状态、库存
-        if (!$this->checkGoodsStatusFromOrder($this['goods'])) {
+        if (!$this->checkGoodsStatusFromOrder($this)) {
             return false;
         }
         // 余额支付
@@ -96,7 +98,7 @@ class Order extends OrderModel
                 $goodsData = $agentData['goodsData'];
                 foreach($goodsList as $k => $v){
                     if(isset($goodsData[$v['goods_id']]) && $goodsData[$v['goods_id']] != $v['goods_price']){
-                        ##更新价格
+                        ##更新价格[order_goods]
                         OrderGoods::editPrice($v['order_goods_id'], $goodsData[$v['goods_id']], $agentGoods[$v['goods_id']]);
                         $this['goods'][$k]['total_price'] = $goodsData[$v['goods_id']] * $agentGoods[$v['goods_id']];
                     }
@@ -233,12 +235,13 @@ class Order extends OrderModel
                 $filter['order_status'] = 30;
                 break;
         }
+        $size = input('get.size',6,'intval');
         return $this->with(['goods.image'])
             ->where('user_id', '=', $user_id)
             ->where($filter)
             ->where('is_delete', '=', 0)
             ->order(['create_time' => 'desc'])
-            ->paginate(1, false, [
+            ->paginate($size, false, [
                 'query' => \request()->request()
             ]);
     }
@@ -256,10 +259,10 @@ class Order extends OrderModel
         }
         // 订单取消事件
         return $this->transaction(function () use ($user) {
-            // 回退商品库存
-            (new OrderGoodsModel)->backGoodsStock($this['goods']);
             // 未付款的订单
             if ($this['pay_status']['value'] != PayStatusEnum::SUCCESS) {
+                // 回退商品库存
+                //(new OrderGoodsModel)->backGoodsStock($this['goods']);
                 // 回退用户优惠券
                 $this['coupon_id'] > 0 && UserCouponModel::setIsUse($this['coupon_id'], false);
                 // 回退用户积分
@@ -373,14 +376,15 @@ class Order extends OrderModel
 
     /**
      * 判断商品库存不足 (未付款订单)
-     * @param $goodsList
+     * @param $order
      * @return bool
      */
-    private function checkGoodsStatusFromOrder($goodsList)
+    private function checkGoodsStatusFromOrder($order)
     {
+        $goodsList = $order['goods'];
         foreach ($goodsList as $goods) {
             // 判断商品是否下架
-            if (
+            if(
                 empty($goods['goods'])
                 || $goods['goods']['goods_status']['value'] != 10
             ) {
@@ -392,10 +396,10 @@ class Order extends OrderModel
                 $this->setError("很抱歉，商品 [{$goods['goods_name']}] sku已不存在，请重新下单");
                 return false;
             }
-            // 付款减库存
-            if ($goods['deduct_stock_type'] == 20 && $goods['total_num'] > $goods['sku']['stock_num']) {
-                $this->setError("很抱歉，商品 [{$goods['goods_name']}] 库存不足");
-                return false;
+            // 付款减库存&&平台发货
+            if($goods['deduct_stock_type'] == 20 && $order['supply_user_id'] == 0 && $goods['total_num'] > $goods['sku']['stock_num']){
+                    $this->setError("很抱歉，商品 [{$goods['goods_name']}] 库存不足");
+                    return false;
             }
         }
         return true;
@@ -473,6 +477,68 @@ class Order extends OrderModel
                 }
             ]
         )->field(['order_id', 'pay_price', 'express_price', 'order_status'])->select();
+    }
+
+    /**
+     * 代理出货列表
+     * @param $user_id
+     * @return false|\PDOStatement|string|\think\Collection
+     * @throws Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getAgentSaleGoodsLists($user_id){
+        $validate = new Checkout();
+        if(!$validate->scene('agent_sale_order')->check(input()))throw new Exception($validate->getError());
+        ##参数
+        $order_type = input('get.order_type',0,'intval');
+        $page = input('get.page',1,'intval');
+        $size = input('get.size',6,'intval');
+        $this->setAgentOrderWhere($order_type, $user_id);
+        ##订单列表
+        $list = $this
+            ->with(
+                [
+                    'user' => function(Query $query){
+                        $query->field(['user_id', 'nickName', 'mobile']);
+                    },
+                    'goods' => function(Query $query){
+                        $query->field(['order_id', 'goods_sku_id', 'goods_name'])->with(['spec'=>function(Query $query){$query->field(['goods_sku_id', 'spec_sku_id', 'image_id'])->with(['image']);}]);
+                    }
+                ]
+            )
+            ->field(['order_id', 'order_no', 'create_time', 'user_id', 'order_price', 'pay_price', 'express_price', 'delivery_type', 'order_status', 'pay_status', 'delivery_status'])
+            ->page($page, $size)
+            ->select();
+        return $list;
+    }
+
+    /**
+     * 设置代理出货筛选条件
+     * @param $order_type
+     * @param $user_id
+     */
+    public function setAgentOrderWhere($order_type, $user_id){
+        $where = [
+            'supply_user_id' => $user_id,
+            'pay_status' => 20,
+            'order_status' => 10
+        ];
+        switch($order_type){
+            case 10: ##待发货
+                $where['delivery_status'] = 10;
+                break;
+            case 20: ##待收货
+                $where['delivery_status'] = 20;
+                $where['receipt_status'] = 10;
+                break;
+            case 30: ##已完成
+                $where['receipt_status'] = 20;
+                $where['order_status'] = 30;
+                break;
+        }
+        $this->where($where);
     }
 
 }

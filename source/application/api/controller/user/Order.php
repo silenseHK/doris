@@ -9,6 +9,7 @@ use app\api\model\Setting as SettingModel;
 use app\common\enum\OrderType as OrderTypeEnum;
 use app\common\enum\order\PayType as PayTypeEnum;
 use app\common\service\qrcode\Extract as ExtractQRcode;
+use think\Exception;
 
 /**
  * 用户订单管理
@@ -175,6 +176,20 @@ class Order extends Controller
         return $this->renderSuccess([
             'qrcode' => $Qrcode->getImage(),
         ]);
+    }
+
+    /**
+     * 获取代理商发货记录
+     * @return array
+     */
+    public function agentSaleGoodsLists(){
+        try{
+            $model = new OrderModel;
+            $list = $model->getAgentSaleGoodsLists($this->user['user_id']);
+            return $this->renderSuccess($list);
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
     }
 
 }

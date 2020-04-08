@@ -354,29 +354,42 @@ class User extends BaseModel
      * @throws Exception
      */
     public function addGoodsStock($model, $integralLogId){
+
         $goodsList = $model['goods'];
         $data = $stock = $decStock = [];
         $balance = 0;
         foreach($goodsList as $goods){
             if($goods['sale_type'] == 1){ ##层级代理商品
+                $goods_sku_id = $goods['goods_sku_id'];
                 if($model['delivery_type']['value'] == 30){ ##用户选择补充库存
                     $data[] = [
                         'user_id' => $this['user_id'],
                         'goods_id' => $goods['goods_id'],
-                        'balance_stock' => UserGoodsStock::getStock($this['user_id'], $goods['goods_id']),
+                        'goods_sku_id' => $goods_sku_id,
+                        'balance_stock' => UserGoodsStock::getStock($this['user_id'], $goods_sku_id),
                         'change_num' => $goods['total_num'],
                         'opposite_user_id' => $model['supply_user_id'],  //发货人id
                         'remark' => '用户补货',
                         'integral_weight' => $goods['integral_weight'],
                         'integral_log_id' => $integralLogId
                     ];
-                    if(!isset($stock[$goods['goods_id']]))$stock[$goods['goods_id']] = 0;
-                    $stock[$goods['goods_id']] += $goods['total_num'];
+                    if(!isset($stock[$goods_sku_id])){
+                        $stock[$goods_sku_id] = [
+                            'stock' => 0,
+                            'goods_id' => $goods['goods_id']
+                        ];
+                    }
+                    $stock[$goods_sku_id]['stock'] += $goods['total_num'];
                 }
                 ##减少库存
                 if($model['supply_user_id'] >0){ ##供货人非平台
-                    if(!isset($decStock[$goods['goods_id']]))$decStock[$goods['goods_id']] = 0;
-                    $decStock[$goods['goods_id']] += $goods['total_num'];
+                    if(!isset($decStock[$goods_sku_id])){
+                        $decStock[$goods_sku_id] = [
+                            'stock' => 0,
+                            'goods_id' => $goods['goods_id']
+                        ];
+                    }
+                    $decStock[$goods_sku_id]['stock'] += $goods['total_num'];
                     $balance += $goods['total_pay_price'];
                 }
             }
@@ -386,7 +399,7 @@ class User extends BaseModel
         ##增加购买人库存
         if(!empty($stock)){
             foreach($stock as $key => $sto){
-                UserGoodsStock::incHistoryStock($this['user_id'], $key, $sto);
+                UserGoodsStock::incHistoryStock($this['user_id'], $sto['goods_id'], $key, $sto['stock']);
             }
             UserGoodsStockLog::insertAllData($data);
         }
@@ -398,9 +411,10 @@ class User extends BaseModel
                 $supplyUserId = $model['supply_user_id'];
                 $desData[] = [
                     'user_id' => $model['supply_user_id'],
-                    'goods_id' => $key,
+                    'goods_id' => $val['goods_id'],
+                    'goods_sku_id' => $key,
                     'balance_stock' => UserGoodsStock::getStock($supplyUserId, $key),
-                    'change_num' => $val,
+                    'change_num' => $val['stock'],
                     'change_type' => 10,
                     'change_direction' => 20,
                     'opposite_user_id' => $this['user_id'],
@@ -408,9 +422,9 @@ class User extends BaseModel
                 ];
                 ##减少库存
                 if($model['delivery_type']['value'] == 30){ ##非补充库存订单直接减库存
-                    UserGoodsStock::editStock($model['supply_user_id'], $key, $val, 'dec');
+                    UserGoodsStock::editStock($model['supply_user_id'], $val['goods_id'], $key, $val['stock'], 'dec');
                 }else{  ##补充库存订单 减库存+增加冻结库存
-                    UserGoodsStock::freezeStockByUserGoodsId($model['supply_user_id'], $key, $val,1);
+                    UserGoodsStock::freezeStockByUserGoodsId($model['supply_user_id'],$key['goods_id'], $key, $val['stock'], 1);
                 }
             }
             ##插入库存变更日志

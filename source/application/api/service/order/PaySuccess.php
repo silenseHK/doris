@@ -105,9 +105,9 @@ class PaySuccess extends Basics
             $this->model->save($order);
             // 累积用户总消费金额
             $this->user->setIncPayMoney($this->model['pay_price']);
-            ## 增加用户积分
+            ## 增加用户积分[补充库存的订单]
 //            print_r($this->model['goods']->toArray());die;
-            $integralLogId = $this->model['delivery_type']['value'] == 30 ? $this->user->setIncIntegral($this->model['goods']) : 0;
+            $integralLogId = $this->model['sale_type'] == 1 ? $this->user->setIncIntegral($this->model['goods']) : 0;
 
             ## 补充用户库存 && 减少供应用户库存 && 增加供应用户余额
             $this->user->addGoodsStock($this->model, $integralLogId);

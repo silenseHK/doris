@@ -20,7 +20,7 @@ class Goods extends Controller
         try{
             $user = $this->getUser();
             $model = new User();
-            return $this->renderSuccess($model->getGoodsSendLists($user, $this->request->post()));
+            return $this->renderSuccess($model->getGoodsSendLists($user, $this->request->get()));
         }catch(Exception $e){
             return $this->renderError($e->getMessage());
         }
@@ -34,7 +34,7 @@ class Goods extends Controller
         try{
             $user = $this->getUser();
             $model = new User();
-            return $this->renderSuccess($model->getGoodsSendData($user, $this->request->post()));
+            return $this->renderSuccess($model->getGoodsSendData($user, $this->request->get()));
         }catch(Exception $e){
             return $this->renderError($e->getMessage());
         }
@@ -65,7 +65,7 @@ class Goods extends Controller
             $user = $this->getUser();
             $model = new OrderDeliver($user);
             return $this->renderSuccess([
-                'freight'=>$model->getFreight($this->request->post())
+                'freight'=>$model->getFreight($this->request->get())
             ]);
         }catch(Exception $e){
             return $this->renderError($e->getMessage());

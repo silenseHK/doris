@@ -50,16 +50,21 @@ class Withdraw extends WithdrawModel
         // 构建查询规则
         $this->alias('withdraw')
             ->with(['user'])
-            ->field('withdraw.*, dealer.real_name, dealer.mobile, user.nickName, user.avatarUrl')
-            ->join('user', 'user.user_id = withdraw.user_id')
-            ->join('dealer_user dealer', 'dealer.user_id = withdraw.user_id')
+            ->field('withdraw.*, user.mobile, user.nickName, user.avatarUrl')
+            ->join('user', 'user.user_id = withdraw.user_id','LEFT')
+//            ->join('dealer_user dealer', 'dealer.user_id = withdraw.user_id','LEFT')
             ->order(['withdraw.create_time' => 'desc']);
         // 查询条件
         $user_id > 0 && $this->where('withdraw.user_id', '=', $user_id);
-        !empty($search) && $this->where('dealer.real_name|dealer.mobile', 'like', "%$search%");
+        !empty($search) && $this->where('user.nickName|user.mobile', 'like', "%$search%");
         $apply_status > 0 && $this->where('withdraw.apply_status', '=', $apply_status);
         $pay_type > 0 && $this->where('withdraw.pay_type', '=', $pay_type);
         // 获取列表数据
+//        $list = $this->paginate(15, false, [
+//            'query' => \request()->request()
+//        ]);
+//        echo $this->getLastSql();
+//        die;
         return $this->paginate(15, false, [
             'query' => \request()->request()
         ]);

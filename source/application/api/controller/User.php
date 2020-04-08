@@ -92,8 +92,12 @@ class User extends Controller
 //        $new_str = implode("", $arr);
 //        echo $new_str;
 //        print_r($arr);die;
-        echo $res = createCode(19001);
-        echo decode($res);
+//        echo $res = createCode(19001);
+//        echo decode($res);
+//        phpinfo();
+        $file = "../source/runtime/image/10001/";
+        if(file_exists($file))echo 'asd';
+        var_dump(file_get_contents('test.txt'));
     }
 
 }

@@ -301,6 +301,7 @@ class User extends UserModel
             ##验证
             $rule = [
                 'goods_id|商品id' => 'require|number|>=:1',
+                'goods_sku_id|规格id' => 'require|number|>=:1',
                 'num|购买数量' => 'require|number|>=:1'
             ];
             $validate = new Validate($rule);
@@ -309,6 +310,7 @@ class User extends UserModel
 
             ##接收参数
             $goodsId = input('get.goods_id', 0,'intval');
+            $goodsSkuId = input('get.goods_sku_id', 0,'intval');
             $num = input('get.num',1,'intval');
 
             ##逻辑
@@ -317,7 +319,7 @@ class User extends UserModel
             ## 检查库存
             $is_stock_enough = 1;
             if(!$agentData['supplyUserId']){
-                $is_stock_enough = Goods::checkAgentGoodsStock($goodsId, $num);
+                $is_stock_enough = Goods::checkAgentGoodsStock($goodsSkuId, $num);
             }
             ##返回
             $price = $agentData['price'];
@@ -350,10 +352,10 @@ class User extends UserModel
             }
         }
         ##获取用户当前积分和等级
-        $userInfo = self::where(['user_id'=>$userId])->field(['grade_id', 'integral', 'relation'])->find();
+        $userInfo = self::alias('u')->join('user_grade ug','u.grade_id = ug.grade_id')->where(['u.user_id'=>$userId])->field(['u.grade_id', 'u.integral', 'u.relation', 'ug.weight'])->find();
         $finalIntegral = $diffIntegral + $userInfo['integral'];
         ##获取最新等级
-        $gradeInfo = Grade::getRecentGrade($finalIntegral);
+        $gradeInfo = Grade::getRecentGrade($finalIntegral, $userInfo);
         ##获取供应用户id
         $supplyUserId = self::getSupplyUserId($userInfo['relation'], $gradeInfo['weight']);
         ##获取商品的最新购买价
@@ -413,7 +415,7 @@ class User extends UserModel
         ##减少用户冻结库存
         if($model['supply_user_id'] > 0){
             foreach($model['goods'] as $goods){
-                UserGoodsStock::disFreezeStockByUserGoodsId($model['supply_user_id'], $goods['goods_id'], $goods['total_num'],1);
+                UserGoodsStock::disFreezeStockByUserGoodsId($model['supply_user_id'], $goods['goods_sku_id'], $goods['total_num'],1);
             }
         }
 
@@ -533,7 +535,7 @@ class User extends UserModel
         ##获取收货地址
         $address = $user['address_default'] ? : (empty($user['address'])?[] : $user['address'][0]);
         ##商品库存
-        $stock = GoodsStock::getStock($user['user_id'], intval($post['goods_id']));
+        $stock = GoodsStock::getStock($user['user_id'], intval($post['goods_sku_id']));
         return compact('address','stock');
     }
 
@@ -666,12 +668,16 @@ class User extends UserModel
         $next_grade = ApiGrade::getNextGradeInfo($this['grade']['weight']);
         if($next_grade){
             $grade['rate'] = (int)$this['integral'] .'/'. (int)$next_grade['upgrade_integral'];
+            $grade['current'] = (int)$this['integral'];
+            $grade['target'] = (int)$next_grade['upgrade_integral'];
             $grade['cha'] = (int)$next_grade['upgrade_integral'] - (int)$this['integral'];
             $grade['next_grade'] = $next_grade['name'];
         }else{
             ##获取最高等级
             $high_grade = ApiGrade::getHighestGradeInfo();
             $grade['rate'] = (int)$high_grade['upgrade_integral'] . '/' . (int)$high_grade['upgrade_integral'];
+            $grade['current'] = (int)$high_grade['upgrade_integral'];
+            $grade['target'] = (int)$high_grade['upgrade_integral'];
             $grade['cha'] = 0;
             $grade['next_grade'] = '';
         }
@@ -692,7 +698,10 @@ class User extends UserModel
         $this['sale_money'] = $sale_money;
 
         ##获取推荐人
-        $this['invitation_user_info'] = ['mobile' => self::getUserMobile($this['invitation_user_id'])];
+        $this['invitation_user_info'] = ['mobile' => (self::getUserMobile($this['invitation_user_id'] ? : ''))];
+
+        ##团队人数
+        $this['team_member_num'] = $this->getTeamMemberNum($this['user_id']);
 
         return $this;
     }
@@ -704,6 +713,17 @@ class User extends UserModel
      */
     public static function getUserMobile($user_id){
         return self::where(['user_id'=>$user_id])->value('mobile');
+    }
+
+    /**
+     * 获取团队人数
+     * @param $user_id
+     * @return int|string
+     * @throws Exception
+     */
+    public function getTeamMemberNum($user_id){
+        $like = "%-{$user_id}-%";
+        return self::where(['relation'=>['LIKE', $like], 'is_delete'=>0])->count('user_id');
     }
 
 }

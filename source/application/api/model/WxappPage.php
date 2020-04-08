@@ -9,6 +9,7 @@ use app\api\model\Goods as GoodsModel;
 use app\api\model\store\Shop as ShopModel;
 use app\api\model\sharing\Goods as SharingGoodsModel;
 use app\api\model\bargain\Active as BargainActiveModel;
+use app\store\model\GoodsGrade;
 
 /**
  * 微信小程序diy页面模型
@@ -96,13 +97,18 @@ class WxappPage extends WxappPageModel
         // 格式化商品列表
         $data = [];
         foreach ($goodsList as $goods) {
+            $goods_price = $goods['sku'][0]['goods_price'];
+            ##代理商品处理价格为代理价格
+            if($user){
+                $goods_price = GoodsGrade::getGoodsPrice($user['grade_id'], $goods['goods_id']) ? : $goods_price;
+            }
             $data[] = [
                 'goods_id' => $goods['goods_id'],
                 'goods_name' => $goods['goods_name'],
                 'selling_point' => $goods['selling_point'],
                 'image' => $goods['image'][0]['file_path'],
                 'goods_image' => $goods['image'][0]['file_path'],
-                'goods_price' => $goods['sku'][0]['goods_price'],
+                'goods_price' => $goods_price,
                 'line_price' => $goods['sku'][0]['line_price'],
                 'goods_sales' => $goods['goods_sales'],
             ];
