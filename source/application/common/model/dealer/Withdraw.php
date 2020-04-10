@@ -40,7 +40,7 @@ class Withdraw extends BaseModel
      */
     public function user()
     {
-        return $this->belongsTo('User');
+        return $this->belongsTo('app\common\model\User','user_id','user_id');
     }
 
     /**

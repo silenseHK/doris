@@ -69,4 +69,12 @@ class Withdraw extends Controller
         ]);
     }
 
+    /**
+     * 代理金额信息
+     * @return array
+     */
+    public function index(){
+        return $this->renderSuccess($this->user->moneyInfo());
+    }
+
 }

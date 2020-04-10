@@ -14,8 +14,6 @@ use app\common\model\dealer\Setting;
  */
 class Poster extends Base
 {
-    /* @var \app\common\model\dealer\User $dealer 分销商用户信息 */
-    private $dealer;
 
     /* @var array $config 分销商海报设置 */
     private $config;
@@ -26,16 +24,16 @@ class Poster extends Base
     /**
      * 构造方法
      * Poster constructor.
-     * @param $dealer
+     * @param $user
      * @throws \Exception
      */
-    public function __construct($dealer)
+    public function __construct($user)
     {
         parent::__construct();
         // 分销商用户信息
-        $this->dealer = $dealer;
+        $this->user = $user;
         // 分销商海报设置
-        $this->config = Setting::getItem('qrcode', $dealer['wxapp_id']);
+        $this->config = Setting::getItem('qrcode', $user['wxapp_id']);
     }
 
     /**
@@ -69,7 +67,7 @@ class Poster extends Base
     private function getPosterPath()
     {
         // 保存路径
-        $tempPath = WEB_PATH . 'temp' . DS . $this->dealer['wxapp_id'] . DS;
+        $tempPath = WEB_PATH . 'temp' . DS . $this->user['wxapp_id'] . DS;
         !is_dir($tempPath) && mkdir($tempPath, 0755, true);
         return $tempPath . $this->getPosterName();
     }
@@ -89,7 +87,7 @@ class Poster extends Base
      */
     private function getPosterUrl()
     {
-        return \base_url() . 'temp/' . $this->dealer['wxapp_id'] . '/' . $this->getPosterName() . '?t=' . time();
+        return \base_url() . 'temp/' . $this->user['wxapp_id'] . '/' . $this->getPosterName() . '?t=' . time();
     }
 
     /**
@@ -136,7 +134,7 @@ class Poster extends Base
         $fontY = $this->config['nickName']['top'] * 2;
         $Color = new Color($this->config['nickName']['color']);
         $fontPath = Grafika::fontsDir() . DS . 'st-heiti-light.ttc';
-        $editor->text($backdropImage, $this->dealer['user']['nickName'], $fontSize, $fontX, $fontY, $Color, $fontPath);
+        $editor->text($backdropImage, $this->user['nickName'], $fontSize, $fontX, $fontY, $Color, $fontPath);
 
         // 保存图片
         $editor->save($backdropImage, $this->getPosterPath());

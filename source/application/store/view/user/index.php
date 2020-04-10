@@ -141,7 +141,7 @@
                                                                href="<?= url('order/all_list', ['user_id' => $item['user_id']]) ?>">用户订单</a>
                                                         </li>
                                                     <?php endif; ?>
-                                                    <?php if (checkPrivilege('user.recharge/order')): ?>
+                                                    <?php if (!checkPrivilege('user.recharge/order')): ?>
                                                         <li>
                                                             <a class="am-dropdown-item" target="_blank"
                                                                href="<?= url('user.recharge/order', ['user_id' => $item['user_id']]) ?>">充值记录</a>

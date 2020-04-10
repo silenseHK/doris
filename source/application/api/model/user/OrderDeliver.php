@@ -6,6 +6,7 @@ use app\api\model\Goods;
 use app\api\model\GoodsSku;
 use app\api\model\Order as OrderModel;
 use app\api\model\Region;
+use app\api\model\store\Shop as ShopModel;
 use app\api\model\UserAddress;
 use app\api\service\Payment;
 use app\api\validate\user\OrderDeliverValidate;
@@ -324,6 +325,62 @@ class OrderDeliver extends OrderDeliverModel
             ->find();
         if(!$order)throw new Exception('订单信息不存在');
         return $order;
+    }
+
+    /**
+     * 获取提货发货主页信息
+     * @param $user
+     * @return array
+     * @throws Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function supply($user){
+        ##验证
+        $rule = [
+            'shop_id' => '>=:0'
+        ];
+        $res = $this->valid->scene('supply')->rule($rule)->check(request()->get());
+        if(!$res)throw new Exception($this->valid->getError());
+        ##参数
+        $goods_sku_id = input('get.goods_sku_id',0,'intval');
+        $shop_id = input('get.shop_id',0,'intval');
+        ##数据
+        ###自提点
+        $extract_shop = $shop_id > 0 ? ShopModel::detail($shop_id) : [];
+        ###商品信息
+        $goodsSkuModel = new GoodsSku();
+        $goods_data = $goodsSkuModel
+            ->where(['goods_sku_id'=>$goods_sku_id])
+            ->with(
+                [
+                    'image' => function(Query $query){
+                        $query->field(['file_id', 'file_name', 'storage']);
+                    },
+                    'goods' => function(Query $query){
+                        $query->field(['goods_id', 'goods_name', 'sales_initial', 'sales_actual','delivery_id'])->with(['delivery']);
+                    }
+                ]
+            )
+            ->field(['goods_id', 'spec_sku_id', 'image_id'])
+            ->find();
+        $user->hidden(['nickName', 'avatarUrl', 'gender', 'country', 'province', 'city', 'balance', 'withdraw_money', 'freeze_money', 'points', 'pay_money', 'expend_money', 'integral', 'relation', 'invitation_user_id', 'mobile', 'password', 'invitation_code']);
+
+        ##库存
+        $stock = UserGoodsStock::getStock($user['user_id'], $goods_sku_id);
+
+        ##判断是否在配送范围
+        $city_id = (isset($user['address_default']) && $user['address_default']) ? $user['address_default']['city_id'] : 0;
+        $intra_region = false;
+        if($city_id) {
+            $cityIds = [];
+            foreach ($goods_data['goods']['delivery']['rule'] as $item)
+                $cityIds = array_merge($cityIds, $item['region_data']);
+            if (in_array($city_id, $cityIds))$intra_region = true;
+        }
+
+        return compact('extract_shop','goods_data','user','stock','intra_region');
     }
 
 }

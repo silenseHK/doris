@@ -156,7 +156,7 @@
                         , l = 0
                         , t = 0
                         , r = $preview.offsetWidth - $ele.offsetWidth
-                        , b = $preview.offsetHeight - $ele.offsetHeight;
+                        , b = $preview.offsetHeight;
                     $ele.onmousedown = function (ev) {
                         var sentX = ev.clientX - $ele.offsetLeft;
                         var sentY = ev.clientY - $ele.offsetTop;

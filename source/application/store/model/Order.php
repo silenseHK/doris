@@ -43,7 +43,17 @@ class Order extends OrderModel
         // 检索查询条件
         !empty($query) && $this->setWhere($query);
         // 获取数据列表
-        return $this->with(['goods.image', 'address', 'user'])
+        return $this
+            ->with(
+                [
+                    'goods.image',
+                    'address',
+                    'user',
+                    'supplyUser.grade',
+                    'supplyGrade',
+                    'userGrade'
+                ]
+            )
             ->alias('order')
             ->field('order.*')
             ->join('user', 'user.user_id = order.user_id')
@@ -81,7 +91,9 @@ class Order extends OrderModel
                     'user' => function(Query $query){
                         $query->with(['grade']);
                     },
-                    'supplyUser.grade'
+                    'supplyUser.grade',
+                    'supplyGrade',
+                    'userGrade'
                 ]
             )
             ->alias('order')

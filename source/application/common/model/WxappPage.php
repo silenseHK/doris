@@ -30,7 +30,8 @@ class WxappPage extends BaseModel
             'style' => [
                 'titleTextColor' => 'black',
                 'titleBackgroundColor' => '#ffffff',
-            ]
+            ],
+            'otherBackground' => self::$base_url . 'assets/store/img/diy/banner/01.png',
         ];
     }
 

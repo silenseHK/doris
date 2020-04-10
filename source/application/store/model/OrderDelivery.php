@@ -86,6 +86,7 @@ class OrderDelivery extends OrderDeliver
         if(isset($params['deliver_type']) && $params['deliver_type'] > 0){
             $where['od.deliver_type'] = intval($params['deliver_type']);
         }
+        $where['od.pay_status'] = 20;
         if(isset($where) && !empty($where))
             $this->where($where);
     }

@@ -114,4 +114,36 @@ class Withdraw extends WithdrawModel
         }
     }
 
+    /**
+     * 待提现的金额
+     * @param $user_id
+     * @return float|int
+     */
+    public static function getWaitWithdrawMoney($user_id){
+        $money = self::where(
+                [
+                    'user_id' => $user_id,
+                    'apply_status' => ['IN', [10, 20]]
+                ]
+            )
+            ->sum('money');
+        return $money;
+    }
+
+    /**
+     * 已提现金额
+     * @param $user_id
+     * @return float|int
+     */
+    public static function getDidWithDrawMoney($user_id){
+        $money = self::where(
+                [
+                    'user_id' => $user_id,
+                    'apply_status' => 40
+                ]
+            )
+            ->sum('money');
+        return $money;
+    }
+
 }

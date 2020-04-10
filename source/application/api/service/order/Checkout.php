@@ -189,22 +189,31 @@ class Checkout
         $this->setOrderCouponMoney($couponList, $this->param['coupon_id']);
         // 计算订单商品的实际付款金额
         $this->setOrderGoodsPayPrice();
-        // 设置默认配送方式
-        !$this->param['delivery'] && $this->param['delivery'] = current(SettingModel::getItem('store')['delivery_type']);
+
+        ##获取当前的等级权重
+        $grade_type = Grade::getGradeType($this->orderData['grade_id']);
+        $this->orderData['is_agent'] = $grade_type>10?1:0;
+        if($this->orderData['sale_type'] == 1){
+            if($grade_type == GradeType::LOW){
+                if(!$this->param['delivery'])$this->param['delivery'] = current(SettingModel::getItem('store')['delivery_type']);
+                $this->orderData['delivery_type'] = $this->param['delivery'] < 30 ? $this->param['delivery'] : 10;
+            }else{
+                $this->orderData['delivery_type'] = 30;
+            }
+            $this->orderData['delivery_type'] = $grade_type == GradeType::LOW ? ($this->param['delivery'] < 30 ? $this->param['delivery'] : 10) : 30;
+        }else{
+            // 设置默认配送方式
+            !$this->param['delivery'] && $this->param['delivery'] = current(SettingModel::getItem('store')['delivery_type']);
+            $this->orderData['delivery_type'] = $this->param['delivery'];
+        }
+
         // 处理配送方式
         if ($this->param['delivery'] == DeliveryTypeEnum::EXPRESS) {
             $this->setOrderExpress();
         } elseif ($this->param['delivery'] == DeliveryTypeEnum::EXTRACT) {
             $this->param['shop_id'] > 0 && $this->orderData['extract_shop'] = ShopModel::detail($this->param['shop_id']);
         }
-        ##获取当前的等级权重
-        $grade_type = Grade::getGradeType($this->orderData['grade_id']);
-        $this->orderData['is_agent'] = $grade_type>10?1:0;
-        if($this->orderData['sale_type'] == 1){
-            $this->orderData['delivery_type'] = $grade_type == GradeType::LOW ? ($this->param['delivery'] < 30 ? $this->param['delivery'] : 10) : 30;
-        }else{
-            $this->orderData['delivery_type'] = $this->param['delivery'];
-        }
+
 
         // 计算订单最终金额
         $this->setOrderPayPrice();
@@ -386,6 +395,7 @@ class Checkout
                 }
                 $this->orderData['grade_id'] = $check['grade_id'];
                 $this->orderData['supply_user_id'] = $check['supplyUserId'];
+                $this->orderData['supply_user_grade_id'] = $check['supply_user_grade_id'];
                 ##获取获得返利的用户和返利金额
                 $rebateUser = \app\common\model\User::getRebateUser($this->user['user_id'], $goods['goods_id'], $goods['total_num'], $this->orderData['supply_user_id']);
                 if(!empty($rebateUser)){
@@ -397,6 +407,7 @@ class Checkout
                 $this->orderData['rebate_info'] = !empty($rebateUser)? json_encode($rebateUser) : "";
             }
             $this->orderData['sale_type'] = $goods['sale_type']; ##商品类型
+            $this->orderData['user_grade_id'] = User::getUserGrade($this->user['user_id']);
         }
 
     }
@@ -646,7 +657,7 @@ class Checkout
         });
         // 余额支付标记订单已支付
         if ($status && $order['pay_type'] == PayTypeEnum::BALANCE) {
-            return $this->model->onPaymentByBalance($this->model['order_no']);
+            return $this->model->onPaymentByBalance($this->model['out_trade_no']);
         }
         return $status;
     }
@@ -772,6 +783,7 @@ class Checkout
         $data = [
             'user_id' => $this->user['user_id'],
             'order_no' => $this->model->orderNo(),
+            'out_trade_no' => $this->model->orderNo(),
             'total_price' => $order['order_total_price'],
             'order_price' => $order['order_price'],
             'coupon_id' => $order['coupon_id'],
@@ -786,10 +798,12 @@ class Checkout
             'order_source_id' => $this->orderSource['source_id'],
             'points_bonus' => $order['points_bonus'],
             'wxapp_id' => $this->wxapp_id,
-            'supply_user_id' => $order['supply_user_id'],
-            'rebate_user_id' => $order['rebate_user_id'],
-            'rebate_money' => $order['rebate_money'],
-            'rebate_info' => $order['rebate_info']
+            'supply_user_id' => isset($order['supply_user_id'])?$order['supply_user_id']:0,
+            'rebate_user_id' => isset($order['rebate_user_id'])?$order['rebate_user_id']:'',
+            'rebate_money' => isset($order['rebate_money'])?$order['rebate_money']:0,
+            'rebate_info' => isset($order['rebate_info'])?$order['rebate_info']:"",
+            'user_grade_id' => $order['user_grade_id'],
+            'supply_user_grade_id' => isset($order['supply_user_id'])?$order['supply_user_grade_id']:0
         ];
         if ($order['delivery'] == DeliveryTypeEnum::EXPRESS) {
             $data['express_price'] = $order['express_price'];

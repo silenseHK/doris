@@ -218,7 +218,11 @@ class Goods extends GoodsModel
             // 添加规格数据
             if ($data['spec_type'] == '10') {
                 // 单规格
-                $this->sku()->save($data['sku']);
+                if($isUpdate){
+                    $model->save($data['sku'],['goods_id'=>$this['goods_id']]);
+                }else{
+                    $model->isUpdate(false)->save($data['sku']);
+                }
             } else if ($data['spec_type'] == '20'){
 //                if($data['sale_type'] == 2){
                     // 添加商品与规格关系记录

@@ -157,10 +157,10 @@ return [
                 'name' => '余额记录',
                 'active' => true,
                 'submenu' => [
-                    [
-                        'name' => '充值记录',
-                        'index' => 'user.recharge/order',
-                    ],
+//                    [
+//                        'name' => '充值记录',
+//                        'index' => 'user.recharge/order',
+//                    ],
                     [
                         'name' => '余额明细',
                         'index' => 'user.balance/log',
@@ -178,6 +178,10 @@ return [
                     [
                         'name' => '团队转换记录',
                         'index' => 'user.team/exchange_log',
+                    ],
+                    [
+                        'name' => '团队管理奖',
+                        'index' => 'user.team/manage_reward',
                     ],
                 ]
             ],

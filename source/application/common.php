@@ -441,4 +441,16 @@ function decode($code) {
 
 }
 
+/**
+ * 过滤通配符
+ * @param $str
+ * @return string|string[]
+ */
+function keywords_filter($str){
+    $str = str_filter($str);
+    $str = str_replace('*','',$str);
+    $str = str_replace('%','',$str);
+    $str = str_replace('_','',$str);
+    return $str;
+}
 

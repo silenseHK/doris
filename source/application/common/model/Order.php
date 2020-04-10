@@ -3,6 +3,7 @@
 namespace app\common\model;
 
 use app\api\model\User as UserModel;
+use app\common\model\user\Grade;
 use think\Hook;
 use app\common\model\store\shop\Order as ShopOrder;
 use app\common\service\Order as OrderService;
@@ -115,9 +116,25 @@ class Order extends BaseModel
      * 关联出货人
      * @return \think\model\relation\BelongsTo
      */
-    public function SupplyUser(){
+    public function supplyUser(){
         $module = self::getCalledModule() ?: 'common';
         return $this->belongsTo("app\\{$module}\\model\\User",'supply_user_id','user_id');
+    }
+
+    /**
+     * 关联出货人等级
+     * @return \think\model\relation\BelongsTo
+     */
+    public function supplyGrade(){
+        return $this->belongsTo('app\common\model\user\Grade','supply_user_grade_id','grade_id');
+    }
+
+    /**
+     * 关联购买人等级
+     * @return \think\model\relation\BelongsTo
+     */
+    public function userGrade(){
+        return $this->belongsTo('app\common\model\user\Grade','user_grade_id','grade_id');
     }
 
     /**
@@ -131,6 +148,7 @@ class Order extends BaseModel
         $rebateInfo = json_decode($value,true);
         foreach($rebateInfo as &$item){
             $item['user'] = User::getUserInfo($item['user_id']);
+            $item['grade'] = isset($item['grade_id']) ? Grade::getName($item['grade_id']) : '';
         }
         return $rebateInfo;
     }

@@ -73,4 +73,20 @@ class UserGoodsStockLog extends BaseModel
         return $this->belongsTo('app\common\model\User','opposite_user_id','user_id');
     }
 
+    /**
+     * 获取指定时间段的进货量
+     * @param $goods_id
+     * @param $user_id
+     * @param $start_time
+     * @param $end_time
+     * @return float|int
+     */
+    public function getBuyStock($goods_id, $user_id, $start_time, $end_time){
+        $where = compact('goods_id','user_id');
+        $where['change_type'] = 40;
+        $where['change_direction'] = 10;
+        $where['create_time'] = ['BETWEEN', [$start_time, $end_time]];
+        return $this->where($where)->sum('change_num');
+    }
+
 }

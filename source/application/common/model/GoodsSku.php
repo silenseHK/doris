@@ -25,6 +25,14 @@ class GoodsSku extends BaseModel
     }
 
     /**
+     * 商品
+     * @return \think\model\relation\BelongsTo
+     */
+    public function goods(){
+        return $this->belongsTo('Goods','goods_id','goods_id');
+    }
+
+    /**
      * 规格列表
      * @param $value
      * @param $data

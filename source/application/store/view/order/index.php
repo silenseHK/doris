@@ -105,6 +105,7 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                 <th width="10%">单价/数量</th>
                                 <th width="15%">实付款</th>
                                 <th>买家</th>
+                                <th>出货方</th>
                                 <th>支付方式</th>
                                 <th>配送方式</th>
                                 <th>交易状态</th>
@@ -147,6 +148,16 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                             <td class="am-text-middle" rowspan="<?= $goodsCount ?>">
                                                 <p><?= $order['user']['nickName'] ?></p>
                                                 <p class="am-link-muted">(用户id：<?= $order['user']['user_id'] ?>)</p>
+                                                <p class="am-link-muted">(用户等级：<?= $order['user_grade']['name'] ?>)</p>
+                                            </td>
+                                            <td class="am-text-middle" rowspan="<?= $goodsCount ?>">
+                                                <?php if($order['supply_user_id'] > 0):?>
+                                                    <p><?= $order['supplyUser']['nickName'] ?></p>
+                                                    <p class="am-link-muted">(用户id：<?= $order['supplyUser']['user_id'] ?>)</p>
+                                                    <p class="am-link-muted">(用户等级：<?= $order['supply_grade']['name'] ?>)</p>
+                                                <?php else:?>
+                                                    平台
+                                                <?php endif?>
                                             </td>
                                             <td class="am-text-middle" rowspan="<?= $goodsCount ?>">
                                                 <span class="am-badge am-badge-secondary">

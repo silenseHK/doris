@@ -3,6 +3,7 @@
 namespace app\api\controller;
 
 use app\api\model\User as UserModel;
+use app\common\service\ManageReward;
 use think\Exception;
 use think\Hook;
 
@@ -92,12 +93,22 @@ class User extends Controller
 //        $new_str = implode("", $arr);
 //        echo $new_str;
 //        print_r($arr);die;
-//        echo $res = createCode(19001);
+//        echo $res = createCode(7);
 //        echo decode($res);
 //        phpinfo();
-        $file = "../source/runtime/image/10001/";
-        if(file_exists($file))echo 'asd';
-        var_dump(file_get_contents('test.txt'));
+//        $file = "../source/runtime/image/10001/";
+//        if(file_exists($file))echo 'asd';
+//        var_dump(file_get_contents('test.txt'));
+//        $rewardModel = new ManageReward();
+//        $rewardModel->countReward();
+//        $list = $rewardModel->getNumData();
+//        print_r($list);
+//        $rewardModel->insertRewardLog();
+//        var_dump($rewardModel->getError());
+//        $notify = new Notify();
+//        $notify->order();
+        $user = $this->getUser();
+//        print_r($user);
     }
 
 }

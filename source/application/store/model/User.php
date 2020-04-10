@@ -327,7 +327,7 @@ class User extends UserModel
      */
     public static function totalMoney($user_id, $money){
         ##增加用户已提现金额,减少用户冻结中余额
-        self::update(['balance'=>['inc', $money], 'freeze_money'=>['dec', $money]], compact('user_id'));
+        self::update(['withdraw_money'=>['inc', $money], 'freeze_money'=>['dec', $money]], compact('user_id'));
     }
 
     /**

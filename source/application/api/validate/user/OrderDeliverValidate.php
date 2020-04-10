@@ -19,7 +19,7 @@ class OrderDeliverValidate extends Validate
         'page|页码' => 'number|>=:1',
         'size|每页条数' => 'number|>=:1',
         'deliver_id' => 'require|number|>=:1',
-        'shop_id' => 'number|>=:1'
+        'shop_id' => 'number|>=:0'
     ];
 
     protected $scene = [
@@ -27,7 +27,8 @@ class OrderDeliverValidate extends Validate
         'count_freight' => ['address_id', 'goods_num', 'goods_id'],
         'order_list' => ['deliver_type', 'deliver_status', 'page', 'size'],
         'complete' => ['deliver_id'],
-        'detail' => ['deliver_id']
+        'detail' => ['deliver_id'],
+        'supply' => ['goods_sku_id', 'shop_id']
     ];
 
 }

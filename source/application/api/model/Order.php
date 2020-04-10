@@ -4,6 +4,7 @@ namespace app\api\model;
 
 use app\api\service\order\PaySuccess;
 use app\api\validate\order\Checkout;
+use app\api\validate\user\OrderValidate;
 use app\common\model\Order as OrderModel;
 
 use app\api\model\User as UserModel;
@@ -49,7 +50,7 @@ class Order extends OrderModel
      */
     public static function getPayDetail($orderNo)
     {
-        return self::get(['order_no' => $orderNo, 'pay_status' => 10, 'is_delete' => 0], ['goods', 'user']);
+        return self::get(['out_trade_no' => $orderNo, 'pay_status' => 10, 'is_delete' => 0], ['goods', 'user']);
     }
 
     /**
@@ -68,13 +69,13 @@ class Order extends OrderModel
         }
         // 余额支付
         if ($payType == PayTypeEnum::BALANCE) {
-            return $this->onPaymentByBalance($this['order_no']);
+            return $this->onPaymentByBalance($this['out_trade_no']);
         }
         return true;
     }
 
     /**
-     * 更新订单（出品人 价格 支付金额）
+     * 更新订单（出货人 价格 支付金额 out_trade_no）
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
@@ -91,7 +92,13 @@ class Order extends OrderModel
             $agentData= User::repayGetSupplyGoodsUser($this['user_id'], $agentGoods);
             if($this['supply_user_id'] != $agentData['supplyUserId']){
                 ##更新出货人
-                $this->where(['order_id'=>$this['order_id']])->setField('supply_user_id', $agentData['supplyUserId']);
+                $this->where(['order_id'=>$this['order_id']])->update(
+                    [
+                        'supply_user_id'=>$agentData['supplyUserId'],
+                        'supply_user_grade_id'=>$agentData['supplyUserGradeId'],
+                        'user_grade_id' => $agentData['grade_id']
+                    ]
+                );
             }
             ##更新规格价格
             if(!empty($agentData['goodsData'])){
@@ -111,6 +118,8 @@ class Order extends OrderModel
             $payPrice += $v['total_price'];
         }
         $this['pay_price'] = $payPrice + $this['express_price'];
+        $this['out_trade_no'] = $this->orderNo();
+        $this->where(['order_id'=>$this['order_id']])->update(['out_trade_no'=>$this['out_trade_no'], 'pay_price'=>$this['pay_price'], 'total_price'=>$payPrice, 'order_price'=>$payPrice]);
         return true;
     }
 
@@ -144,7 +153,7 @@ class Order extends OrderModel
         return PaymentService::wechat(
             $user,
             $order['order_id'],
-            $order['order_no'],
+            $order['out_trade_no'],
             $order['pay_price'],
             OrderTypeEnum::MASTER
         );
@@ -504,7 +513,7 @@ class Order extends OrderModel
                         $query->field(['user_id', 'nickName', 'mobile']);
                     },
                     'goods' => function(Query $query){
-                        $query->field(['order_id', 'goods_sku_id', 'goods_name'])->with(['spec'=>function(Query $query){$query->field(['goods_sku_id', 'spec_sku_id', 'image_id'])->with(['image']);}]);
+                        $query->field(['order_id', 'goods_sku_id', 'goods_name', 'total_num'])->with(['spec'=>function(Query $query){$query->field(['goods_sku_id', 'spec_sku_id', 'image_id'])->with(['image']);}]);
                     }
                 ]
             )
@@ -523,21 +532,137 @@ class Order extends OrderModel
         $where = [
             'supply_user_id' => $user_id,
             'pay_status' => 20,
-            'order_status' => 10
+            'order_status' => ['IN', [10, 30]]
         ];
         switch($order_type){
             case 10: ##待发货
                 $where['delivery_status'] = 10;
+                $where['order_status'] = 10;
                 break;
             case 20: ##待收货
                 $where['delivery_status'] = 20;
                 $where['receipt_status'] = 10;
                 break;
             case 30: ##已完成
-                $where['receipt_status'] = 20;
+//                $where['receipt_status'] = 20;
                 $where['order_status'] = 30;
                 break;
         }
+        $this->where($where);
+    }
+
+    /**
+     * 获取待入账金额
+     * @param $user_id
+     * @return float|int
+     */
+    public static function getUserWaitIncomeMoney($user_id){
+        $money = self::where(
+                [
+                    'supply_user_id' => $user_id,
+                    'pay_status' => 20,
+                    'delivery_type' => ['IN', [10, 20]],
+                    'receipt_status' => 10,
+                    'order_status' => 10
+                ]
+            )
+            ->sum('order_price');
+        return $money;
+    }
+
+    /**
+     * 获取收入列表
+     * @param $user
+     * @return false|\PDOStatement|string|\think\Collection
+     * @throws Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getIncomeList($user){
+        ##参数
+        $validate = new OrderValidate();
+        if(!$validate->scene('income_list')->check(input()))throw new Exception($validate->getError());
+        ##参数
+        $params = [
+            'type' => input('get.type',10,'intval'),
+            'keywords' => input('get.keywords','','keywords_filter'),
+            'start_time' => input('get.start_time','','str_filter'),
+            'end_time' => input('get.end_time','','str_filter')
+        ];
+
+        $page = input('get.page',1,'intval');
+        $size = input('get.size',1,'intval');
+        ##设置筛选条件
+        $this->setIncomeListWhere($params, $user);
+
+        $list = $this
+            ->field(['order_id', 'order_no', 'user_id', 'supply_user_id', 'order_price', 'delivery_type', 'rebate_info', 'rebate_money', 'order_status', 'create_time'])
+            ->with(
+                [
+                    'goods' => function(Query $query){
+                        $query
+                            ->field(['goods_id', 'order_id', 'goods_name', 'goods_sku_id', 'spec_sku_id'])
+                            ->with(
+                                [
+                                    'spec' => function(Query $query){
+                                        $query->field(['goods_sku_id', 'spec_sku_id', 'goods_id', 'image_id'])->with(['image'=>function(Query $query){$query->field(['file_id', 'storage', 'file_name']);}]);
+                                    }
+                                ]
+                            );
+                    }
+                ]
+            )
+            ->page($page, $size)
+            ->order('create_time','desc')
+            ->select();
+
+        ##计算收入
+        if($params['type'] == 10){ ##货款 - 返利
+            foreach($list as &$item){
+                $item['income'] = $item['order_price'] - $item['rebate_money'];
+            }
+        }else{ ##返利
+            foreach($list as &$item){
+                foreach($item['rebate_info'] as $rebate){
+                    if($rebate['user_id'] == $user['user_id']){
+                        $item['income'] = $rebate['money'];
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $list;
+    }
+
+    /**
+     * 设置收入列表筛选条件
+     * @param $params
+     * @param $user
+     */
+    public function setIncomeListWhere($params, $user){
+        if($params['type'] == 10){ ##货款收入
+            $where = [
+                'supply_user_id' => $user['user_id']
+            ];
+        }else{ ##返利佣金
+            $where = [
+                'rebate_user_id' => ['LIKE', "%[{$user['user_id']}]%"]
+            ];
+        }
+        ## 订单号
+        if($params['keywords']){
+            $where['order_no'] = $params['keywords'];
+        }
+        ## 时间筛选
+        if($params['start_time'] && $params['end_time']){
+            $start_time = strtotime($params['start_time'] . " 00:00:01");
+            $end_time = strtotime($params['end_time'] . " 23:59:59");
+            $where['create_time'] = ['BETWEEN', [$start_time, $end_time]];
+        }
+        $where['order_status'] = 30;
+
         $this->where($where);
     }
 

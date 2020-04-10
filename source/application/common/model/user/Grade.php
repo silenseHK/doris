@@ -3,6 +3,7 @@
 namespace app\common\model\user;
 
 use app\common\enum\user\grade\GradeSize;
+use app\common\enum\user\grade\GradeType;
 use think\Hook;
 use app\common\model\BaseModel;
 
@@ -181,7 +182,7 @@ class Grade extends BaseModel
     public static function getApplyGrade($weight){
         ##董事或者合伙人直接平台发货
         if($weight == GradeSize::DIRECTOR || $weight == GradeSize::PARTNER)return [];
-        return self::where(['weight' => ['GT', $weight], 'is_delete'=>0, 'status'=>1])->order('weight','asc')->column('grade_id');
+        return self::where(['weight' => ['GT', $weight], 'is_delete'=>0, 'status'=>1, 'grade_type' => ['GT', GradeType::LOW]])->order('weight','asc')->column('grade_id');
     }
 
     /**
@@ -258,6 +259,24 @@ class Grade extends BaseModel
      */
     public static function getHighestGradeInfo(){
         return self::where(['can_upgrade'=>1])->order('weight','desc')->field(['upgrade_integral'])->find();
+    }
+
+    /**
+     * 获取weight
+     * @param $grade_id
+     * @return mixed
+     */
+    public static function getWeightByGradeId($grade_id){
+        return self::where(compact('grade_id'))->value('weight');
+    }
+
+    /**
+     * 获取会员名称
+     * @param $grade_id
+     * @return mixed
+     */
+    public static function getName($grade_id){
+        return self::where(compact('grade_id'))->value('name');
     }
 
 }

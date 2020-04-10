@@ -45,8 +45,7 @@ class Qrcode extends Controller
      */
     public function poster()
     {
-        $Qrcode = new Poster($this->dealer);
-        $Qrcode->user = $this->user;
+        $Qrcode = new Poster($this->user);
         return $this->renderSuccess([
             // 二维码图片地址
             'qrcode' => $Qrcode->getImage(),

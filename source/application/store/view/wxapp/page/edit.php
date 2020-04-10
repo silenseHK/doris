@@ -721,6 +721,19 @@
                                     </button>
                                 </div>
                             </div>
+                            <div class="am-form-group">
+                                <label class="am-u-sm-3 am-form-label am-text-xs">其他背景 </label>
+                                <div class="am-u-sm-8 am-u-end">
+                                    <div class="data-image">
+                                        <img :src="diyData.page.otherBackground"
+                                             style="height: 45px;" title="点击更换图片" alt=""
+                                             @click="onEditorSelectImage(diyData.page, 'otherBackground')">
+                                    </div>
+                                    <div class="help-block">
+                                        <small>建议尺寸：90×90</small>
+                                    </div>
+                                </div>
+                            </div>
                         </form>
                     </div>
 

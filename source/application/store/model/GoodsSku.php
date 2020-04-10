@@ -37,8 +37,8 @@ class GoodsSku extends GoodsSkuModel
                     'goods_id' => $goods_id,
                     'wxapp_id' => self::$wxapp_id,
                 ]);
-                $this->allowField(true)->isUpdate(false)->save($data);
-                $ids[] = $this->getLastInsID();
+                unset($data['image_path']);
+                $ids[] = $this->insertGetId($data);
             }
         }
         ##删除

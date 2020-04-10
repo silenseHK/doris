@@ -276,7 +276,7 @@ class User extends BaseModel
         #获取商品信息
         $userInfo = self::getRecentUserInfo($userId, $goodsId, $num);
         ##获取最新等级
-        $gradeInfo = Grade::getRecentGrade($userInfo['final_integral']);
+        $gradeInfo = Grade::getRecentGrade($userInfo['final_integral'],['weight'=>$userInfo['grade']['weight'], 'grade_id'=>$userInfo['grade_id']]);
 
         $price = GoodsGrade::getGoodsPrice($gradeInfo['grade_id'], $goodsId);
         $supplyUserId = self::getSupplyUserId($userInfo['relation'], $gradeInfo['weight']);
@@ -401,8 +401,12 @@ class User extends BaseModel
             foreach($stock as $key => $sto){
                 UserGoodsStock::incHistoryStock($this['user_id'], $sto['goods_id'], $key, $sto['stock']);
             }
+            foreach($data as $k => $v){
+                $data[$k]['change_type'] = 40;
+            }
             UserGoodsStockLog::insertAllData($data);
         }
+
         ##减少供货人库存
         if(!empty($decStock)){
             $desData = [];
@@ -424,7 +428,7 @@ class User extends BaseModel
                 if($model['delivery_type']['value'] == 30){ ##非补充库存订单直接减库存
                     UserGoodsStock::editStock($model['supply_user_id'], $val['goods_id'], $key, $val['stock'], 'dec');
                 }else{  ##补充库存订单 减库存+增加冻结库存
-                    UserGoodsStock::freezeStockByUserGoodsId($model['supply_user_id'],$key['goods_id'], $key, $val['stock'], 1);
+                    UserGoodsStock::freezeStockByUserGoodsId($model['supply_user_id'],$val['goods_id'], $key, $val['stock'], 1);
                 }
             }
             ##插入库存变更日志
@@ -450,7 +454,8 @@ class User extends BaseModel
                         'buy_user_id' => $this['user_id'],
                         'balance' => $item['money'],
                         'order_id' => $model['order_id'],
-                        'remark' => $item['text']
+                        'remark' => $item['remark'],
+                        'grade_id' => $item['grade_id']
                     ]);
                 }
                 ##出货人返利
@@ -601,13 +606,14 @@ class User extends BaseModel
             #VIP
             if($gradeInfo['weight'] == GradeSize::VIP){
                 ##查找上级到供货人为止是否有VIP
-                $rebateUserId = self::VIPGetRebate($userInfo['relation'], $supplyUserId);
-                if(!$rebateUserId)return [];
+                $rebateUser = self::VIPGetRebate($userInfo['relation'], $supplyUserId);
+                if(!$rebateUser)return [];
                 $rebateConf = RebateConfig::getConf()[RebateConfig::VIP][RebateConfig::VIP];
                 $money = $rebateConf['rebate'] * $num;
                 return [
                     [
-                        'user_id' => $rebateUserId,
+                        'user_id' => $rebateUser['user_id'],
+                        'grade_id' => $rebateUser['grade_id'],
                         'money' => $money,
                         'remark' => $rebateConf['text'],
                         'num' => $num
@@ -617,42 +623,48 @@ class User extends BaseModel
             #总代
             elseif($gradeInfo['weight'] == GradeSize::AGENT){
                 ##查找上级到供货人之前是否有总代
-                $agentUserId = self::agentGetRebate($userInfo['relation'], $supplyUserId, 'agent');
-                if($agentUserId){ ##有总代
+                $agentUser = self::agentGetRebate($userInfo['relation'], $supplyUserId, 'agent');
+                if($agentUser){ ##有总代
+                    $agentUserId = $agentUser['user_id'];
                     $rtn = [];
                     $agentConf = RebateConfig::getConf()[RebateConfig::AGENT][RebateConfig::AGENT];
                     $agent_money = $agentConf['rebate'] * $num;
                     ##查看总代前是否有VIP
-                    $vipUserId = self::agentGetRebate($userInfo['relation'], $agentUserId, 'vip');
-                    if($vipUserId){ ##有VIP
+                    $vipUser = self::agentGetRebate($userInfo['relation'], $agentUserId, 'vip');
+                    if($vipUser){ ##有VIP
+                        $vipUserId = $vipUser['user_id'];
                         $vipConf = RebateConfig::getConf()[RebateConfig::AGENT][RebateConfig::VIP];
                         $vip_money = $vipConf['rebate'] * $num;
                         $agent_money = $agent_money - $vip_money;
                         $rtn[] = [
                             'user_id' => $vipUserId,
+                            'grade_id' => $vipUser['grade_id'],
                             'money' => $vip_money,
-                            'text' => $vipConf['text'],
+                            'remark' => $vipConf['text'],
                             'num' => $num
                         ];
                     }
                     $rtn[] = [
                         'user_id' => $agentUserId,
+                        'grade_id' => $agentUser['grade_id'],
                         'money' => $agent_money,
-                        'text' => $agentConf['text'],
+                        'remark' => $agentConf['text'],
                         'num' => $num
                     ];
                     return $rtn;
                 }else{ ##没有总代理
                     ##查找上级到供货人之前是否有VIP
-                    $vipUserId = self::agentGetRebate($userInfo['relation'], $supplyUserId, 'vip');
-                    if($vipUserId){ ##有vip
+                    $vipUser = self::agentGetRebate($userInfo['relation'], $supplyUserId, 'vip');
+                    if($vipUser){ ##有vip
+                        $vipUserId = $vipUser['user_id'];
                         $vipConf = RebateConfig::getConf()[RebateConfig::AGENT][RebateConfig::VIP];
                         $vip_money = $vipConf['rebate'] * $num;
                         return [
                             [
                                 'user_id' => $vipUserId,
+                                'grade_id' => $vipUser['grade_id'],
                                 'money' => $vip_money,
-                                'text' => $vipConf['text'],
+                                'remark' => $vipConf['text'],
                                 'num' => $num
                             ]
                         ];
@@ -666,13 +678,15 @@ class User extends BaseModel
                 $strategyUser = self::strategyGetRebate($userInfo['relation'], $supplyUserId,'strategy');
                 if(empty($strategyUser)){ ##没有战略董事
                     ##查找是否有总代
-                    $agentUserId = self::strategyGetRebate($userInfo['relation'], $supplyUserId,'agent');
-                    if($agentUserId){ ##有总代
+                    $agentUser = self::strategyGetRebate($userInfo['relation'], $supplyUserId,'agent');
+                    if($agentUser){ ##有总代
+                        $agentUserId = $agentUser['user_id'];
                         $agentConf = RebateConfig::getConf()[RebateConfig::STRATEGY][RebateConfig::AGENT];
                         $money = $agentConf['rebate'] * $num;
                         return [
                             [
                                 'user_id' => $agentUserId,
+                                'grade_id' => $agentUser['grade_id'],
                                 'money' => $money,
                                 'remark' => $agentConf['text'],
                                 'num' => $num
@@ -684,8 +698,8 @@ class User extends BaseModel
                 }else{ ##有战略董事
                     $rtn = [];
                     ##查找第一个战略懂事之前的第一个总代
-                    $agentUserId = self::strategyGetRebate($userInfo['relation'], $strategyUser[0]['user_id'],'agent');
-                    if(!$agentUserId){ ##没有总代
+                    $agentUser = self::strategyGetRebate($userInfo['relation'], $strategyUser[0]['user_id'],'agent');
+                    if(!$agentUser){ ##没有总代
                         foreach($strategyUser as $k => $item){
                             if($k == 0){
                                 $strategyConf = RebateConfig::getConf()[RebateConfig::STRATEGY][RebateConfig::STRATEGY];
@@ -696,17 +710,20 @@ class User extends BaseModel
                             }
                             $rtn[] = [
                                 'user_id' => $item['user_id'],
+                                'grade_id' => $item['grade_id'],
                                 'money' => $money,
                                 'remark' => $strategyConf['text'],
                                 'num' => $num
                             ];
                         }
                     }else{ ##有总代
+                        $agentUserId = $agentUser['user_id'];
                         ##获取总代推战略懂事 低推高奖励
                         $agentConf = RebateConfig::getConf()[RebateConfig::STRATEGY][RebateConfig::AGENT];
                         $agent_money = $agentConf['rebate'] * $num;
                         $rtn[] = [
                             'user_id' => $agentUserId,
+                            'grade_id' => $agentUser['grade_id'],
                             'money' => $agent_money,
                             'remark' => $agentConf['text'],
                             'num' => $num
@@ -721,6 +738,7 @@ class User extends BaseModel
                             }
                             $rtn[] = [
                                 'user_id' => $item['user_id'],
+                                'grade_id' => $item['grade_id'],
                                 'money' => $money,
                                 'remark' => $strategyConf['text'],
                                 'num' => $num
@@ -736,13 +754,15 @@ class User extends BaseModel
         ## 董事or合伙人
         if($gradeInfo['grade_type'] == GradeType::HIDE){
             ##查找上级到供货人为止是否有合伙人和董事
-            $hideUserId = self::hideGetRebate($userInfo['relation']);
-            if($hideUserId){ ##有董事和合伙人
+            $hideUser = self::hideGetRebate($userInfo['relation']);
+            if($hideUser){ ##有董事和合伙人
+                $hideUserId = $hideUser['user_id'];
                 $hideConf = RebateConfig::getConf()[RebateConfig::DIRECTOR][RebateConfig::DIRECTOR];
                 $money = $hideConf['rebate'] * $num;
                 return [
                     [
                         'user_id' => $hideUserId,
+                        'grade_id' => $hideUser['grade_id'],
                         'money' => $money,
                         'remark' => $hideConf['text'],
                         'num' => $num
@@ -772,7 +792,7 @@ class User extends BaseModel
      */
     public static function checkExistMobile($mobile){
         $check = self::where(['mobile'=>$mobile])->count('user_id');
-        return $check ? false : true;
+        return $check > 0 ? true : false;
     }
 
     /**
@@ -796,8 +816,8 @@ class User extends BaseModel
         ##VIP grade_id
         $grade_id = Grade::getGradeId(GradeSize::VIP);
         $rebateUser = self::where(['user_id'=>['IN', $filter], 'grade_id'=>$grade_id, 'is_delete'=>0])->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->find();
-        if(!$rebateUser)return 0;
-        return $rebateUser['user_id'];
+        if(!$rebateUser)return [];
+        return $rebateUser;
     }
 
     /**
@@ -826,8 +846,8 @@ class User extends BaseModel
             $grade_id = Grade::getGradeId(GradeSize::VIP);
         }
         $rebateUser = self::where(['user_id'=>['IN', $filter], 'grade_id'=>$grade_id, 'is_delete'=>0])->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->find();
-        if(!$rebateUser)return 0;
-        return $rebateUser['user_id'];
+        if(!$rebateUser)return [];
+        return $rebateUser;
     }
 
     /**
@@ -883,8 +903,8 @@ class User extends BaseModel
                     }
                 ]
             )->find();
-            if(!$rebateUser)return 0;
-            return $rebateUser['user_id'];
+            if(!$rebateUser)return [];
+            return $rebateUser;
         }
     }
 
@@ -917,8 +937,8 @@ class User extends BaseModel
                 }
             ]
         )->find();
-        if(!$rebateUser)return 0;
-        return $rebateUser['user_id'];
+        if(!$rebateUser)return [];
+        return $rebateUser;
     }
 
     /**

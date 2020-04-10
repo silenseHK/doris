@@ -2,6 +2,7 @@
 
 namespace app\api\model;
 
+use app\api\model\dealer\Withdraw;
 use app\api\model\user\BalanceLog;
 use app\api\model\user\GoodsStock;
 use app\api\validate\user\TeamValidate;
@@ -73,8 +74,6 @@ class User extends UserModel
     protected $hidden = [
         'open_id',
         'is_delete',
-        'wxapp_id',
-        'create_time',
         'update_time'
     ];
 
@@ -111,7 +110,6 @@ class User extends UserModel
         $referee_id = isset($post['referee_id']) ? $post['referee_id'] : null;
         $userInfo = json_decode(htmlspecialchars_decode($post['user_info']), true);
         $userInfo['open_id'] = $session['openid'];
-        $userInfo['invitation_user_id'] = intval($referee_id);
         $userData = $this->register($userInfo, $referee_id);
         // 生成token (session3rd)
         $this->token = $this->token($session['openid']);
@@ -221,9 +219,17 @@ class User extends UserModel
 
         $this->startTrans();
         try {
+            if(!$user){
+                $invitation_user_id = decode($referee_id)?:0;
+                $data['invitation_user_id'] = intval($invitation_user_id);
+            }
             // 保存/更新用户记录
             if (!$model->allowField(true)->save($data)) {
                 throw new BaseException(['msg' => '用户注册失败']);
+            }
+            ##用户的邀请码
+            if(!$user){
+                $model->save(['invitation_code' => createCode($model['user_id'])]);
             }
             // 记录推荐人关系
             if (!$user && $referee_id > 0) {
@@ -251,31 +257,31 @@ class User extends UserModel
                 'url' => 'pages/address/index',
                 'icon' => 'map'
             ],
-            'coupon' => [
-                'name' => '领券中心',
-                'url' => 'pages/coupon/coupon',
-                'icon' => 'lingquan'
-            ],
-            'my_coupon' => [
-                'name' => '我的优惠券',
-                'url' => 'pages/user/coupon/coupon',
-                'icon' => 'youhuiquan'
-            ],
-            'sharing_order' => [
-                'name' => '拼团订单',
-                'url' => 'pages/sharing/order/index',
-                'icon' => 'pintuan'
-            ],
-            'my_bargain' => [
-                'name' => '我的砍价',
-                'url' => 'pages/bargain/index/index?tab=1',
-                'icon' => 'kanjia'
-            ],
-            'dealer' => [
-                'name' => '分销中心',
-                'url' => 'pages/dealer/index/index',
-                'icon' => 'fenxiaozhongxin'
-            ],
+//            'coupon' => [
+//                'name' => '领券中心',
+//                'url' => 'pages/coupon/coupon',
+//                'icon' => 'lingquan'
+//            ],
+//            'my_coupon' => [
+//                'name' => '我的优惠券',
+//                'url' => 'pages/user/coupon/coupon',
+//                'icon' => 'youhuiquan'
+//            ],
+//            'sharing_order' => [
+//                'name' => '拼团订单',
+//                'url' => 'pages/sharing/order/index',
+//                'icon' => 'pintuan'
+//            ],
+//            'my_bargain' => [
+//                'name' => '我的砍价',
+//                'url' => 'pages/bargain/index/index?tab=1',
+//                'icon' => 'kanjia'
+//            ],
+//            'dealer' => [
+//                'name' => '分销中心',
+//                'url' => 'pages/dealer/index/index',
+//                'icon' => 'fenxiaozhongxin'
+//            ],
             'help' => [
                 'name' => '我的帮助',
                 'url' => 'pages/user/help/index',
@@ -283,11 +289,11 @@ class User extends UserModel
             ],
         ];
         // 判断分销功能是否开启
-        if (DealerSettingModel::isOpen()) {
-            $menus['dealer']['name'] = DealerSettingModel::getDealerTitle();
-        } else {
-            unset($menus['dealer']);
-        }
+//        if (DealerSettingModel::isOpen()) {
+//            $menus['dealer']['name'] = DealerSettingModel::getDealerTitle();
+//        } else {
+//            unset($menus['dealer']);
+//        }
         return $menus;
     }
 
@@ -355,17 +361,18 @@ class User extends UserModel
         $userInfo = self::alias('u')->join('user_grade ug','u.grade_id = ug.grade_id')->where(['u.user_id'=>$userId])->field(['u.grade_id', 'u.integral', 'u.relation', 'ug.weight'])->find();
         $finalIntegral = $diffIntegral + $userInfo['integral'];
         ##获取最新等级
-        $gradeInfo = Grade::getRecentGrade($finalIntegral, $userInfo);
+        $gradeInfo = Grade::getRecentGrade($finalIntegral, $userInfo->toArray());
         ##获取供应用户id
         $supplyUserId = self::getSupplyUserId($userInfo['relation'], $gradeInfo['weight']);
+        $supplyUserGradeId = $supplyUserId ? User::getUserGrade($supplyUserId) : 0;
         ##获取商品的最新购买价
         if(!empty($goodsData)){
             foreach($goodsData as $k => $v){
                 $goodsData[$k] = GoodsGrade::getGoodsPrice($gradeInfo['grade_id'], $k);
             }
         }
-
-        return compact('supplyUserId','goodsData');
+        $grade_id = $gradeInfo['grade_id'];
+        return compact('supplyUserId','goodsData','supplyUserGradeId','grade_id');
     }
 
     /**
@@ -447,7 +454,7 @@ class User extends UserModel
         ##验证手机验证码
         if(!MobileVerifyCode::checkVerifyCode($post['mobile'], $post['verify_code'], verifyCodeEnum::REGISTER))throw new Exception('验证码错误');
         ##判断手机号是否已注册
-        if(!self::checkExistMobile($post['mobile']))throw new Exception('手机号已被注册');
+        if(self::checkExistMobile($post['mobile']))throw new Exception('手机号已被注册');
         ##微信登录 获取session_key
         $code = str_filter($post['code']);
         $session = $this->wxlogin($code);
@@ -482,7 +489,7 @@ class User extends UserModel
         $codeType = intval($post['code_type']);
         if($codeType == VerifyCode::REGISTER){
             ##判断手机号是否已注册
-            if(!self::checkExistMobile($mobile))throw new Exception('手机号已经注册过了');
+            if(self::checkExistMobile($mobile))throw new Exception('手机号已经注册过了');
         }
         ##判断发送时间
         MobileVerifyCode::checkSendRight($mobile, $wxappId, $codeType);
@@ -600,8 +607,8 @@ class User extends UserModel
             ->with(['grade' => function(Query $query){
                 $query->field(['grade_id', 'name']);
             }])
-            ->field(['user_id', 'avatarUrl', 'balance', 'nickName', 'mobile', 'grade_id' ,'user_id as month_buy', 'user_id as day_buy', 'user_id as last_month_buy'])
-            ->paginate($size,true, ['page'=>$page]);
+            ->field(['user_id', 'avatarUrl', 'balance', 'nickName', 'mobile', 'grade_id' ,'user_id as month_buy', 'user_id as day_buy', 'user_id as last_month_buy', 'user_id as member_num', 'create_time'])
+            ->paginate($size,false, ['page'=>$page]);
     }
 
     /**
@@ -629,6 +636,16 @@ class User extends UserModel
      */
     public function getLastMonthBuyAttr($user_id){
         return GoodsStock::countLastMonthBuy($user_id);
+    }
+
+    /**
+     * 获取器 -- 下级人数
+     * @param $user_id
+     * @return int|string
+     * @throws Exception
+     */
+    public function getMemberNumAttr($user_id){
+        return self::where(['relation'=>['LIKE', "%-{$user_id}-%"]])->count('user_id');
     }
 
     /**
@@ -703,6 +720,13 @@ class User extends UserModel
         ##团队人数
         $this['team_member_num'] = $this->getTeamMemberNum($this['user_id']);
 
+        ##获取背景图
+        $setting_info = DealerSettingModel::getItem('background');
+        $this['setting'] = $setting_info;
+
+        ##待入账
+        $this['wait_income_money'] = Order::getUserWaitIncomeMoney($this['user_id']);
+
         return $this;
     }
 
@@ -724,6 +748,31 @@ class User extends UserModel
     public function getTeamMemberNum($user_id){
         $like = "%-{$user_id}-%";
         return self::where(['relation'=>['LIKE', $like], 'is_delete'=>0])->count('user_id');
+    }
+
+    /**
+     * 用户的金额信息
+     * @return array
+     */
+    public function moneyInfo(){
+        ##可体现金额
+        $can_withdraw_money = $this['balance'];
+        ##待入账金额
+        $wait_income_money = Order::getUserWaitIncomeMoney($this['user_id']);
+        ##待提现金额
+        $wait_withdraw_money = Withdraw::getWaitWithDrawMoney($this['user_id']);
+        ##已提现金额
+        $did_withdraw_money = Withdraw::getDidWithDrawMoney($this['user_id']);
+        return compact('can_withdraw_money','wait_income_money','wait_withdraw_money','did_withdraw_money');
+    }
+
+    /**
+     * 获取用户等级id
+     * @param $user_id
+     * @return mixed
+     */
+    public static function getUserGrade($user_id){
+        return self::where(compact('user_id'))->value('grade_id');
     }
 
 }

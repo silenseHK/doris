@@ -4,6 +4,8 @@ namespace app\api\controller;
 
 use app\api\model\Cart as CartModel;
 use app\api\model\Order as OrderModel;
+use app\api\model\user\Grade;
+use app\api\model\user\Grade as ApiGrade;
 use app\api\service\order\Checkout as CheckoutModel;
 use app\api\validate\order\Checkout as CheckoutValidate;
 use app\common\model\UserGoodsStock;

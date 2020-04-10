@@ -116,4 +116,18 @@ class Goods extends Controller
         }
     }
 
+    /**
+     * 申请页信息
+     * @return array
+     */
+    public function supply(){
+        try{
+            $user = $this->getUser();
+            $model = new OrderDeliver();
+            return $this->renderSuccess($model->supply($user));
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
 }

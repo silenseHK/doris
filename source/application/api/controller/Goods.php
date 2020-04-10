@@ -4,6 +4,9 @@ namespace app\api\controller;
 
 use app\api\model\Goods as GoodsModel;
 use app\api\model\Cart as CartModel;
+use app\api\model\GoodsSku;
+use app\api\model\user\Grade;
+use app\common\model\GoodsGrade;
 use app\common\service\qrcode\Goods as GoodsPoster;
 use think\Exception;
 use app\api\model\User as UserModel;
@@ -42,6 +45,8 @@ class Goods extends Controller
      */
     public function detail($goods_id)
     {
+        $spec_sku_id = input('get.spec_sku_id','','str_filter');
+
         // 用户信息
         $user = $this->getUser(false);
         // 商品详情
@@ -52,6 +57,36 @@ class Goods extends Controller
         }
         // 多规格商品sku信息, todo: 已废弃 v1.1.25
         $specData = $goods['spec_type'] == 20 ? $model->getManySpecData($goods['spec_rel'], $goods['sku']) : null;
+        ##升级信息
+        if($user && $goods['sale_type'] == 1){
+            $grade_weight = Grade::getWeightByGradeId($user['grade_id']);
+            $next_info = Grade::getNextGradeInfo($grade_weight);
+            if($next_info){
+                $next_num = ceil(($next_info['upgrade_integral'] - $user['integral']) / $goods['integral_weight']);
+                $next_price = GoodsGrade::getGoodsPrice($next_info['grade_id'], $goods_id);
+                $next = compact('next_num','next_price');
+                $next['grade'] = $next_info['name'];
+            }else{
+                $next = [];
+            }
+            $next['cur_grade'] = Grade::getName($user['grade_id']);
+        }else{
+            $next = [];
+        }
+        $goods['next'] = $next;
+
+        if($goods['spec_type'] == 20){
+            if($spec_sku_id){
+                $spec = GoodsSku::getSpec($spec_sku_id);
+            }else{
+                ##找到默认值
+                $spec = GoodsSku::getDefaultSpec($goods_id);
+            }
+        }else{
+            $spec = [];
+        }
+        $goods['spec'] = $spec;
+
         return $this->renderSuccess([
             // 商品详情
             'detail' => $goods,

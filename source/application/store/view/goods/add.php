@@ -437,6 +437,21 @@
                                 </div>
                             </div>
 
+                            <div class="am-form-group">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">团队管理奖 </label>
+                                <div class="am-u-sm-9 am-u-end">
+                                    <label class="am-radio-inline">
+                                        <input type="radio" name="goods[is_manage_reward]" value="1" data-am-ucheck
+                                               checked>
+                                        开启
+                                    </label>
+                                    <label class="am-radio-inline">
+                                        <input type="radio" name="goods[is_manage_reward]" value="0" data-am-ucheck>
+                                        关闭
+                                    </label>
+                                </div>
+                            </div>
+
                             <!-- 表单提交按钮 -->
                             <div class="am-form-group">
                                 <div class="am-u-sm-9 am-u-sm-push-3 am-margin-top-lg">

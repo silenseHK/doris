@@ -105,6 +105,16 @@ class Goods extends GoodsModel
         $detail = $this->setGoodsListDataFromApi($detail, false, ['userInfo' => $userInfo]);
         // 多规格商品sku信息
         $detail['goods_multi_spec'] = $detail['spec_type'] == 20 ? $this->getManySpecData($detail['spec_rel'], $detail['sku']) : null;
+
+        ##处理banner图
+        $image = json_decode(json_encode($detail['image']),true);
+        if(count($image) > 1){
+            array_splice($image,0,1);
+            $detail['images'] = $image;
+        }else{
+            $detail['images'] = $detail['image'];
+        }
+
         return $detail;
     }
 

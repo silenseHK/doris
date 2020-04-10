@@ -26,7 +26,7 @@ class BalanceLog extends BalanceLogModel
             ->alias('log')
             ->field('log.*')
             ->join('user', 'user.user_id = log.user_id')
-            ->order(['log.create_time' => 'desc'])
+            ->order(['log.create_time' => 'desc', 'log_id' => 'desc'])
             ->paginate(15, false, [
                 'query' => \request()->request()
             ]);

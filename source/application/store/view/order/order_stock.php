@@ -96,7 +96,7 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                 <th width="10%">单价/数量</th>
                                 <th width="10%">实付款</th>
                                 <th>进货</th>
-                                <th>发货</th>
+                                <th>出货</th>
                                 <th>返利</th>
                                 <th>支付方式</th>
 <!--                                <th>操作</th>-->
@@ -136,13 +136,13 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                             </td>
                                             <td class="am-text-middle" rowspan="<?= $goodsCount ?>">
                                                 <p><?= $order['user']['nickName'] ?></p>
-                                                <p><?= $order['user']['grade']['name'] ?></p>
-                                                <p class="am-link-muted">(用户id：<?= $order['user']['user_id'] ?>)</p>
+                                                <p><?= $order['user_grade']['name'] ?></p>
+                                                <p class="am-link-muted">(用户id：<?= $order['user_id'] ?>)</p>
                                             </td>
                                             <td class="am-text-middle" rowspan="<?= $goodsCount ?>">
                                                 <?php if($order['supply_user_id'] > 0):?>
                                                     <p><?= $order['supply_user']['nickName'] ?></p>
-                                                    <p><?= $order['supply_user']['grade']['name'] ?></p>
+                                                    <p><?= $order['supply_grade']['name'] ?></p>
                                                     <p class="am-link-muted">(用户id：<?= $order['supply_user']['user_id'] ?>)</p>
                                                 <?php else:?>
                                                     平台
@@ -212,8 +212,8 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                             <td align="center" valign="middle">{{ $value['user']['nickName'] }}</td>
                             <td align="center" valign="middle">{{ $value['user']['user_id'] }}</td>
                             <td align="center" valign="middle">{{ $value['money'] }}</td>
-                            <td align="center" valign="middle">{{ $value['text'] }}</td>
-                            <td align="center" valign="middle">{{ $value['user']['grade']['name'] }}</td>
+                            <td align="center" valign="middle">{{ $value['remark'] }}</td>
+                            <td align="center" valign="middle">{{ $value['grade'] }}</td>
                         </tr>
                         {{/each}}
                         </tbody>

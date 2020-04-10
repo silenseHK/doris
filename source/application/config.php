@@ -170,7 +170,7 @@ return [
         // 日志记录级别
         'level' => [],
         // error和sql日志单独记录
-        'apart_level' => ['begin', 'error', 'sql', 'yoshop-info'],
+        'apart_level' => ['begin', 'error', 'sql', 'yoshop-info', 'pay-err'],
     ],
 
     // +----------------------------------------------------------------------

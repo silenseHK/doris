@@ -55,24 +55,27 @@ class PaySuccess extends Basics
      */
     public function onPaySuccess($payType, $data){
         ##更新订单
-        $data = [
+        $data2 = [
             'pay_time' => time(),
             'transaction_id' => $data['transaction_id'],
             'pay_status' => 20
         ];
         Db::startTrans();
         try{
+            $order = $this->model->toArray();
             ##更新库存
-            $stock = UserGoodsStock::getStock($this->model['user_id'], $this->model['goods_id']);
-            $this->model['stock'] = $stock;
-            $res = GoodsStock::takeStock($this->model);
+            $stock = UserGoodsStock::getStock($this->model['user_id'], $this->model['goods_sku_id']);
+            $order['stock'] = $stock;
+            $res = GoodsStock::takeStock($order);
             if($res !== true)throw new Exception($res);
             ##更新状态
-            $this->model->save($data);
+            $this->model->save($data2);
             Db::commit();
             return true;
         }catch(Exception $e){
             Db::rollback();
+            $order['error'] = $e->getMessage();
+            log_write($order,'pay-err');
             return $e->getMessage();
         }
     }

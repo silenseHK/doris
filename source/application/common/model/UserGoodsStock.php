@@ -5,6 +5,8 @@ namespace app\common\model;
 
 use app\api\model\Goods as GoodsModel;
 
+use app\api\model\User as UserModel;
+
 class UserGoodsStock extends BaseModel
 {
 
@@ -46,8 +48,9 @@ class UserGoodsStock extends BaseModel
         $supply_info = User::getSupplyGoodsUser($user['user_id'], $goodsId, $num);
         $supplyUserId = $supply_info['supply_user_id'];
         $grade_id = $supply_info['grade_id'];
+        $supply_user_grade_id = $supplyUserId?UserModel::getUserGrade($supplyUserId):0;
         $isStockEnough = $supplyUserId ? 1 : GoodsModel::checkAgentGoodsStock($goods_sku_id, $num);
-        return compact('supplyUserId','isStockEnough', 'grade_id');
+        return compact('supplyUserId','isStockEnough', 'grade_id','supply_user_grade_id');
     }
 
     /**

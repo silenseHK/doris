@@ -138,7 +138,7 @@ class Withdraw extends WithdrawModel
     public function wechatPay()
     {
         // 微信用户信息
-        $user = $this['user']['user'];
+        $user = $this['user'];
         // 生成付款订单号
         $orderNO = OrderService::createOrderNo();
         // 付款描述

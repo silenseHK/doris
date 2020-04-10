@@ -4,6 +4,8 @@ namespace app\api\controller\user;
 
 use app\api\controller\Controller;
 use app\api\model\Setting as SettingModel;
+use app\api\model\Order;
+use think\Exception;
 
 class Wallet extends Controller
 {
@@ -39,6 +41,19 @@ class Wallet extends Controller
                 'is_entrance' => (bool)$setting['is_entrance']
             ]
         ]);
+    }
+
+    /**
+     * 收入列表
+     * @return array
+     */
+    public function incomeList(){
+        try{
+            $model = new Order();
+            return $this->renderSuccess($model->getIncomeList($this->user));
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
     }
 
 }

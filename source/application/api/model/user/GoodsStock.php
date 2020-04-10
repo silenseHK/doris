@@ -21,7 +21,7 @@ class GoodsStock extends UserGoodsStock
      * @throws \think\exception\DbException
      */
     public static function getSendLists($userId){
-        return self::where(['user_id'=> $userId, 'stock'=> ['GT', 0]])
+        return self::where(['user_id'=> $userId])
             ->with([
                 'goods',
                 'spec' => function(Query $query){

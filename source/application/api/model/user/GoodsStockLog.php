@@ -18,7 +18,7 @@ class GoodsStockLog extends UserGoodsStockLog
     public static function countBuy($user_id, $start, $end){
         return self::where([
                 'user_id' => $user_id,
-                'change_type' => 10,
+                'change_type' => 40,
                 'change_direction' => 10,
                 'create_time' => ['BETWEEN', [$start, $end]]
             ])

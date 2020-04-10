@@ -13,6 +13,7 @@ use app\common\enum\OrderType as OrderTypeEnum;
 use app\common\service\wechat\wow\Order as WowService;
 use app\common\service\order\Complete as OrderCompleteService;
 use app\common\library\helper;
+use think\Hook;
 
 /**
  * 订单行为管理
@@ -41,11 +42,13 @@ class Order
         if (!Cache::has("__task_space__order__{$model::$wxapp_id}")) {
             // 获取商城交易设置
             $config = Setting::getItem('trade');
-            $this->model->transaction(function () use ($config) {
+            $this->model->transaction(function () use ($config, $model) {
                 // 未支付订单自动关闭
                 $this->close($config['order']['close_days']);
                 // 已发货订单自动确认收货
-                $this->receive($config['order']['receive_days']);
+//                $this->receive($config['order']['receive_days']);
+                ##自动完成订单等
+                Hook::listen('auto_deliver_order',$model::$wxapp_id);
                 // 已完成订单结算
                 $this->settled($config['order']['refund_days']);
             });
@@ -119,8 +122,10 @@ class Order
         // 条件
         $filter = [
             'pay_status' => 20,
+            'delivery_type' => 10,
             'delivery_status' => 20,
             'receipt_status' => 10,
+            'order_status' => 10,
             'delivery_time' => ['<=', $deadlineTime]
         ];
         // 订单id集
