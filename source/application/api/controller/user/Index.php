@@ -25,7 +25,7 @@ class Index extends Controller
     public function detail()
     {
         // 当前用户信息
-        $user = $this->getUser();
+        $user = $this->getUser(false);
         // 订单总数
         $model = new OrderModel;
         return $this->renderSuccess([
@@ -40,7 +40,19 @@ class Index extends Controller
             ],
             // todo: 废弃
             'couponCount' => (new UserCouponModel)->getCount($user['user_id']),
-            'menus' => $user->getMenus()   // 个人中心菜单列表
+//            'menus' => $user->getMenus()   // 个人中心菜单列表
+            'menus' => $menus = [
+                'address' => [
+                    'name' => '收货地址',
+                    'url' => 'pages/address/index',
+                    'icon' => 'map'
+                ],
+                'help' => [
+                    'name' => '我的帮助',
+                    'url' => 'pages/user/help/index',
+                    'icon' => 'help'
+                ],
+            ]  // 个人中心菜单列表
         ]);
     }
 

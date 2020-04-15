@@ -59,7 +59,7 @@ class BalanceLog extends BaseModel
         $model->save(array_merge([
             'scene' => $scene,
             'describe' => vsprintf(SceneEnum::data()[$scene]['describe'], $describeParam),
-            'wxapp_id' => $model::$wxapp_id
+            'wxapp_id' => $model::$wxapp_id ? : 10001
         ], $data));
     }
 

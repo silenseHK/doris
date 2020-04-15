@@ -55,6 +55,7 @@
                                 <th>获得奖励</th>
                                 <th>团队总进货金额</th>
                                 <th>团队总奖励</th>
+                                <th>库存情况</th>
                                 <th>日期</th>
                                 <th>统计时间</th>
                             </tr>
@@ -87,6 +88,7 @@
                                     <td class="am-text-middle">
                                         <p><?= $item['total_reward']?></p>
                                     </td>
+                                    <td class="am-text-middle"><?= $item['stock_info'] ?></td>
                                     <td class="am-text-middle"><?= $item['date'] ?></td>
                                     <td class="am-text-middle"><?= $item['create_time'] ?></td>
                                 </tr>

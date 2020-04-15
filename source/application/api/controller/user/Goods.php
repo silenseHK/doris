@@ -130,4 +130,19 @@ class Goods extends Controller
         }
     }
 
+    /**
+     * 查看物流信息
+     * @return array
+     */
+    public function express(){
+        try{
+            $user = $this->getUser();
+            $model = new OrderDeliver();
+            throw new Exception('暂不支持此功能');
+            return $this->renderSuccess($model->expressInfo($user));
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
 }

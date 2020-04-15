@@ -281,56 +281,56 @@ return [
         'icon' => 'icon-marketing',
         'index' => 'market.coupon/index',
         'submenu' => [
-            [
-                'name' => '优惠券',
-//                'active' => true,
-                'submenu' => [
-                    [
-                        'name' => '优惠券列表',
-                        'index' => 'market.coupon/index',
-                        'uris' => [
-                            'market.coupon/index',
-                            'market.coupon/add',
-                            'market.coupon/edit',
-                        ]
-                    ],
-                    [
-                        'name' => '领取记录',
-                        'index' => 'market.coupon/receive'
-                    ],
-                ]
-            ],
-            [
-                'name' => '用户充值',
-                'submenu' => [
-                    [
-                        'name' => '充值套餐',
-                        'index' => 'market.recharge.plan/index',
-                        'uris' => [
-                            'market.recharge.plan/index',
-                            'market.recharge.plan/add',
-                            'market.recharge.plan/edit',
-                        ]
-                    ],
-                    [
-                        'name' => '充值设置',
-                        'index' => 'market.recharge/setting'
-                    ],
-                ]
-            ],
-            [
-                'name' => '积分管理',
-                'submenu' => [
-                    [
-                        'name' => '积分设置',
-                        'index' => 'market.points/setting'
-                    ],
-                    [
-                        'name' => '积分明细',
-                        'index' => 'market.points/log'
-                    ],
-                ]
-            ],
+//            [
+//                'name' => '优惠券',
+////                'active' => true,
+//                'submenu' => [
+//                    [
+//                        'name' => '优惠券列表',
+//                        'index' => 'market.coupon/index',
+//                        'uris' => [
+//                            'market.coupon/index',
+//                            'market.coupon/add',
+//                            'market.coupon/edit',
+//                        ]
+//                    ],
+//                    [
+//                        'name' => '领取记录',
+//                        'index' => 'market.coupon/receive'
+//                    ],
+//                ]
+//            ],
+//            [
+//                'name' => '用户充值',
+//                'submenu' => [
+//                    [
+//                        'name' => '充值套餐',
+//                        'index' => 'market.recharge.plan/index',
+//                        'uris' => [
+//                            'market.recharge.plan/index',
+//                            'market.recharge.plan/add',
+//                            'market.recharge.plan/edit',
+//                        ]
+//                    ],
+//                    [
+//                        'name' => '充值设置',
+//                        'index' => 'market.recharge/setting'
+//                    ],
+//                ]
+//            ],
+//            [
+//                'name' => '积分管理',
+//                'submenu' => [
+//                    [
+//                        'name' => '积分设置',
+//                        'index' => 'market.points/setting'
+//                    ],
+//                    [
+//                        'name' => '积分明细',
+//                        'index' => 'market.points/log'
+//                    ],
+//                ]
+//            ],
             [
                 'name' => '消息推送',
                 'submenu' => [
@@ -407,22 +407,22 @@ return [
             [
                 'name' => '分销中心',
                 'submenu' => [
-                    [
-                        'name' => '入驻申请',
-                        'index' => 'apps.dealer.apply/index',
-                    ],
-                    [
-                        'name' => '分销商用户',
-                        'index' => 'apps.dealer.user/index',
-                        'uris' => [
-                            'apps.dealer.user/index',
-                            'apps.dealer.user/fans',
-                        ]
-                    ],
-                    [
-                        'name' => '分销订单',
-                        'index' => 'apps.dealer.order/index',
-                    ],
+//                    [
+//                        'name' => '入驻申请',
+//                        'index' => 'apps.dealer.apply/index',
+//                    ],
+//                    [
+//                        'name' => '分销商用户',
+//                        'index' => 'apps.dealer.user/index',
+//                        'uris' => [
+//                            'apps.dealer.user/index',
+//                            'apps.dealer.user/fans',
+//                        ]
+//                    ],
+//                    [
+//                        'name' => '分销订单',
+//                        'index' => 'apps.dealer.order/index',
+//                    ],
                     [
                         'name' => '提现申请',
                         'index' => 'apps.dealer.withdraw/index',
@@ -437,117 +437,117 @@ return [
                     ],
                 ]
             ],
-            [
-                'name' => '拼团管理',
-                'submenu' => [
-                    [
-                        'name' => '商品分类',
-                        'index' => 'apps.sharing.category/index',
-                        'uris' => [
-                            'apps.sharing.category/index',
-                            'apps.sharing.category/add',
-                            'apps.sharing.category/edit',
-                        ]
-                    ],
-                    [
-                        'name' => '商品列表',
-                        'index' => 'apps.sharing.goods/index',
-                        'uris' => [
-                            'apps.sharing.goods/index',
-                            'apps.sharing.goods/add',
-                            'apps.sharing.goods/edit',
-                            'apps.sharing.goods/copy',
-                            'apps.sharing.goods/copy_master',
-                        ]
-                    ],
-                    [
-                        'name' => '拼单管理',
-                        'index' => 'apps.sharing.active/index',
-                        'uris' => [
-                            'apps.sharing.active/index',
-                            'apps.sharing.active/users',
-                        ]
-                    ],
-                    [
-                        'name' => '订单管理',
-                        'index' => 'apps.sharing.order/index',
-                        'uris' => [
-                            'apps.sharing.order/index',
-                            'apps.sharing.order/detail',
-                            'apps.sharing.order.operate/batchdelivery'
-                        ]
-                    ],
-                    [
-                        'name' => '售后管理',
-                        'index' => 'apps.sharing.order.refund/index',
-                        'uris' => [
-                            'apps.sharing.order.refund/index',
-                            'apps.sharing.order.refund/detail',
-                        ]
-                    ],
-                    [
-                        'name' => '商品评价',
-                        'index' => 'apps.sharing.comment/index',
-                        'uris' => [
-                            'apps.sharing.comment/index',
-                            'apps.sharing.comment/detail',
-                        ],
-                    ],
-                    [
-                        'name' => '拼团设置',
-                        'index' => 'apps.sharing.setting/index'
-                    ]
-                ]
-            ],
-            [
-                'name' => '砍价活动',
-                'index' => 'apps.bargain.active/index',
-                'submenu' => [
-                    [
-                        'name' => '活动列表',
-                        'index' => 'apps.bargain.active/index',
-                        'uris' => [
-                            'apps.bargain.active/index',
-                            'apps.bargain.active/add',
-                            'apps.bargain.active/edit',
-                            'apps.bargain.active/delete',
-                        ],
-                    ],
-                    [
-                        'name' => '砍价记录',
-                        'index' => 'apps.bargain.task/index',
-                        'uris' => [
-                            'apps.bargain.task/index',
-                            'apps.bargain.task/add',
-                            'apps.bargain.task/edit',
-                            'apps.bargain.task/delete',
-                            'apps.bargain.task/help',
-                        ],
-                    ],
-                    [
-                        'name' => '砍价设置',
-                        'index' => 'apps.bargain.setting/index',
-                    ]
-                ]
-            ],
-            [
-                'name' => '好物圈',
-                'index' => 'apps.wow.order/index',
-                'submenu' => [
-                    [
-                        'name' => '商品收藏',
-                        'index' => 'apps.wow.shoping/index',
-                    ],
-                    [
-                        'name' => '订单信息',
-                        'index' => 'apps.wow.order/index',
-                    ],
-                    [
-                        'name' => '基础设置',
-                        'index' => 'apps.wow.setting/index',
-                    ]
-                ]
-            ],
+//            [
+//                'name' => '拼团管理',
+//                'submenu' => [
+//                    [
+//                        'name' => '商品分类',
+//                        'index' => 'apps.sharing.category/index',
+//                        'uris' => [
+//                            'apps.sharing.category/index',
+//                            'apps.sharing.category/add',
+//                            'apps.sharing.category/edit',
+//                        ]
+//                    ],
+//                    [
+//                        'name' => '商品列表',
+//                        'index' => 'apps.sharing.goods/index',
+//                        'uris' => [
+//                            'apps.sharing.goods/index',
+//                            'apps.sharing.goods/add',
+//                            'apps.sharing.goods/edit',
+//                            'apps.sharing.goods/copy',
+//                            'apps.sharing.goods/copy_master',
+//                        ]
+//                    ],
+//                    [
+//                        'name' => '拼单管理',
+//                        'index' => 'apps.sharing.active/index',
+//                        'uris' => [
+//                            'apps.sharing.active/index',
+//                            'apps.sharing.active/users',
+//                        ]
+//                    ],
+//                    [
+//                        'name' => '订单管理',
+//                        'index' => 'apps.sharing.order/index',
+//                        'uris' => [
+//                            'apps.sharing.order/index',
+//                            'apps.sharing.order/detail',
+//                            'apps.sharing.order.operate/batchdelivery'
+//                        ]
+//                    ],
+//                    [
+//                        'name' => '售后管理',
+//                        'index' => 'apps.sharing.order.refund/index',
+//                        'uris' => [
+//                            'apps.sharing.order.refund/index',
+//                            'apps.sharing.order.refund/detail',
+//                        ]
+//                    ],
+//                    [
+//                        'name' => '商品评价',
+//                        'index' => 'apps.sharing.comment/index',
+//                        'uris' => [
+//                            'apps.sharing.comment/index',
+//                            'apps.sharing.comment/detail',
+//                        ],
+//                    ],
+//                    [
+//                        'name' => '拼团设置',
+//                        'index' => 'apps.sharing.setting/index'
+//                    ]
+//                ]
+//            ],
+//            [
+//                'name' => '砍价活动',
+//                'index' => 'apps.bargain.active/index',
+//                'submenu' => [
+//                    [
+//                        'name' => '活动列表',
+//                        'index' => 'apps.bargain.active/index',
+//                        'uris' => [
+//                            'apps.bargain.active/index',
+//                            'apps.bargain.active/add',
+//                            'apps.bargain.active/edit',
+//                            'apps.bargain.active/delete',
+//                        ],
+//                    ],
+//                    [
+//                        'name' => '砍价记录',
+//                        'index' => 'apps.bargain.task/index',
+//                        'uris' => [
+//                            'apps.bargain.task/index',
+//                            'apps.bargain.task/add',
+//                            'apps.bargain.task/edit',
+//                            'apps.bargain.task/delete',
+//                            'apps.bargain.task/help',
+//                        ],
+//                    ],
+//                    [
+//                        'name' => '砍价设置',
+//                        'index' => 'apps.bargain.setting/index',
+//                    ]
+//                ]
+//            ],
+//            [
+//                'name' => '好物圈',
+//                'index' => 'apps.wow.order/index',
+//                'submenu' => [
+//                    [
+//                        'name' => '商品收藏',
+//                        'index' => 'apps.wow.shoping/index',
+//                    ],
+//                    [
+//                        'name' => '订单信息',
+//                        'index' => 'apps.wow.order/index',
+//                    ],
+//                    [
+//                        'name' => '基础设置',
+//                        'index' => 'apps.wow.setting/index',
+//                    ]
+//                ]
+//            ],
         ]
     ],
     'setting' => [

@@ -59,6 +59,7 @@ class InstantGrade
 
         ##获取用户积分
         $integral = $user['integral'];
+        log_write($user->toArray());
         foreach ($list as $grade) {
             if($integral >= $grade['upgrade_integral'] && $user['weight'] < $grade['weight']){
                 $data = [

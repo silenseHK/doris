@@ -38,6 +38,42 @@ class OrderDeliver extends OrderDeliverModel
     }
 
     /**
+     * 初始化创建时间
+     * @param $value
+     * @return false|string
+     */
+    public function getCreateTimeAttr($value){
+        return date('Y-m-d H:i:s', $value);
+    }
+
+    /**
+     * 初始化支付时间
+     * @param $value
+     * @return false|string
+     */
+    public function getPayTimeAttr($value){
+        return date('Y-m-d H:i:s', $value);
+    }
+
+    /**
+     * 初始化发货时间
+     * @param $value
+     * @return false|string
+     */
+    public function getDeliverTimeAttr($value){
+        return date('Y-m-d H:i:s', $value);
+    }
+
+    /**
+     * 初始化完成时间
+     * @param $value
+     * @return false|string
+     */
+    public function getCompleteTimeAttr($value){
+        return date('Y-m-d H:i:s', $value);
+    }
+
+    /**
      * 提交发货申请
      * @param $post
      * @return string
@@ -93,12 +129,17 @@ class OrderDeliver extends OrderDeliverModel
             }
         }else{ ##自提
             $freight = 0;
+            $receiver_mobile = input('post.receiver_mobile','','str_filter');
+            $receiver_user = input('post.receiver_user','','str_filter');
+            if(!$receiver_mobile || !$receiver_user)throw new Exception('请填写收货人信息');
             $data = array_merge($data, [
                 'freight_money' => 0,
                 'pay_status' => 20,
                 'pay_time' => time(),
                 'deliver_status' => 20,
-                'deliver_time' => time()
+                'deliver_time' => time(),
+                'receiver_mobile' => $receiver_mobile,
+                'receiver_user' => $receiver_user
             ]);
         }
 
@@ -381,6 +422,33 @@ class OrderDeliver extends OrderDeliverModel
         }
 
         return compact('extract_shop','goods_data','user','stock','intra_region');
+    }
+
+    /**
+     * 物流信息
+     * @param $user
+     * @return array
+     * @throws Exception
+     * @throws \think\exception\DbException
+     */
+    public function expressInfo($user){
+        ##验证
+        if(!$this->valid->scene('express_info')->check(input()))throw new Exception($this->valid->getError());
+        ##参数
+        $deliver_id = input('get.deliver_id',0,'intval');
+        ##订单数据
+        $deliver_info = self::get(['deliver_id'=>$deliver_id], ['express']);
+        if(!$deliver_info)throw new Exception('订单数据不存在');
+        if($deliver_info['pay_status']['value'] != 20 || $deliver_info['deliver_type']['value'] != 10 || $deliver_info['deliver_status']['value'] != 20)throw new Exception('订单不支持此操作');
+
+        ##获取物流信息
+        /* @var \app\api\model\Express $model */
+        $model = $deliver_info['express'];
+        $express = $model->dynamic($model['express_name'], $model['express_code'], $deliver_info['express_no']);
+        if ($express === false) {
+            throw new Exception($model->getError());
+        }
+        return compact('express');
     }
 
 }

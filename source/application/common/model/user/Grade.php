@@ -107,7 +107,7 @@ class Grade extends BaseModel
      */
     public static function getUpgradeUsableList($wxappId = null, $order = ['weight' => 'asc']){
         $model = new static;
-        $wxappId = $wxappId ? $wxappId : $model::$wxapp_id;
+        $wxappId = $wxappId ? $wxappId : ($model::$wxapp_id ? : 10001);
         return $model->where('status', '=', '1')
             ->where('is_delete', '=', '0')
             ->where('wxapp_id', '=', $wxappId)

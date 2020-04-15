@@ -18,7 +18,7 @@ class Order
     private static $orderModelClass = [
         OrderTypeEnum::MASTER => 'app\common\model\Order',
         OrderTypeEnum::SHARING => 'app\common\model\sharing\Order',
-        OrderTypeEnum::SELF_DELIVERY => 'app\common\model\user\OrderDeliver'
+        OrderTypeEnum::SELF_DELIVERY => 'app\api\model\user\deliver\OrderDeliver'
     ];
 
     /**

@@ -221,6 +221,7 @@ class Goods extends GoodsModel
                 if($isUpdate){
                     $model->save($data['sku'],['goods_id'=>$this['goods_id']]);
                 }else{
+                    $data['sku']['goods_id'] = $this['goods_id'];
                     $model->isUpdate(false)->save($data['sku']);
                 }
             } else if ($data['spec_type'] == '20'){

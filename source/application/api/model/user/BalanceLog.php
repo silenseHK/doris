@@ -35,4 +35,20 @@ class BalanceLog extends BalanceLogModel
             ]);
     }
 
+    /**
+     * 获取收入金额
+     * @param $start_time
+     * @param $end_time
+     * @param $order_id
+     * @param $user_id
+     * @param $scene
+     * @return float|int
+     */
+    public static function getIncome($start_time, $end_time, $order_id, $user_id, $scene){
+        $where = compact('user_id','scene');
+        if($start_time && $end_time)$where['create_time'] = ['BETWEEN', [$start_time, $end_time]];
+        if($order_id)$where['order_id'] = $order_id;
+        return self::where($where)->sum('money');
+    }
+
 }

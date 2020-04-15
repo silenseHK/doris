@@ -39,7 +39,7 @@ class GradeLog extends BaseModel
      * @return false|int
      */
     public function recordsOne($data){
-        $data['wxapp_id'] = static::$wxapp_id;
+        $data['wxapp_id'] = static::$wxapp_id ? : 10001;
         return $this->isUpdate(false)->save($data);
     }
 

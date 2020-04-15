@@ -56,6 +56,7 @@ class OrderDelivery extends OrderDeliver
                 ]
             )
             ->field(['od.deliver_id', 'od.order_no', 'od.user_id', 'od.goods_id', 'od.goods_num', 'od.address', 'od.receiver_user', 'od.receiver_mobile', 'od.express_id', 'od.express_no', 'od.freight_money', 'od.remark', 'od.create_time', 'od.deliver_type', 'od.deliver_status', 'od.pay_status', 'od.pay_time', 'u.nickName', 'u.avatarUrl', 'u.mobile', 'u.grade_Id', 'ug.name as grade_name'])
+            ->order('create_time','desc')
             ->paginate(10,false,['query' => \request()->request()]);
         return $list;
     }
@@ -112,7 +113,7 @@ class OrderDelivery extends OrderDeliver
         if($model['deliver_type']['value'] != 20){
             throw new Exception('非自提订单');
         }
-        if($model['deliver_status']['value'] != 10){
+        if($model['deliver_status']['value'] != 20){
             throw new Exception('订单不支持确认自提');
         }
         if($model['pay_status']['value'] != 20){
@@ -121,14 +122,14 @@ class OrderDelivery extends OrderDeliver
         ##执行操作
         Db:: startTrans();
         try{
-            $res = $model->save([
-                'deliver_status' => 20,
+            $res = $model->isUpdate()->save([
+                'deliver_status' => 40,
                 'complete_time' => time(),
                 'complete_type' => $complete_type
-            ]);
+            ],['deliver_id'=>$model['deliver_id']]);
             if($res === false)throw new Exception('操作失败');
             ##减少冻结库存
-            if(UserGoodsStock::disFreezeStockByUserGoodsId($model['user_id'], $model['goods_id'], $model['goods_num'],1) !== true)throw new Exception('操作失败');
+            if(UserGoodsStock::disFreezeStockByUserGoodsId($model['user_id'], $model['goods_sku_id'], $model['goods_num'],1) === false)throw new Exception('操作失败');
             Db::commit();
             return true;
         }catch(Exception $e){

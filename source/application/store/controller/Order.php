@@ -171,14 +171,15 @@ class Order extends Controller
 
     /**
      * 确认已自提
+     * @param $deliver_id
      * @return array|bool
      */
-    public function submitSelfOrder(){
+    public function submitSelfOrder($deliver_id){
         try{
             ##接收参数
-            $deliver_id = input('post.deliver_id',0,'intval');
             $model = new OrderDelivery();
-            $model->submitSelfOrder($deliver_id);
+            $res = $model->submitSelfOrder($deliver_id);
+            if($res !== true)throw new Exception($res);
             return $this->renderSuccess('操作成功');
         }catch(Exception $e){
             return $this->renderError($e->getMessage());

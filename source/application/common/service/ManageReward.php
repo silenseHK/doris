@@ -8,6 +8,7 @@ use app\common\model\Goods;
 use app\common\model\GoodsGrade;
 use app\common\model\User;
 use app\common\model\user\ManageRewardLog;
+use app\common\model\UserGoodsStock;
 use think\Cache;
 use think\Db;
 use app\common\model\user\Grade;
@@ -35,6 +36,15 @@ class ManageReward
 
     protected $goods_price;
 
+    protected $empty_info = [
+        'money' => 0,
+        'need_buy' => false
+    ];
+
+    protected $person_reward = 0;
+
+    protected $person_stock_info = [];
+
     public function __construct()
     {
         $this->goods_ids = $this->goods();
@@ -42,6 +52,39 @@ class ManageReward
         $this->grade_id = $this->grade();
         $this->goods_price = $this->goodsPrice();
         $this->user = new User();
+    }
+
+    /**
+     * 统计单用户本月团队管理奖
+     * @param $userInfo
+     * @return array
+     * @throws Exception
+     */
+    public function personCountReward($userInfo){
+        ##获取用户信息
+        if($userInfo['grade_id'] != $this->grade_id)return $this->empty_info;
+        ##获取下级的总进货量
+        if(!$this->goods_ids)return $this->empty_info;
+        ##获取下级中的战略
+        $user_ids = $this->user->where(['relation'=>['LIKE', "%-{$userInfo['user_id']}-%"], 'grade_id'=>$this->grade_id])->column('user_id');
+        $start_time = get_month_start_timestamp();
+        $end_time = get_month_end_timestamp();
+        $model = new UserGoodsStockLog();
+        foreach($this->goods_ids as $goods_id){
+            $child_stock = empty($user_ids)? 0 : $model->getUsersStock($goods_id, $user_ids, $start_time, $end_time);
+            $self_stock = $model->getBuyStock($goods_id, $userInfo['user_id'], $start_time, $end_time);
+            $total_money = ($child_stock + $self_stock) * $this->goods_price[$goods_id];
+            $child_money = $child_stock * $this->goods_price[$goods_id];
+            $reward = $total_money - $child_money;
+            $this->person_stock_info[$goods_id] = compact('total_money','child_money','reward','child_stock','self_stock');
+            $this->person_reward += $reward;
+        }
+        ##判断是否需要补充库存
+        $is_negative_stock = UserGoodsStock::countNegativeStock($userInfo['user_id']) > 0;
+        return [
+            'money' => $this->person_reward,
+            'need_buy' => $is_negative_stock
+        ];
     }
 
     /**

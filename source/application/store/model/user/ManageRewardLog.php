@@ -6,6 +6,7 @@ namespace app\store\model\user;
 use app\common\enum\user\grade\GradeSize;
 use app\common\model\user\ManageRewardLog as ManageRewardLogModel;
 use app\common\service\ManageReward;
+use app\store\model\UserGoodsStock;
 use think\db\Query;
 use app\store\model\User;
 use think\Exception;
@@ -32,6 +33,8 @@ class ManageRewardLog extends ManageRewardLogModel
                 ]
             )
             ->paginate(10,false, ['query' => \request()->request()]);
+        $list->append(['stock_info']);
+
         return $list;
     }
 
@@ -50,6 +53,17 @@ class ManageRewardLog extends ManageRewardLogModel
             $where['user_id'] = ['IN', $user_ids];
         }
         $this->where($where);
+    }
+
+    /**
+     * 获取器 -- 判断用户是否有负库存
+     * @param $value
+     * @param $data
+     * @return int|string
+     * @throws Exception
+     */
+    public function getStockInfoAttr($value, $data){
+        return UserGoodsStock::countNegativeStock($data['user_id']) > 0 ? '需补充库存' : '库存充足';
     }
 
     /**

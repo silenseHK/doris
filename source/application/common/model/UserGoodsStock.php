@@ -6,6 +6,7 @@ namespace app\common\model;
 use app\api\model\Goods as GoodsModel;
 
 use app\api\model\User as UserModel;
+use think\Exception;
 
 class UserGoodsStock extends BaseModel
 {
@@ -21,7 +22,7 @@ class UserGoodsStock extends BaseModel
      * @return mixed
      */
     public function setWxappIdAttr(){
-        return static::$wxapp_id;
+        return static::$wxapp_id ? : 10001;
     }
 
     /**
@@ -228,6 +229,16 @@ class UserGoodsStock extends BaseModel
                 break;
         }
         return $res;
+    }
+
+    /**
+     * 统计用户负库存数
+     * @param $user_id
+     * @return int|string
+     * @throws Exception
+     */
+    public static function countNegativeStock($user_id){
+        return self::where(['user_id'=>$user_id, 'stock'=>['LT', 0]])->count('id');
     }
 
     /**

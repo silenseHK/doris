@@ -2,6 +2,7 @@
 
 namespace app\api\service\order;
 
+use think\Exception;
 use think\Hook;
 use app\api\service\Basics;
 use app\api\model\User as UserModel;
@@ -67,12 +68,17 @@ class PaySuccess extends Basics
             return false;
         }
         // 更新付款状态
-        $status = $this->updatePayStatus($payType, $payData);
-        // 订单支付成功行为
-        if ($status == true) {
-            Hook::listen('order_pay_success', $this->model, OrderTypeEnum::MASTER);
+        try{
+            $status = $this->updatePayStatus($payType, $payData);
+            // 订单支付成功行为
+            if ($status == true) {
+                Hook::listen('order_pay_success', $this->model, OrderTypeEnum::MASTER);
+            }
+            return $status;
+        }catch(Exception $e){
+            log_write($e->getMessage(),'pay-err');
+            return false;
         }
-        return $status;
     }
 
     /**

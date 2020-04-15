@@ -86,6 +86,20 @@ class User extends Controller
         }
     }
 
+    /**
+     * 绑定邀请人
+     * @return array
+     */
+    public function bindInvitation(){
+        try{
+            $user = $this->getUser();
+            $user->bindInvitation();
+            return $this->renderSuccess('','操作成功');
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
     public function test(){
 //        $str = 'E5FCDG3HQA4B1NOPIJ2RSTUV67MWX89KLYZ';
 //        $arr = str_split($str);
@@ -94,7 +108,7 @@ class User extends Controller
 //        echo $new_str;
 //        print_r($arr);die;
 //        echo $res = createCode(7);
-//        echo decode($res);
+//        echo decode(8);
 //        phpinfo();
 //        $file = "../source/runtime/image/10001/";
 //        if(file_exists($file))echo 'asd';
@@ -107,7 +121,7 @@ class User extends Controller
 //        var_dump($rewardModel->getError());
 //        $notify = new Notify();
 //        $notify->order();
-        $user = $this->getUser();
+//        $user = $this->getUser();
 //        print_r($user);
     }
 

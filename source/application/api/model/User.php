@@ -13,6 +13,7 @@ use app\common\model\MobileVerifyCode;
 use app\common\model\user\Grade;
 use app\common\model\user\IntegralLog;
 use app\common\model\UserGoodsStock;
+use app\common\service\ManageReward;
 use think\Cache;
 use app\common\library\wechat\WxUser;
 use app\common\exception\BaseException;
@@ -216,21 +217,25 @@ class User extends UserModel
         // 此处的preg_replace用于过滤emoji表情
         // 如需支持emoji表情, 需将mysql的编码改为utf8mb4
         $data['nickName'] = preg_replace('/[\xf0-\xf7].{3}/', '', $data['nickName']);
-
         $this->startTrans();
         try {
             if(!$user){
-                $invitation_user_id = decode($referee_id)?:0;
+                ##用户的邀请人
+//                $invitation_user_id = decode($referee_id)?:0;
+                $invitation_user_id = $referee_id?:0;
                 $data['invitation_user_id'] = intval($invitation_user_id);
+            }else{
+                $invitation_code = $user['invitation_code'];
             }
             // 保存/更新用户记录
             if (!$model->allowField(true)->save($data)) {
                 throw new BaseException(['msg' => '用户注册失败']);
             }
-            ##用户的邀请码
             if(!$user){
-                $model->save(['invitation_code' => createCode($model['user_id'])]);
+                $invitation_code = createCode($model['user_id']);
+                $model->save(['invitation_code' => $invitation_code]);
             }
+
             // 记录推荐人关系
             if (!$user && $referee_id > 0) {
                 RefereeModel::createRelation($model['user_id'], $referee_id);
@@ -242,7 +247,7 @@ class User extends UserModel
         }
         $is_bind_mobile = 0;
         if($user && $user['mobile'])$is_bind_mobile = 1;
-        return ['user_id' => $model['user_id'], 'is_bind_mobile' => $is_bind_mobile];
+        return ['user_id' => $model['user_id'], 'is_bind_mobile' => $is_bind_mobile, 'invitation_code' => $invitation_code];
     }
 
     /**
@@ -596,11 +601,12 @@ class User extends UserModel
         $where['relation'] = ['LIKE', "%-{$user_id}-%"];
         if($grade_id > 0){
             $where['grade_id'] = $grade_id;
-        }else{
-            ##获取可显示的等级
-            $grade_ids = Grade::getShowGradeIds();
-            $where['grade_id'] = ['IN', $grade_ids];
         }
+//        else{
+//            ##获取可显示的等级
+//            $grade_ids = Grade::getShowGradeIds();
+//            $where['grade_id'] = ['IN', $grade_ids];
+//        }
 
         return $this
             ->where($where)
@@ -763,7 +769,10 @@ class User extends UserModel
         $wait_withdraw_money = Withdraw::getWaitWithDrawMoney($this['user_id']);
         ##已提现金额
         $did_withdraw_money = Withdraw::getDidWithDrawMoney($this['user_id']);
-        return compact('can_withdraw_money','wait_income_money','wait_withdraw_money','did_withdraw_money');
+        ##团队管理奖
+        $manageReward = new ManageReward();
+        $manage_reward = $manageReward->personCountReward($this);
+        return compact('can_withdraw_money','wait_income_money','wait_withdraw_money','did_withdraw_money','manage_reward');
     }
 
     /**
@@ -773,6 +782,39 @@ class User extends UserModel
      */
     public static function getUserGrade($user_id){
         return self::where(compact('user_id'))->value('grade_id');
+    }
+
+    /**
+     * 绑定邀请人
+     * @throws Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function bindInvitation(){
+        if($this['invitation_user_id'])throw new Exception('不能重复绑定推荐人');
+        ##检查是否有下级
+        if(self::checkExistChild($this['user_id']) > 0)throw new Exception('请联系管理员执行此操作');
+        ##参数
+        $code = input('post.code','','str_filter');
+        if(!$code)throw new Exception('参数缺失');
+        $invitation_user_id = decode($code);
+        if(!$invitation_user_id)throw new Exception('邀请码错误');
+        $invitation_user = self::where(['user_id'=>$invitation_user_id])->field(['user_id', 'relation'])->find();
+        if(!$invitation_user)throw new Exception('邀请人不存在');
+        $relation = '-' . $invitation_user_id . '-' . trim($invitation_user['relation'],'-') . '-';
+        $res = $this->isUpdate(true)->save(compact('invitation_user_id','relation'));
+        if($res === false)throw new Exception('邀请人绑定失败');
+    }
+
+    /**
+     * 检查下级数量
+     * @param $user_id
+     * @return int|string
+     * @throws Exception
+     */
+    public static function checkExistChild($user_id){
+        return self::where(['relation'=>['LIKE', "%-{$user_id}-%"]])->count('user_id');
     }
 
 }

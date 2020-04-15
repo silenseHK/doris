@@ -72,10 +72,10 @@ class Checkout
      * @var array
      */
     private $checkoutRule = [
-        'is_user_grade' => true,    // 会员等级折扣
-        'is_coupon' => true,        // 优惠券抵扣
-        'is_use_points' => true,        // 是否使用积分抵扣
-        'is_dealer' => true,        // 是否开启分销
+        'is_user_grade' => false,    // 会员等级折扣
+        'is_coupon' => false,        // 优惠券抵扣
+        'is_use_points' => false,        // 是否使用积分抵扣
+        'is_dealer' => false,        // 是否开启分销
     ];
 
     /**

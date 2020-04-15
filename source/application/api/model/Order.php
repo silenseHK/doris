@@ -2,6 +2,7 @@
 
 namespace app\api\model;
 
+use app\api\model\user\BalanceLog;
 use app\api\service\order\PaySuccess;
 use app\api\validate\order\Checkout;
 use app\api\validate\user\OrderValidate;
@@ -513,7 +514,15 @@ class Order extends OrderModel
                         $query->field(['user_id', 'nickName', 'mobile']);
                     },
                     'goods' => function(Query $query){
-                        $query->field(['order_id', 'goods_sku_id', 'goods_name', 'total_num'])->with(['spec'=>function(Query $query){$query->field(['goods_sku_id', 'spec_sku_id', 'image_id'])->with(['image']);}]);
+                        $query
+                            ->field(['order_id', 'goods_sku_id', 'goods_name', 'total_num', 'goods_price', 'sale_type'])
+                            ->with(
+                                [
+                                    'spec'=>function(Query $query){
+                                        $query->field(['goods_sku_id', 'spec_sku_id', 'image_id'])->with(['image']);
+                                    }
+                                ]
+                            );
                     }
                 ]
             )
@@ -573,7 +582,7 @@ class Order extends OrderModel
     /**
      * 获取收入列表
      * @param $user
-     * @return false|\PDOStatement|string|\think\Collection
+     * @return array
      * @throws Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\ModelNotFoundException
@@ -592,7 +601,7 @@ class Order extends OrderModel
         ];
 
         $page = input('get.page',1,'intval');
-        $size = input('get.size',1,'intval');
+        $size = input('get.size',6,'intval');
         ##设置筛选条件
         $this->setIncomeListWhere($params, $user);
 
@@ -602,7 +611,7 @@ class Order extends OrderModel
                 [
                     'goods' => function(Query $query){
                         $query
-                            ->field(['goods_id', 'order_id', 'goods_name', 'goods_sku_id', 'spec_sku_id'])
+                            ->field(['goods_id', 'order_id', 'goods_name', 'goods_sku_id', 'spec_sku_id', 'goods_price', 'total_num'])
                             ->with(
                                 [
                                     'spec' => function(Query $query){
@@ -610,6 +619,12 @@ class Order extends OrderModel
                                     }
                                 ]
                             );
+                    },
+                    'user' => function(Query $query){
+                        $query->field(['user_id', 'nickName', 'mobile']);
+                    },
+                    'supplyUser' => function(Query $query){
+                        $query->field(['user_id', 'nickName', 'mobile']);
                     }
                 ]
             )
@@ -633,7 +648,10 @@ class Order extends OrderModel
             }
         }
 
-        return $list;
+        ##总收入
+        $total_income = $this->getTotalIncome($params, $user['user_id']);
+
+        return compact('list','total_income');
     }
 
     /**
@@ -664,6 +682,31 @@ class Order extends OrderModel
         $where['order_status'] = 30;
 
         $this->where($where);
+    }
+
+    /**
+     * 获取总收入
+     * @param $params
+     * @param $user_id
+     * @return float|int
+     */
+    public function getTotalIncome($params, $user_id){
+        ## 时间筛选
+        $start_time = $end_time = $order_id = 0;
+        if($params['start_time'] && $params['end_time']){
+            $start_time = strtotime($params['start_time'] . " 00:00:01");
+            $end_time = strtotime($params['end_time'] . " 23:59:59");
+        }
+        ## 订单号
+        if($params['keywords']){
+            $order_id = $this->where(['order_no'=>$params['keywords']])->value('order_id');
+            if(!$order_id)return 0;
+        }
+        ##类型
+        $scene = $params['type'] == 10 ? 50 : 60;
+        ##计算收入
+        $income = BalanceLog::getIncome($start_time, $end_time, $order_id, $user_id, $scene);
+        return $income;
     }
 
 }

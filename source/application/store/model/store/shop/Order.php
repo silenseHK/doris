@@ -24,6 +24,7 @@ class Order extends OrderModel
         // 检索查询条件
         $shop_id > 0 && $this->where('clerk.shop_id', '=', (int)$shop_id);
         !empty($search) && $this->where('clerk.real_name', 'like', "%{$search}%");
+        $this->where('order.order_type','NEQ','40');
         // 查询列表数据
         $data = $this->with(['shop', 'clerk'])
             ->alias('order')
