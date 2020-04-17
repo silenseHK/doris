@@ -59,7 +59,7 @@ class Goods extends Base
         // 下载商品首图
         $goodsUrl = $this->saveTempImage($wxappId, $this->goods['image'][1]['file_path'], 'goods');
         // 小程序码参数
-        $scene = "gid:{$this->goods['goods_id']},uid:" . ($this->user_id ?: '');
+        $scene = "gid:{$this->goods['goods_id']}" . ",referee_id:" . ($this->user_id ?: '');
         // 下载小程序码
         $qrcode = $this->saveQrcode($wxappId, $scene, $this->pages[$this->goodsType]);
         // 拼接海报图

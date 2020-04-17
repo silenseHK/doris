@@ -10,6 +10,7 @@ use app\common\enum\user\balanceLog\Scene;
 use app\common\enum\VerifyCode;
 use app\common\model\GoodsGrade;
 use app\common\model\MobileVerifyCode;
+use app\common\model\NoticeMessage;
 use app\common\model\user\Grade;
 use app\common\model\user\IntegralLog;
 use app\common\model\UserGoodsStock;
@@ -81,13 +82,14 @@ class User extends UserModel
     /**
      * 获取用户信息
      * @param $token
-     * @return null|static
+     * @return User|bool|null
      * @throws \think\exception\DbException
      */
     public static function getUser($token)
     {
 //        $openId = Cache::get($token)['openid'];
         $mobile = Cache::get($token);
+        if(!$mobile)return false;
         if(is_array($mobile)){
             $where = ['open_id'=>$mobile['openid']];
         }else{
@@ -223,6 +225,8 @@ class User extends UserModel
                 ##用户的邀请人
 //                $invitation_user_id = decode($referee_id)?:0;
                 $invitation_user_id = $referee_id?:0;
+                ##检查邀请人是否存在
+                if($invitation_user_id > 0 && !(self::checkUserExist($invitation_user_id)))$invitation_user_id = 0;
                 $data['invitation_user_id'] = intval($invitation_user_id);
             }else{
                 $invitation_code = $user['invitation_code'];
@@ -526,6 +530,11 @@ class User extends UserModel
             ##使用验证码
             $res = MobileVerifyCode::useVerifyByMobileCode($mobile, $code);
             if($res === false)throw new Exception('验证码使用失败');
+            ##通知邀请人
+            if($user['invitation_user_id'] > 0){
+                $noticeMessage = new NoticeMessage();
+                $noticeMessage->newChildRegisterMsg($user);
+            }
             Db::commit();
         }catch(Exception $e){
             Db::rollback();

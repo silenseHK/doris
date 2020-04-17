@@ -3,6 +3,7 @@
 namespace app\store\model\dealer;
 
 use app\common\library\wechat\WxSubMsg;
+use app\common\model\NoticeMessage;
 use app\common\service\Message;
 use app\common\service\Order as OrderService;
 use app\common\library\wechat\WxPay;
@@ -92,13 +93,18 @@ class Withdraw extends WithdrawModel
 //        // 发送模板消息
 //        (new Message)->withdraw($this);
         ##发送订阅消息
-        $config = WxappModel::getWxappCache();
-        $wxSubMsg = new WxSubMsg($config['app_id'], $config['app_secret']);
-        //'cash_result' => ['amount1', 'phrase2', 'date3', 'thing4', 'phrase5'],//提现金额、提现方式、申请时间、温馨提示、审核结果
-        $user = UserModel::detail($this['user_id']);
-        $remark = $data['reject_reason'] ? : '等待提现';
-        $result_text = $data['apply_status'] == 20 ? '审核通过' : '驳回';
-        $wxSubMsg->sendMsg($user, [$this['money'], $this['pay_type']['text'], $this['create_time'], $remark, $result_text], 'cash_result');
+//        $config = WxappModel::getWxappCache();
+//        $wxSubMsg = new WxSubMsg($config['app_id'], $config['app_secret']);
+//        //'cash_result' => ['amount1', 'phrase2', 'date3', 'thing4', 'phrase5'],//提现金额、提现方式、申请时间、温馨提示、审核结果
+//        $user = UserModel::detail($this['user_id']);
+//        $remark = $data['reject_reason'] ? : '等待提现';
+//        $result_text = $data['apply_status'] == 20 ? '审核通过' : '驳回';
+//        $wxSubMsg->sendMsg($user, [$this['money'], $this['pay_type']['text'], $this['create_time'], $remark, $result_text], 'cash_result');
+
+        ##增加系统提醒
+        $noticeMessage = new NoticeMessage();
+        $noticeMessage->addCashResultMsg($this);
+
         return true;
     }
 

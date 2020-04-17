@@ -396,6 +396,15 @@ return [
                     'wxapp.help/edit'
                 ]
             ],
+            [
+                'name' => '系统消息',
+                'index' => 'wxapp.system_msg/index',
+                'uris' => [
+                    'wxapp.system_msg/index',
+                    'wxapp.system_msg/add',
+                    'wxapp.system_msg/edit'
+                ]
+            ],
         ],
     ],
     'apps' => [

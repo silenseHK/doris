@@ -1073,4 +1073,15 @@ class User extends BaseModel
         if($res === false)throw new Exception('操作失败');
     }
 
+    /**
+     * 检查用户是否存在
+     * @param $user_id
+     * @return bool
+     * @throws Exception
+     */
+    public static function checkUserExist($user_id){
+        $count = self::where(compact('user_id'))->count('user_id');
+        return $count > 0;
+    }
+
 }
