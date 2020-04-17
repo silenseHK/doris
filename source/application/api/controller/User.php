@@ -3,7 +3,9 @@
 namespace app\api\controller;
 
 use app\api\model\User as UserModel;
+use app\common\library\wechat\WxSubMsg;
 use app\common\service\ManageReward;
+use app\store\model\Wxapp as WxappModel;
 use think\Exception;
 use think\Hook;
 
@@ -123,6 +125,11 @@ class User extends Controller
 //        $notify->order();
 //        $user = $this->getUser();
 //        print_r($user);
+        $user = $this->getUser();
+        $config = WxappModel::getWxappCache();
+        $wxSubMsg = new WxSubMsg($config['app_id'], $config['app_secret']);
+        $res = $wxSubMsg->sendMsg($user,['jet lee', '15983587777'],'register_success');
+        print_r($res);
     }
 
 }

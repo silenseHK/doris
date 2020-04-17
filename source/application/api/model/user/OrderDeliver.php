@@ -4,12 +4,16 @@
 namespace app\api\model\user;
 use app\api\model\Goods;
 use app\api\model\GoodsSku;
+use app\api\model\Order;
 use app\api\model\Order as OrderModel;
 use app\api\model\Region;
+use app\api\model\Setting;
 use app\api\model\store\Shop as ShopModel;
 use app\api\model\UserAddress;
 use app\api\service\Payment;
 use app\api\validate\user\OrderDeliverValidate;
+use app\common\enum\DeliveryType as DeliveryTypeEnum;
+use app\common\enum\order\PayStatus as PayStatusEnum;
 use app\common\enum\OrderType as OrderTypeEnum;
 use app\common\library\helper;
 use app\common\model\user\OrderDeliver as OrderDeliverModel;
@@ -29,6 +33,8 @@ class OrderDeliver extends OrderDeliverModel
     protected $user;
 
     protected $valid;
+
+    protected $error = '';
 
     public function __construct($user=null)
     {
@@ -258,24 +264,29 @@ class OrderDeliver extends OrderDeliverModel
             'order_no' => input('order_no','','str_filter'),
             'deliver_status' => input('deliver_status',0,'intval'),
             'page' => input('page',1,'intval'),
-            'size' => input('page',6,'intval'),
+            'size' => input('size',6,'intval'),
             'user_id' => $user['user_id']
         ];
         $this->setWhere($params);
         ##数据
-        $list = $this->with(
-            [
-                'goods' => function(Query $query){
-                    $query->field(['goods_id', 'goods_name', 'sales_initial', 'sales_actual']);
-                },
-                'express' => function(Query $query){
-                    $query->field(['express_id', 'express_name', 'express_code']);
-                },
-                'spec' => function(Query $query){
-                    $query->field(['goods_sku_id', 'spec_sku_id', 'image_id'])->with(['image'=>function(Query $query){$query->field(['file_id', 'file_name', 'storage']);}]);
-                }
-            ]
-        )->page($params['page'], $params['size'])->field(['deliver_id', 'order_no', 'goods_id', 'goods_sku_id', 'goods_num', 'address', 'receiver_user' ,'receiver_mobile', 'express_id', 'express_no', 'freight_money', 'remark', 'create_time', 'deliver_type', 'deliver_status', 'pay_status', 'pay_time', 'deliver_time', 'complete_time'])->select();
+        $list = $this
+            ->with(
+                [
+                    'goods' => function(Query $query){
+                        $query->field(['goods_id', 'goods_name', 'sales_initial', 'sales_actual']);
+                    },
+                    'express' => function(Query $query){
+                        $query->field(['express_id', 'express_name', 'express_code']);
+                    },
+                    'spec' => function(Query $query){
+                        $query->field(['goods_sku_id', 'spec_sku_id', 'image_id'])->with(['image'=>function(Query $query){$query->field(['file_id', 'file_name', 'storage']);}]);
+                    }
+                ]
+            )
+            ->page($params['page'], $params['size'])
+            ->field(['deliver_id', 'order_no', 'goods_id', 'goods_sku_id', 'goods_num', 'address', 'receiver_user' ,'receiver_mobile', 'express_id', 'express_no', 'freight_money', 'remark', 'create_time', 'deliver_type', 'deliver_status', 'pay_status', 'pay_time', 'deliver_time', 'complete_time'])
+            ->order('create_time','desc')
+            ->select();
         return $list;
     }
 
@@ -421,7 +432,10 @@ class OrderDeliver extends OrderDeliverModel
             if (in_array($city_id, $cityIds))$intra_region = true;
         }
 
-        return compact('extract_shop','goods_data','user','stock','intra_region');
+        ##返回模板
+        $tid = Setting::getItem('subMsg',10001)['order_deliver']['template_id'];
+
+        return compact('extract_shop','goods_data','user','stock','intra_region','tid');
     }
 
     /**
@@ -449,6 +463,32 @@ class OrderDeliver extends OrderDeliverModel
             throw new Exception($model->getError());
         }
         return compact('express');
+    }
+
+    /**
+     * 判断当前订单是否允许核销
+     * @param static $order
+     * @return bool
+     */
+    public function checkExtractOrder(&$order)
+    {
+        if (
+            $order['pay_status']['value'] == PayStatusEnum::SUCCESS
+            && $order['deliver_type']['value'] == DeliveryTypeEnum::EXTRACT
+            && $order['deliver_status']['value'] == 20
+        ) {
+            return true;
+        }
+        $this->setError('该订单不能被核销');
+        return false;
+    }
+
+    public function setError($err){
+        $this->error = $err;
+    }
+
+    public function getError(){
+        return $this->error;
     }
 
 }

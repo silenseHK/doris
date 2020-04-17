@@ -30,7 +30,7 @@ class DeliveryType extends EnumBasics
                 'value' => self::EXPRESS,
             ],
             self::EXTRACT => [
-                'name' => '上门自提',
+                'name' => '公司自提',
                 'value' => self::EXTRACT,
             ],
             self::STOCK => [

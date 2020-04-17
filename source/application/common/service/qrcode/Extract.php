@@ -20,6 +20,11 @@ class Extract extends Base
 
     private $orderType;
 
+    private $check_page = [
+        '10' => 'pages/store/check/order',
+        '40' => 'pages/store/check/delivery',
+    ];
+
     /**
      * 构造方法
      * Extract constructor.
@@ -50,11 +55,12 @@ class Extract extends Base
         if (file_exists($this->getPosterPath())) {
             return $this->getPosterUrl();
         }
+
         // 下载小程序码
         $qrcode = $this->saveQrcode(
             $this->wxappId,
             "oid:{$this->orderId},oty:{$this->orderType}",
-            'pages/store/check/order'
+            $this->check_page[$this->orderType]
         );
         return $this->savePoster($qrcode);
     }

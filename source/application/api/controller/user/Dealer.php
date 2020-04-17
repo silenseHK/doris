@@ -6,6 +6,7 @@ use app\api\controller\Controller;
 use app\api\model\dealer\Setting;
 use app\api\model\dealer\User as DealerUserModel;
 use app\api\model\dealer\Apply as DealerApplyModel;
+use app\api\model\Setting as SettingModel;
 
 /**
  * 分销中心
@@ -102,6 +103,8 @@ class Dealer extends Controller
             'background' => $this->setting['background']['values']['withdraw_apply'],
             // 页面文字
             'words' => $this->setting['words']['values'],
+            //订阅消息模板id
+            'tid' => SettingModel::getItem('subMsg','10001')['cash_result']['template_id']
         ]);
     }
 

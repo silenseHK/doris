@@ -94,6 +94,7 @@ class UserGoodsStockLog extends UserGoodsStockLogModel
     public function setWhere($params){
         $where = [
             'user_id' => intval($params['user_id']),
+            'goods_sku_id' => intval($params['goods_sku_id']),
             'goods_id' => intval($params['goods_id'])
         ];
         if(isset($params['scene']) && $params['scene'] != -1){

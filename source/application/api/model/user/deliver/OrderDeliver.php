@@ -27,11 +27,13 @@ class OrderDeliver extends OrderDeliverModel
         'user',
         'extract',
         'express',
-        'spec'
+        'spec.image'
     ])
     {
         is_array($where) ? $filter = $where : $filter['deliver_id'] = (int)$where;
-        return self::get($filter, $with);
+        $model = self::get($filter, $with);
+        $model['order_id'] = $model['deliver_id'];
+        return $model;
     }
 
     /**

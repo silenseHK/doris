@@ -595,6 +595,13 @@ return [
                 ],
             ],
             [
+                'name' => '订阅消息',
+                'index' => 'setting/submsg',
+                'uris' => [
+                    'setting/submsg',
+                ],
+            ],
+            [
                 'name' => '退货地址',
                 'index' => 'setting.address/index',
                 'uris' => [

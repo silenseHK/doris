@@ -54,6 +54,15 @@ class Setting extends Controller
     }
 
     /**
+     * 订阅消息
+     * @return array|mixed
+     * @throws \think\exception\DbException
+     */
+    public function subMsg(){
+        return $this->updateEvent('subMsg');
+    }
+
+    /**
      * 发送短信通知测试
      * @param $AccessKeyId
      * @param $AccessKeySecret

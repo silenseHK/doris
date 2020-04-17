@@ -79,10 +79,13 @@ class OrderDeliver extends BaseModel
     /**
      * 获取发货状态
      * @param $value
+     * @param $data
      * @return mixed
      */
-    public function getDeliverStatusAttr($value){
-        return $this->deliver_status[$value];
+    public function getDeliverStatusAttr($value, $data){
+        $rtn = $this->deliver_status[$value];
+        if($data['deliver_type'] == 20 && $rtn['value'] == 20)$rtn['text'] = "待自提";
+        return $rtn;
     }
 
     /**

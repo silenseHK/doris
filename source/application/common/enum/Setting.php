@@ -21,6 +21,9 @@ class Setting extends EnumBasics
     // 模板消息
     const TPL_MSG = 'tplMsg';
 
+    // 订阅消息
+    const SUB_MSG = 'subMsg';
+
     // 上传设置
     const STORAGE = 'storage';
 
@@ -58,6 +61,10 @@ class Setting extends EnumBasics
             self::TPL_MSG => [
                 'value' => self::TPL_MSG,
                 'describe' => '模板消息',
+            ],
+            self::SUB_MSG => [
+                'value' => self::SUB_MSG,
+                'describe' => '订阅消息消息',
             ],
             self::STORAGE => [
                 'value' => self::STORAGE,

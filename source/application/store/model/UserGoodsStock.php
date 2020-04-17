@@ -146,12 +146,26 @@ class UserGoodsStock extends UserGoodsStockModel
         $list = $this->where(['user_id'=>$user_id])->with(
             [
                 'goods' => function(Query $query){
-                    $query->field(['goods_id', 'goods_name', 'sales_initial', 'sales_actual'])->with(
-                        ['image.file']
+                    $query->field(['goods_id', 'goods_name', 'sales_initial', 'sales_actual']);
+                },
+                'spec' => function(Query $query){
+                    $query->field(['goods_sku_id', 'image_id', 'spec_sku_id'])->with(
+                        [
+                            'image'=>function(Query $query){
+                                $query->field(['file_id', 'storage', 'file_name']);
+                            }
+                        ]
                     );
                 }
             ]
-        )->select();
+        )->order('id','desc')->select();
+        foreach($list as &$data){
+            $specs = '';
+            foreach($data['spec']['sku_list'] as $k => $v){
+                $specs .= $v['spec_name'] .'：'. $v['spec_value'] . '，';
+            }
+            $data['specs'] = trim($specs, '，');
+        }
         return $list;
     }
 

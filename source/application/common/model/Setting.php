@@ -196,6 +196,42 @@ class Setting extends BaseModel
                     ],
                 ],
             ],
+            'subMsg' => [
+                'key' => 'subMsg',
+                'describe' => '推送消息',
+                'values' => [
+                    'cash_result' => [
+                        'is_enable' => '0',
+                        'template_id' => '',
+                        'page' => ''
+                    ],
+                    'sale_success' => [
+                        'is_enable' => '0',
+                        'template_id' => '',
+                        'page' => ''
+                    ],
+                    'register_success' => [
+                        'is_enable' => '0',
+                        'template_id' => '',
+                        'page' => ''
+                    ],
+                    'rebate_income' => [
+                        'is_enable' => '0',
+                        'template_id' => '',
+                        'page' => ''
+                    ],
+                    'goods_supply' => [
+                        'is_enable' => '0',
+                        'template_id' => '',
+                        'page' => ''
+                    ],
+                    'manage_reward' => [
+                        'is_enable' => '0',
+                        'template_id' => '',
+                        'page' => ''
+                    ],
+                ],
+            ],
             'printer' => [
                 'key' => 'printer',
                 'describe' => '小票打印机设置',

@@ -6,6 +6,7 @@ use app\api\controller\Controller;
 
 use app\api\model\Order as OrderModel;
 use app\api\model\Setting as SettingModel;
+use app\api\model\user\OrderDeliver;
 use app\common\enum\OrderType as OrderTypeEnum;
 use app\common\enum\order\PayType as PayTypeEnum;
 use app\common\service\qrcode\Extract as ExtractQRcode;
@@ -162,7 +163,11 @@ class Order extends Controller
     {
         $order_type = input('order_type',10,'intval');
         // 订单详情
-        $order = OrderModel::getUserOrderDetail($order_id, $this->user['user_id']);
+        if($order_type == 10){
+            $order = OrderModel::getUserOrderDetail($order_id, $this->user['user_id']);
+        }else{
+            $order = OrderDeliver::get(['deliver_id'=>$order_id, 'user_id'=>$this->user['user_id']]);
+        }
         // 判断是否为待核销订单
         if (!$order->checkExtractOrder($order)) {
             return $this->renderError($order->getError());

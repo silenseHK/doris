@@ -25,10 +25,15 @@
                             <?php if (!$list->isEmpty()): foreach ($list as $item): ?>
                                 <tr>
                                     <td class="am-text-middle"><?= $item['id'] ?></td>
-                                    <td class="am-text-middle"><?= $item['goods']['goods_name'] ?></td>
                                     <td class="am-text-middle">
-                                        <a href="<?= $item['goods']['image'][0]['file_path'] ?>" title="点击查看大图" target="_blank">
-                                            <img src="<?= $item['goods']['image'][0]['file_path'] ?>" width="72" height="72" alt="">
+                                        <p><?= $item['goods']['goods_name'] ?></p>
+                                        <?php if($item['specs']):?>
+                                            <p><?= $item['specs'] ?></p>
+                                        <?php endif ?>
+                                    </td>
+                                    <td class="am-text-middle">
+                                        <a href="<?= $item['spec']['image']['file_path'] ?>" title="点击查看大图" target="_blank">
+                                            <img src="<?= $item['spec']['image']['file_path'] ?>" width="72" height="72" alt="">
                                         </a>
                                     </td>
                                     <td class="am-text-middle">
@@ -42,7 +47,7 @@
                                     </td>
                                     <td class="am-text-middle">
                                         <a class="tpl-table-black-operation-default"
-                                           href="<?= url('user.goods/log',['user_id'=>$item['user_id'], 'goods_id'=>$item['goods_id']])?>"
+                                           href="<?= url('user.goods/log',['user_id'=>$item['user_id'], 'goods_id'=>$item['goods_id'], 'goods_sku_id'=>$item['goods_sku_id']])?>"
                                            title="库存明细"
                                         >
                                             库存明细

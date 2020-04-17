@@ -4,6 +4,7 @@
 namespace app\store\model;
 
 
+use app\common\library\wechat\WxSubMsg;
 use app\common\model\user\OrderDeliver;
 use app\store\service\order\Export as Exportservice;
 use app\store\validate\OrderDeliverValid;
@@ -12,6 +13,7 @@ use think\db\Query;
 use think\Exception;
 use app\common\service\order\Refund as RefundService;
 use app\common\model\UserGoodsStock;
+use app\store\model\Wxapp as WxappModel;
 
 class OrderDelivery extends OrderDeliver
 {
@@ -206,7 +208,7 @@ class OrderDelivery extends OrderDeliver
         $res = $this->valid->scene('deliver')->check($post);
         if(!$res)throw new Exception($this->valid->getError());
         $deliver_id = intval($post['deliver_id']);
-        $order = self::get(compact('deliver_id'));
+        $order = self::get(compact('deliver_id'), ['user', 'goods']);
         if($order['pay_status']['value'] != 20)throw new Exception('订单不支持此操作');
         if($order['deliver_type']['value'] != 10)throw new Exception('订单不支持此操作');
         if($order['deliver_status']['value'] != 10)throw new Exception('订单不支持此操作');
@@ -220,6 +222,12 @@ class OrderDelivery extends OrderDeliver
         ];
         $res = $this->isUpdate(true)->save($data, compact('deliver_id'));
         if($res === false)throw new Exception('操作失败');
+
+        ##发送订阅消息
+        $config = WxappModel::getWxappCache();
+        $wxSubMsg = new WxSubMsg($config['app_id'], $config['app_secret']);
+        //'goods_supply' => ['character_string1', 'thing6', 'time9', 'name17'],// 订单编号、商品信息、快递单号、发货时间、收货人
+        $res = $wxSubMsg->sendMsg($order['user'],[$order['order_no'], $order['goods']['goods_name'], $data['express_no'], time(), $order['receiver_user']],'goods_supply');
     }
 
     /**
