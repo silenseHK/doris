@@ -70,4 +70,8 @@ class Team extends Controller
         }
     }
 
+    public function teamLists(){
+
+    }
+
 }

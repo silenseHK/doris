@@ -3,7 +3,7 @@
         <div class="am-u-sm-12 am-u-md-12 am-u-lg-12">
             <div class="widget am-cf">
                 <div class="widget-head am-cf">
-                    <div class="widget-title am-cf">余额明细</div>
+                    <div class="widget-title am-cf">问卷列表</div>
                 </div>
                 <div class="widget-body am-fr">
                     <!-- 工具栏 -->
@@ -16,7 +16,7 @@
                                     <?php if (checkPrivilege('goods/add')): ?>
                                         <div class="am-btn-group am-btn-group-xs">
                                             <a class="am-btn am-btn-default am-btn-success"
-                                               href="<?= url('wxapp.system_msg/add') ?>">
+                                               href="<?= url('content.questionnaire/add') ?>">
                                                 <span class="am-icon-plus"></span> 新增
                                             </a>
                                         </div>
@@ -26,33 +26,22 @@
 
                             <div class="am fr">
                                 <div class="am-form-group am-fl">
-                                    <?php $type = $request->get('type'); ?>
-                                    <select name="type"
+                                    <?php $type = $request->get('status'); ?>
+                                    <select name="status"
                                             data-am-selected="{btnSize: 'sm', placeholder: '是否生效'}">
                                         <option value=""></option>
                                         <option value="0"
                                             <?= $type === '0' ? 'selected' : '' ?>>全部
                                         </option>
                                         <option value="1"
-                                            <?= $type === '1' ? 'selected' : '' ?>>已生效
+                                            <?= $type === '1' ? 'selected' : '' ?>>上线
                                         </option>
                                         <option value="2"
-                                            <?= $type === '2' ? 'selected' : '' ?>>待生效
+                                            <?= $type === '2' ? 'selected' : '' ?>>下线
                                         </option>
                                     </select>
                                 </div>
-                                <div class="am-form-group tpl-form-border-form am-fl">
-                                    <input type="text" name="start_time"
-                                           class="am-form-field"
-                                           value="<?= $request->get('start_time') ?>" placeholder="请选择起始日期"
-                                           data-am-datepicker>
-                                </div>
-                                <div class="am-form-group tpl-form-border-form am-fl">
-                                    <input type="text" name="end_time"
-                                           class="am-form-field"
-                                           value="<?= $request->get('end_time') ?>" placeholder="请选择截止日期"
-                                           data-am-datepicker>
-                                </div>
+
                                 <div class="am-form-group am-fl">
                                     <div class="am-input-group am-input-group-sm tpl-form-border-form">
                                         <div class="am-input-group-btn">
@@ -69,42 +58,54 @@
                             <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>通知标题</th>
-                                <th>通知详情</th>
-                                <th>链接</th>
-                                <th>参数</th>
+                                <th>问卷标题</th>
+                                <th>编号</th>
+                                <th>提交问卷数</th>
+                                <th>状态</th>
                                 <th>创建时间</th>
-                                <th>生效时间</th>
                                 <th>操作</th>
                             </tr>
                             </thead>
                             <tbody>
                             <?php if (!$list->isEmpty()): foreach ($list as $item): ?>
                                 <tr>
-                                    <td class="am-text-middle"><?= $item['id'] ?></td>
+                                    <td class="am-text-middle"><?= $item['questionnaire_id'] ?></td>
                                     <td class="am-text-middle">
                                         <?= $item['title'] ?>
                                     </td>
                                     <td class="am-text-middle">
-                                        <?= $item['content'] ?>
+                                        <?= $item['questionnaire_no'] ?>
                                     </td>
+                                    <td class="am-text-middle"><?= $item['fill_num'] ?></td>
                                     <td class="am-text-middle">
-                                        <?= $item['url'] ?>
-                                    </td>
-                                    <td class="am-text-middle">
-                                        <?= $item['params'] ?>
+                                        <?= $item['status'] == 1? "上线" : "下线" ?>
                                     </td>
                                     <td class="am-text-middle"><?= $item['create_time'] ?></td>
-                                    <td class="am-text-middle"><?= date('Y-m-d H:i:s', $item['effect_time']) ?></td>
                                     <td class="am-text-middle">
-                                        <li>
-                                            <a class="am-dropdown-item" target=""
-                                               href="<?= url('wxapp.system_msg/edit', ['message_id' => $item['id']]) ?>">编辑</a>
-                                        </li>
-                                        <li>
-                                            <a data-id="<?= $item['id'] ?>" class="am-dropdown-item btn-del" target=""
-                                               href="javascript:void(0);">删除</a>
-                                        </li>
+                                        <div class="tpl-table-black-operation">
+                                            <a class="tpl-table-black-operation-default"
+                                               href="<?= url('content.questionnaire/edit', ['questionnaire_id'=>$item['questionnaire_id']]) ?>"
+                                               title="编辑"
+                                            >
+                                                <i class="iconfont am-icon-edit"></i>
+                                                编辑
+                                            </a>
+                                            <a class="tpl-table-black-operation-default"
+                                               href="<?= url('content.questionnaire/userFillList', ['questionnaire_id'=>$item['questionnaire_id']]) ?>"
+                                               title="答卷"
+                                            >
+                                                <i class="iconfont am-icon-newspaper-o"></i>
+                                                答卷
+                                            </a>
+                                            <a class="tpl-table-black-operation-default btn-del"
+                                               data-id="<?= $item['questionnaire_id'] ?>"
+                                               href="javascript:void(0);"
+                                               title="删除"
+                                            >
+                                                <i class="iconfont am-icon-close"></i>
+                                                删除
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; else: ?>
@@ -130,19 +131,19 @@
     $(function () {
 
         $('.btn-del').on('click', function(e){
-            let message_id = $(this).data('id');
+            let questionnaire_id = $(this).data('id');
             let index = layer.confirm('确定删除吗？', {
                 btn: ['确定','取消'] //按钮
             }, function(){
                 layer.close(index);
-                $.post("<?= url('wxapp.system_msg/del') ?>", {message_id}, function(res){
-                    if(res.code == 0){
-                        layer.msg(res.msg,{icon:2})
+                $.post("<?= url('content.questionnaire/del') ?>", {questionnaire_id}, function(res){
+                    if(res.code == 1){
+                        layer.msg(res.msg,{icon:1})
                         setTimeout(function(){
                             location.reload();
                         }, 1500)
                     }else{
-                        layer.msg(res.msg,{icon:1})
+                        layer.msg(res.msg,{icon:2})
                     }
                 }, 'json')
             }, function(){

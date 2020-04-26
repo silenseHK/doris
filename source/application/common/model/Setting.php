@@ -171,7 +171,7 @@ class Setting extends BaseModel
                             ],
                             'verify_code' => [
                                 'is_enable' => '1',
-                                'template_code' => 'SMS_182546922',
+                                'template_code' => 'SMS_187265804',
                                 'accept_phone' => ''
                             ]
                         ],

@@ -3,7 +3,7 @@
         <div class="am-u-sm-12 am-u-md-12 am-u-lg-12">
             <div class="widget am-cf">
                 <div class="widget-head am-cf">
-                    <div class="widget-title am-cf">余额明细</div>
+                    <div class="widget-title am-cf">问卷列表</div>
                 </div>
                 <div class="widget-body am-fr">
                     <!-- 工具栏 -->
@@ -16,7 +16,7 @@
                                     <?php if (checkPrivilege('goods/add')): ?>
                                         <div class="am-btn-group am-btn-group-xs">
                                             <a class="am-btn am-btn-default am-btn-success"
-                                               href="<?= url('wxapp.system_msg/add') ?>">
+                                               href="<?= url('content.questionnaire.question/add') ?>">
                                                 <span class="am-icon-plus"></span> 新增
                                             </a>
                                         </div>
@@ -26,32 +26,17 @@
 
                             <div class="am fr">
                                 <div class="am-form-group am-fl">
+
                                     <?php $type = $request->get('type'); ?>
                                     <select name="type"
-                                            data-am-selected="{btnSize: 'sm', placeholder: '是否生效'}">
-                                        <option value=""></option>
-                                        <option value="0"
-                                            <?= $type === '0' ? 'selected' : '' ?>>全部
+                                            data-am-selected="{btnSize: 'sm', placeholder: '类型'}">
+                                        <option value="0" <?= 0 == $type ? 'selected' : '' ?>>全部</option>
+                                        <?php foreach($typeList as $item):?>
+                                        <option value="<?= $item['value'] ?>"
+                                            <?= $item['value'] == $type ? 'selected' : '' ?> ><?= $item['text'] ?>
                                         </option>
-                                        <option value="1"
-                                            <?= $type === '1' ? 'selected' : '' ?>>已生效
-                                        </option>
-                                        <option value="2"
-                                            <?= $type === '2' ? 'selected' : '' ?>>待生效
-                                        </option>
+                                        <?php endforeach; ?>
                                     </select>
-                                </div>
-                                <div class="am-form-group tpl-form-border-form am-fl">
-                                    <input type="text" name="start_time"
-                                           class="am-form-field"
-                                           value="<?= $request->get('start_time') ?>" placeholder="请选择起始日期"
-                                           data-am-datepicker>
-                                </div>
-                                <div class="am-form-group tpl-form-border-form am-fl">
-                                    <input type="text" name="end_time"
-                                           class="am-form-field"
-                                           value="<?= $request->get('end_time') ?>" placeholder="请选择截止日期"
-                                           data-am-datepicker>
                                 </div>
                                 <div class="am-form-group am-fl">
                                     <div class="am-input-group am-input-group-sm tpl-form-border-form">
@@ -69,40 +54,37 @@
                             <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>通知标题</th>
-                                <th>通知详情</th>
-                                <th>链接</th>
-                                <th>参数</th>
+                                <th>问题</th>
+                                <th>name</th>
+                                <th>类型</th>
+                                <th>是否必填</th>
                                 <th>创建时间</th>
-                                <th>生效时间</th>
                                 <th>操作</th>
                             </tr>
                             </thead>
                             <tbody>
                             <?php if (!$list->isEmpty()): foreach ($list as $item): ?>
                                 <tr>
-                                    <td class="am-text-middle"><?= $item['id'] ?></td>
+                                    <td class="am-text-middle"><?= $item['question_id'] ?></td>
                                     <td class="am-text-middle">
-                                        <?= $item['title'] ?>
+                                        <?= $item['label'] ?>
                                     </td>
                                     <td class="am-text-middle">
-                                        <?= $item['content'] ?>
+                                        <?= $item['name'] ?>
                                     </td>
                                     <td class="am-text-middle">
-                                        <?= $item['url'] ?>
+                                        <?= $item['type']['text'] ?>
                                     </td>
-                                    <td class="am-text-middle">
-                                        <?= $item['params'] ?>
-                                    </td>
+                                    <td class="am-text-middle"><?= $item['is_require'] == 1 ? "是" : "否" ?></td>
                                     <td class="am-text-middle"><?= $item['create_time'] ?></td>
-                                    <td class="am-text-middle"><?= date('Y-m-d H:i:s', $item['effect_time']) ?></td>
+
                                     <td class="am-text-middle">
                                         <li>
                                             <a class="am-dropdown-item" target=""
-                                               href="<?= url('wxapp.system_msg/edit', ['message_id' => $item['id']]) ?>">编辑</a>
+                                               href="<?= url('content.questionnaire.question/edit', ['question_id' => $item['question_id']]) ?>">编辑</a>
                                         </li>
                                         <li>
-                                            <a data-id="<?= $item['id'] ?>" class="am-dropdown-item btn-del" target=""
+                                            <a data-id="<?= $item['question_id'] ?>" class="am-dropdown-item btn-del" target=""
                                                href="javascript:void(0);">删除</a>
                                         </li>
                                     </td>
@@ -130,17 +112,17 @@
     $(function () {
 
         $('.btn-del').on('click', function(e){
-            let message_id = $(this).data('id');
+            let question_id = $(this).data('id');
             let index = layer.confirm('确定删除吗？', {
                 btn: ['确定','取消'] //按钮
             }, function(){
                 layer.close(index);
-                $.post("<?= url('wxapp.system_msg/del') ?>", {message_id}, function(res){
+                $.post("<?= url('content.questionnaire.question/del') ?>", {question_id}, function(res){
                     if(res.code == 0){
                         layer.msg(res.msg,{icon:2})
                         setTimeout(function(){
                             location.reload();
-                        }, 1500)
+                        }, 1000)
                     }else{
                         layer.msg(res.msg,{icon:1})
                     }

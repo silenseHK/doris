@@ -4,9 +4,12 @@
 namespace app\task\behavior\user;
 
 
+use app\api\model\Setting as SettingModel;
 use app\common\model\UserGoodsStock;
+use app\common\service\order\Complete as OrderCompleteService;
 use app\task\model\Order;
 use app\task\model\User;
+use app\api\model\User as UserApiMode;
 use think\Cache;
 use think\Db;
 use think\Exception;
@@ -51,23 +54,34 @@ class CompleteOrder
         Db::startTrans();
         try{
             foreach($list as $item){
-                if($item['supply_user_id']){
-                    $user_id = $item['supply_user_id'];
-                    ##减少冻结库存
-                    foreach($item['goods'] as $v){
-                        $res = UserGoodsStock::disFreezeStockByUserGoodsId($user_id, $v['goods_sku_id'], $v['total_num']);
-                        if($res === false)throw new Exception('任务执行失败1');
-                    }
+//                if($item['supply_user_id']){
+//                    $user_id = $item['supply_user_id'];
+//                    ##减少冻结库存
+//                    foreach($item['goods'] as $v){
+//                        log_write('来了');
+//                        $res = UserGoodsStock::disFreezeStockByUserGoodsId($user_id, $v['goods_sku_id'], $v['total_num']);
+//                        if($res === false)throw new Exception('任务执行失败1');
+//                    }
+//
+//                    ##增加余额
+//                    $money = $item['pay_price'] - $item['express_price'];
+//                    User::update(['balance'=>$money],['user_id'=>$user_id]);
+//                    BalanceLogModel::add(SceneEnum::SALE, [
+//                        'user_id' => $user_id,
+//                        'money' => $money,
+//                        'order_id' => $item['order_id'],
+//                    ], ['order_no' => $item['order_no']]);
 
-                    ##增加余额
-                    $money = $item['pay_price'] - $item['express_price'];
-                    User::update(['balance'=>$money],['user_id'=>$user_id]);
-                    BalanceLogModel::add(SceneEnum::SALE, [
-                        'user_id' => $user_id,
-                        'money' => $money,
-                        'order_id' => $item['order_id'],
-                    ], ['order_no' => $item['order_no']]);
-                }
+                    ## 增加积分、返利、出货人余额
+                    $completed = Order::detail($item['order_id'], [
+                        'user', 'address', 'goods', 'express',
+                    ]);
+                    UserApiMode::doIntegralRebate($completed);
+
+                    if (SettingModel::getItem('trade')['order']['refund_days'] == 0) {
+                        (new OrderCompleteService)->settled([$completed]);
+                    }
+//                }
             }
             ##修改订单
             $res = $model->save(
@@ -87,7 +101,7 @@ class CompleteOrder
             return true;
         }catch(Exception $e){
             Db::rollback();
-            echo $e->getMessage();
+            log_write($e->getMessage());
             return $e->getMessage();
         }
     }

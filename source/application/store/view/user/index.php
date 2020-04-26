@@ -73,6 +73,8 @@
                                 <th>国家</th>
                                 <th>省份</th>
                                 <th>城市</th>
+                                <th>手机号</th>
+                                <th>邀请人</th>
                                 <th>注册时间</th>
                                 <th>操作</th>
                             </tr>
@@ -96,6 +98,14 @@
                                     <td class="am-text-middle"><?= $item['country'] ?: '--' ?></td>
                                     <td class="am-text-middle"><?= $item['province'] ?: '--' ?></td>
                                     <td class="am-text-middle"><?= $item['city'] ?: '--' ?></td>
+                                    <td class="am-text-middle"><?= $item['mobile_hide'] ?: '--' ?></td>
+                                    <td class="am-text-middle">
+                                        <?php if(empty($item['invitation_user'])):?>
+                                            无
+                                        <?php else:?>
+                                            <?= $item['invitation_user']['nickName'] ?>(id:<?= $item['invitation_user']['user_id'] ?>)
+                                        <?php endif?>
+                                    </td>
                                     <td class="am-text-middle"><?= $item['create_time'] ?></td>
                                     <td class="am-text-middle">
                                         <div class="tpl-table-black-operation">

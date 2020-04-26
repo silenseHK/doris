@@ -78,7 +78,7 @@ $detail = isset($detail) ? $detail : null;
                                 <th>配送方式</th>
                                 <th>交易状态</th>
                                 <?php if ($detail['pay_status']['value'] == 10 && $detail['order_status']['value'] == 10) : ?>
-                                    <th>操作</th>
+<!--                                    <th>操作</th>-->
                                 <?php endif; ?>
                             </tr>
                             <tr>
@@ -151,18 +151,18 @@ $detail = isset($detail) ? $detail : null;
                                         </p>
                                     <?php endif; ?>
                                 </td>
-                                <?php if ($detail['pay_status']['value'] == 10 && $detail['order_status']['value'] == 10) : ?>
+                                <?php /* if ($detail['pay_status']['value'] == 10 && $detail['order_status']['value'] == 10) : ?>
                                     <td>
-                                        <?php if (checkPrivilege('order/updateprice')): ?>
+                                        <?php  if (checkPrivilege('order/updateprice')): ?>
                                             <p class="am-text-center">
                                                 <a class="j-update-price" href="javascript:void(0);"
                                                    data-order_id="<?= $detail['order_id'] ?>"
                                                    data-order_price="<?= $detail['order_price'] ?>"
                                                    data-express_price="<?= $detail['express_price'] ?>">修改价格</a>
                                             </p>
-                                        <?php endif; ?>
+                                        <?php endif;  ?>
                                     </td>
-                                <?php endif; ?>
+                                <?php endif; */ ?>
                             </tr>
                             </tbody>
                         </table>

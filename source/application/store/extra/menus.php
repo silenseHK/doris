@@ -274,6 +274,23 @@ return [
                     ],
                 ]
             ],
+            [
+                'name' => '问卷管理',
+                'submenu' => [
+                    [
+                        'name' => '问卷列表',
+                        'index' => 'content.questionnaire/index',
+                    ],
+                    [
+                        'name' => '问题列表',
+                        'index' => 'content.questionnaire.question/index',
+                    ],
+                    [
+                        'name' => '配餐列表',
+                        'index' => 'content.food_group/index',
+                    ],
+                ]
+            ],
         ]
     ],
     'market' => [
@@ -281,25 +298,25 @@ return [
         'icon' => 'icon-marketing',
         'index' => 'market.coupon/index',
         'submenu' => [
-//            [
-//                'name' => '优惠券',
-////                'active' => true,
-//                'submenu' => [
-//                    [
-//                        'name' => '优惠券列表',
-//                        'index' => 'market.coupon/index',
-//                        'uris' => [
-//                            'market.coupon/index',
-//                            'market.coupon/add',
-//                            'market.coupon/edit',
-//                        ]
-//                    ],
-//                    [
-//                        'name' => '领取记录',
-//                        'index' => 'market.coupon/receive'
-//                    ],
-//                ]
-//            ],
+            [
+                'name' => '优惠券',
+//                'active' => true,
+                'submenu' => [
+                    [
+                        'name' => '优惠券列表',
+                        'index' => 'market.coupon/index',
+                        'uris' => [
+                            'market.coupon/index',
+                            'market.coupon/add',
+                            'market.coupon/edit',
+                        ]
+                    ],
+                    [
+                        'name' => '领取记录',
+                        'index' => 'market.coupon/receive'
+                    ],
+                ]
+            ],
 //            [
 //                'name' => '用户充值',
 //                'submenu' => [

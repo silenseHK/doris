@@ -13,6 +13,7 @@ use think\db\Query;
 use think\Exception;
 use app\common\service\order\Refund as RefundService;
 use app\common\model\UserGoodsStock;
+use app\store\model\UserGoodsStock as StoreUserGoodsStock;
 use app\store\model\Wxapp as WxappModel;
 
 class OrderDelivery extends OrderDeliver
@@ -164,7 +165,7 @@ class OrderDelivery extends OrderDeliver
             ]);
             if($res === false)throw new Exception('操作失败');
             ##返还库存
-            $res = UserGoodsStock::backStock($model);
+            $res = StoreUserGoodsStock::backStock($model);
             if($res !== true)throw new Exception('库存返还失败');
             ##退款
             if($model['deliver_type']['value'] == 10 && $model['freight_money'] > 0){

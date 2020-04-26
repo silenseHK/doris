@@ -1,33 +1,25 @@
 <?php
 
 
-namespace app\store\controller\wxapp;
+namespace app\store\controller\content;
 
 
 use app\store\controller\Controller;
-use app\store\model\NoticeMessage;
+use app\store\model\FoodGroup as FoodGroupModel;
 use think\Exception;
 
-class SystemMsg extends Controller
+class FoodGroup extends Controller
 {
 
-    /**
-     * 列表
-     * @return mixed
-     */
     public function index(){
-        $model = new NoticeMessage();
-        return $this->fetch('',$model->getSystemLists());
+        $model = new FoodGroupModel();
+        return $this->fetch('',$model->getIndexData());
     }
 
-    /**
-     * 新增
-     * @return array|bool|mixed
-     */
     public function add(){
         if(request()->isPost()){
             try{
-                $model = new NoticeMessage();
+                $model = new FoodGroupModel();
                 $model->add();
                 return $this->renderSuccess('操作成功');
             }catch(Exception $e){
@@ -38,32 +30,24 @@ class SystemMsg extends Controller
         }
     }
 
-    /**
-     * 编辑
-     * @return array|bool|mixed
-     */
     public function edit(){
-        $model = new NoticeMessage();
         try{
+            $model = new FoodGroupModel();
             if(request()->isPost()){
-                $model = new NoticeMessage();
+                $model = new FoodGroupModel();
                 $model->edit();
+                return $this->renderSuccess('操作成功');
             }else{
                 return $this->fetch('',$model->info());
             }
-            return $this->renderSuccess('操作成功');
         }catch(Exception $e){
             return $this->renderError($e->getMessage());
         }
     }
 
-    /**
-     * 删除
-     * @return array|bool
-     */
     public function del(){
         try{
-            $model = new NoticeMessage();
+            $model = new FoodGroupModel();
             $model->del();
             return $this->renderSuccess('操作成功');
         }catch(Exception $e){

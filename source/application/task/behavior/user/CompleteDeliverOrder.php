@@ -59,6 +59,7 @@ class CompleteDeliverOrder
             return true;
         }catch(Exception $e){
             Db::rollback();
+            log_write($e->getMessage(),'error');
             return $e->getMessage();
         }
 

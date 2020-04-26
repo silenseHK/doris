@@ -19,6 +19,8 @@ class NoticeMessage extends BaseModel
     use SoftDelete;
     protected $deleteTime = 'delete_time';
 
+    protected $hidden = ['delete_time'];
+
     /**
      * 生效时间
      * @param $value
@@ -67,6 +69,15 @@ class NoticeMessage extends BaseModel
      */
     public function getTypeAttr($value){
         return $this->type[$value];
+    }
+
+    /**
+     * 初始化detail
+     * @param $value
+     * @return string
+     */
+    public function getDetailAttr($value){
+        return htmlspecialchars_decode($value);
     }
 
     /**

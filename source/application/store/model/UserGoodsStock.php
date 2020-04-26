@@ -182,9 +182,7 @@ class UserGoodsStock extends UserGoodsStockModel
             $goods_id = $order['goods_id'];
             $goods_sku_id = $order['goods_sku_id'];
             $num = $order['goods_num'];
-            ##减少冻结库存并恢复库存
-            $res = self::disFreezeStockByUserGoodsId($user_id, $goods_sku_id, $num, 2);
-            if($res === false)throw new Exception('库存返还失败1');
+
             ##增加库存变动log
             $data = [
                 'user_id' => $user_id,
@@ -199,6 +197,11 @@ class UserGoodsStock extends UserGoodsStockModel
             ];
             $res = UserGoodsStockLog::insertData($data);
             if($res === false)throw new Exception('库存返还失败');
+
+            ##减少冻结库存并恢复库存
+            $res = self::disFreezeStockByUserGoodsId($user_id, $goods_sku_id, $num, 2);
+            if($res === false)throw new Exception('库存返还失败1');
+
             Db::commit();
             return true;
         }catch(Exception $e){

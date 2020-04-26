@@ -26,6 +26,12 @@ use think\Hook;
  */
 class User extends UserModel
 {
+
+    protected $append = [
+        'mobile_hide',
+        'invitation_user'
+    ];
+
     /**
      * 获取当前用户总数
      * @param null $day
@@ -67,6 +73,16 @@ class User extends UserModel
             ->paginate(15, false, [
                 'query' => \request()->request()
             ]);
+    }
+
+    public function getMobileHideAttr($value, $data){
+        if(!isset($data['mobile']) || !$data['mobile'])return '--';
+        return mobile_hide($data['mobile']);
+    }
+
+    public function getInvitationUserAttr($value, $data){
+        if(!isset($data['invitation_user_id']) || !$data['invitation_user_id'])return [];
+        return self::getUserInfo($data['invitation_user_id']);
     }
 
     /**

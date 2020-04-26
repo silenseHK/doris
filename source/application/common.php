@@ -454,3 +454,12 @@ function keywords_filter($str){
     return $str;
 }
 
+/**
+ * 手机号****
+ * @param $mobile
+ * @return string|string[]
+ */
+function mobile_hide($mobile){
+    return substr_replace($mobile,'****',3,4);
+}
+
