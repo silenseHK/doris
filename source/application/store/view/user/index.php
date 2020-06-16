@@ -43,6 +43,34 @@
                                             </option>
                                         </select>
                                     </div>
+                                    <div class="am-form-group tpl-form-border-form am-fl">
+                                        <input type="text" name="start_time"
+                                               class="am-form-field"
+                                               autocomplete="off"
+                                               value="<?= $request->get('start_time') ?>" placeholder="请选择起始日期"
+                                               data-am-datepicker>
+                                    </div>
+                                    <div class="am-form-group tpl-form-border-form am-fl">
+                                        <input type="text" name="end_time"
+                                               class="am-form-field"
+                                               autocomplete="off"
+                                               value="<?= $request->get('end_time') ?>" placeholder="请选择截止日期"
+                                               data-am-datepicker>
+                                    </div>
+                                    <div class="am-form-group am-fl">
+                                        <div class="am-input-group am-input-group-sm tpl-form-border-form">
+                                            <input type="text" class="am-form-field" name="user_id"
+                                                   placeholder="请输入用户ID"
+                                                   value="<?= $request->get('user_id') ?>">
+                                        </div>
+                                    </div>
+                                    <div class="am-form-group am-fl">
+                                        <div class="am-input-group am-input-group-sm tpl-form-border-form">
+                                            <input type="text" class="am-form-field" name="mobile"
+                                                   placeholder="请输入用户手机号"
+                                                   value="<?= $request->get('mobile') ?>">
+                                        </div>
+                                    </div>
                                     <div class="am-form-group am-fl">
                                         <div class="am-input-group am-input-group-sm tpl-form-border-form">
                                             <input type="text" class="am-form-field" name="nickName"
@@ -109,7 +137,7 @@
                                     <td class="am-text-middle"><?= $item['create_time'] ?></td>
                                     <td class="am-text-middle">
                                         <div class="tpl-table-black-operation">
-                                            <?php if (checkPrivilege('user/grade')): ?>
+                                            <?php if (checkPrivilege('user/recharge')): ?>
                                                 <a class="j-recharge tpl-table-black-operation-default"
                                                    href="javascript:void(0);"
                                                    title="用户充值"
@@ -122,7 +150,7 @@
                                                     充值
                                                 </a>
                                             <?php endif; ?>
-                                            <?php if (checkPrivilege('user/recharge')): ?>
+                                            <?php if (checkPrivilege('user/grade')): ?>
                                                 <a class="j-grade tpl-table-black-operation-default"
                                                    href="javascript:void(0);"
                                                    data-id="<?= $item['user_id'] ?>"
@@ -145,28 +173,40 @@
                                                     <span class="am-icon-caret-down"></span>
                                                 </button>
                                                 <ul class="am-dropdown-content" data-id="<?= $item['user_id'] ?>">
-                                                    <?php if (checkPrivilege('order/all_list')): ?>
+                                                    <?php if (checkPrivilege('user.order/index')): ?>
                                                         <li>
-                                                            <a class="am-dropdown-item" target="_blank"
-                                                               href="<?= url('order/all_list', ['user_id' => $item['user_id']]) ?>">用户订单</a>
+                                                            <a class="am-dropdown-item" target=""
+                                                               href="<?= url('user.order/index', ['user_id' => $item['user_id']]) ?>">明细</a>
                                                         </li>
                                                     <?php endif; ?>
                                                     <?php if (!checkPrivilege('user.recharge/order')): ?>
                                                         <li>
-                                                            <a class="am-dropdown-item" target="_blank"
+                                                            <a class="am-dropdown-item" target=""
                                                                href="<?= url('user.recharge/order', ['user_id' => $item['user_id']]) ?>">充值记录</a>
                                                         </li>
                                                     <?php endif; ?>
                                                     <?php if (checkPrivilege('user.balance/log')): ?>
                                                         <li>
-                                                            <a class="am-dropdown-item" target="_blank"
+                                                            <a class="am-dropdown-item" target=""
                                                                href="<?= url('user.balance/log', ['user_id' => $item['user_id']]) ?>">余额明细</a>
                                                         </li>
                                                     <?php endif; ?>
-                                                    <?php if (checkPrivilege('user.balance/log')): ?>
+                                                    <?php if (checkPrivilege('user.goods/goodsstock')): ?>
                                                         <li>
-                                                            <a class="am-dropdown-item" target="_blank"
-                                                               href="<?= url('user.goods/goodsStock', ['user_id' => $item['user_id']]) ?>">库存信息</a>
+                                                            <a class="am-dropdown-item" target=""
+                                                               href="<?= url('user.goods/goodsstock', ['user_id' => $item['user_id']]) ?>">库存信息</a>
+                                                        </li>
+                                                    <?php endif; ?>
+                                                    <?php if (checkPrivilege('user.team/teamlists')): ?>
+                                                        <li>
+                                                            <a class="am-dropdown-item" target=""
+                                                               href="<?= url('user.team/teamlists', ['user_id' => $item['user_id']]) ?>">团队成员</a>
+                                                        </li>
+                                                    <?php endif; ?>
+                                                    <?php if (checkPrivilege('user.team/bestrategy')): ?>
+                                                        <li>
+                                                            <a data-id="<?= $item['user_id'] ?>" class="am-dropdown-item j-rebate" target=""
+                                                               href="javascript:void(0);">成为战略董事</a>
                                                         </li>
                                                     <?php endif; ?>
                                                 </ul>
@@ -176,7 +216,7 @@
                                 </tr>
                             <?php endforeach; else: ?>
                                 <tr>
-                                    <td colspan="12" class="am-text-center">暂无记录</td>
+                                    <td colspan="14" class="am-text-center">暂无记录</td>
                                 </tr>
                             <?php endif; ?>
                             </tbody>
@@ -246,6 +286,7 @@
                 <ul class="am-tabs-nav am-nav am-nav-tabs">
                     <li class="am-active"><a href="#tab1">充值余额</a></li>
                     <li><a href="#tab2">补充库存</a></li>
+                    <li><a href="#tab3">活动补充库存</a></li>
                 </ul>
 
                 <div class="am-tabs-bd am-padding-xs">
@@ -314,6 +355,7 @@
                                             <?php } ?>
                                     <?php } ?>
                                 </select>
+                                <input class="ipt-goods-sku-id" type="hidden" name="recharge[points][goods_sku_id]" value="0">
                             </div>
                         </div>
 
@@ -322,7 +364,7 @@
                                 规格
                             </label>
                             <div class="am-u-sm-8 am-u-end">
-                                <select id="doc-select-attr" name="recharge[points][goods_sku_id]" onchange="chooseGoods.call(this)">
+                                <select id="doc-select-attr" name="recharge[points][goods_sku_id2]" onchange="chooseGoods.call(this)">
                                     <option value="0">请选择规格</option>
                                 </select>
                             </div>
@@ -346,19 +388,19 @@
                                            value="inc" data-am-ucheck checked>
                                     增加
                                 </label>
-                                <label class="am-radio-inline">
-                                    <input type="radio" name="recharge[points][mode]" value="dec" data-am-ucheck>
-                                    减少
-                                </label>
-                                <label class="am-radio-inline">
-                                    <input type="radio" name="recharge[points][mode]" value="final" data-am-ucheck>
-                                    最终库存
-                                </label>
+<!--                                <label class="am-radio-inline">-->
+<!--                                    <input type="radio" name="recharge[points][mode]" value="dec" data-am-ucheck>-->
+<!--                                    减少-->
+<!--                                </label>-->
+<!--                                <label class="am-radio-inline">-->
+<!--                                    <input type="radio" name="recharge[points][mode]" value="final" data-am-ucheck>-->
+<!--                                    最终库存-->
+<!--                                </label>-->
                             </div>
                         </div>
                         <div class="am-form-group">
                             <label class="am-u-sm-3 am-form-label">
-                                变更数量
+                                充值数量
                             </label>
                             <div class="am-u-sm-8 am-u-end">
                                 <input type="number" min="0" class="tpl-form-input"
@@ -375,12 +417,157 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="am-tab-panel am-padding-0" id="tab3">
+
+                        <div class="am-form-group">
+                            <label class="am-u-sm-3 am-form-label form-require">
+                                充值后会员等级
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <select name="recharge[grade][grade_id]"
+                                        data-am-selected="{btnSize: 'sm', placeholder: '请选择会员等级'}">
+                                    <?php foreach ($gradeList as $item): ?>
+                                        <option value="<?= $item['grade_id'] ?>"
+                                            <?= $grade == $item['grade_id'] ? 'selected' : '' ?>><?= $item['name'] ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="am-form-group">
+                            <label class="am-u-sm-3 am-form-label">
+                                补充库存商品
+                            </label>
+                            <div class="am-u-sm-8 am-u-end wrap-goods">
+                                <select id="doc-select-1" name="recharge[grade][goods_id]" onchange="goodsSku.call(this)">
+                                    <option value="0">请选择商品</option>
+                                    <?php if(!empty($goodsList)){ ?>
+                                        <?php foreach($goodsList as $goods){ ?>
+                                            <option value="<?= $goods['goods_id'] ?>"><?= $goods['goods_name'] ?></option>
+                                        <?php } ?>
+                                    <?php } ?>
+                                </select>
+                                <input class="ipt-goods-sku-id" type="hidden" name="recharge[grade][goods_sku_id]" value="0">
+                            </div>
+                        </div>
+
+                        <div class="am-form-group wrap-attr">
+                            <label class="am-u-sm-3 am-form-label">
+                                规格
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <select id="doc-select-attr" name="recharge[grade][goods_sku_id2]" onchange="chooseGoods.call(this)">
+                                    <option value="0">请选择规格</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="am-form-group">
+                            <label class="am-u-sm-3 am-form-label">
+                                当前库存
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <div class="am-form--static stock-wrap">0</div>
+                            </div>
+                        </div>
+                        <div class="am-form-group">
+                            <label class="am-u-sm-3 am-form-label">
+                                充值方式
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <label class="am-radio-inline">
+                                    <input type="radio" name="recharge[grade][mode]"
+                                           value="inc" data-am-ucheck checked>
+                                    增加
+                                </label>
+                                <!--                                <label class="am-radio-inline">-->
+                                <!--                                    <input type="radio" name="recharge[points][mode]" value="dec" data-am-ucheck>-->
+                                <!--                                    减少-->
+                                <!--                                </label>-->
+                                <!--                                <label class="am-radio-inline">-->
+                                <!--                                    <input type="radio" name="recharge[points][mode]" value="final" data-am-ucheck>-->
+                                <!--                                    最终库存-->
+                                <!--                                </label>-->
+                            </div>
+                        </div>
+                        <div class="am-form-group">
+                            <label class="am-u-sm-3 am-form-label">
+                                充值数量
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <input type="number" min="0" class="tpl-form-input"
+                                       placeholder="请输入要变更的数量" name="recharge[grade][value]" value="" required>
+                            </div>
+                        </div>
+                        <div class="am-form-group">
+                            <label class="am-u-sm-3 am-form-label">
+                                管理员备注
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <textarea rows="2" name="recharge[grade][remark]" placeholder="请输入管理员备注"
+                                          class="am-field-valid"></textarea>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
         </form>
     </div>
 </script>
+
+<script id="tpl-rebate" type="text/template">
+    <div class="am-padding-xs am-padding-top">
+        <form class="am-form tpl-form-line-form" method="post" action="">
+            <div class="am-tab-panel am-padding-0 am-active">
+                <div class="am-form-group">
+                    <label class="am-u-sm-3 am-form-label">
+                        商品
+                    </label>
+                    <div class="am-u-sm-8 am-u-end wrap-goods">
+                        <select id="doc-select-1" name="goods_id" onchange="goodsSku.call(this)">
+                            <option value="0">请选择商品</option>
+                            <?php if(!empty($goodsList)){ ?>
+                                <?php foreach($goodsList as $goods){ ?>
+                                    <option value="<?= $goods['goods_id'] ?>"><?= $goods['goods_name'] ?></option>
+                                <?php } ?>
+                            <?php } ?>
+                        </select>
+                        <input class="ipt-goods-sku-id" type="hidden" name="goods_sku_id" value="0">
+                    </div>
+                </div>
+
+                <div class="am-form-group wrap-attr">
+                    <label class="am-u-sm-3 am-form-label">
+                        规格
+                    </label>
+                    <div class="am-u-sm-8 am-u-end">
+                        <select id="doc-select-attr" name="goods_sku_id2" onchange="chooseGoods.call(this)">
+                            <option value="0">请选择规格</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="am-form-group">
+                    <label class="am-u-sm-3 am-form-label"> 商品数量 </label>
+                    <div class="am-u-sm-8 am-u-end">
+                                <textarea rows="2" name="num" placeholder="请输入商品数量"
+                                          class="am-field-valid"></textarea>
+                    </div>
+                </div>
+                <div class="am-form-group">
+                    <label class="am-u-sm-3 am-form-label"> 备注 </label>
+                    <div class="am-u-sm-8 am-u-end">
+                                <textarea rows="2" name="remark" placeholder="请输入管理员备注"
+                                          class="am-field-valid"></textarea>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</script>
+
 <script src="assets/common/js/ddsort.js"></script>
 <script src="assets/store/js/select.data.js?v=<?= $version ?>"></script>
 <script src="assets/common/js/vue.min.js"></script>
@@ -437,6 +624,29 @@
         });
 
         /**
+         * 返利
+         */
+        $('.j-rebate').on('click', function () {
+            var data = $(this).data();
+            $('#wrap-tbody').attr('data-cur-user-id', data.id)
+            $.showModal({
+                title: '成为战略董事'
+                , area: '460px'
+                , content: template('tpl-rebate', data)
+                , uCheck: true
+                , success: function ($content) {
+                }
+                , yes: function ($content) {
+                    $content.find('form').myAjaxSubmit({
+                        url: '<?= url('user.team/bestrategy') ?>',
+                        data: {user_id: data.id}
+                    });
+                    return true;
+                }
+            });
+        });
+
+        /**
          * 注册操作事件
          * @type {jQuery|HTMLElement}
          */
@@ -469,6 +679,7 @@
     function chooseGoods(goods_sku_id){
         goods_sku_id = goods_sku_id||$(this).val()
         var user_id = $('#wrap-tbody').data('cur-user-id');
+        $('input.ipt-goods-sku-id').val(goods_sku_id)
         if(goods_sku_id){
             $.post('index.php?s=/store/user/getUserGoodsStock', {goods_sku_id, user_id}, function(res){
                 if(res.code == 1){
@@ -483,6 +694,7 @@
     function goodsSku(){
         var goods_id = $(this).val()
         if(goods_id){
+            var ipt = $('input.ipt-goods-sku-id');
             $.post('index.php?s=/store/goods/getGoodsSpec', {goods_id}, function(res){
                 if(res.code == 1){
                     if(res.data.spec_id == 0){
@@ -492,13 +704,11 @@
                         })
                         $('.wrap-attr').show();
                         $("#doc-select-attr").html(html_);
-                        $('input.ipt-goods-sku-id').remove();
+                        ipt.val(res.data.list[0]['goods_sku_id']);
                         chooseGoods(res.data.list[0]['goods_sku_id']);
                     }else{
-                        var ipt = $('<input class="ipt-goods-sku-id" type="hidden" name="recharge[points][goods_sku_id]" value="'+res.data.spec_id+'">');
                         $('.wrap-attr').hide();
-                        $('input.ipt-goods-sku-id').remove();
-                        $('.wrap-goods').append(ipt);
+                        ipt.val(res.data.spec_id)
                         chooseGoods(res.data.spec_id);
                     }
                 }else{

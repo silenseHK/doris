@@ -126,8 +126,23 @@ class NoticeMessage extends BaseModel
      * @throws \think\exception\PDOException
      */
     public function balanceChangeMsg($param, $type){
-        $content_txt = $type == 10 ? "出货货款到账" : "分销返利收益到账";
-        $url = $type == 10 ? "pages/dealer/money/sale" : "pages/dealer/money/rebate";
+        $content_txt = $url = '';
+        switch($type){
+            case 10:
+                $content_txt = "出货货款到账";
+                $url = 'pages/dealer/money/sale';
+                break;
+            case 20:
+                $content_txt = "推荐收益到账";
+                $url = "pages/dealer/money/rebate";
+                break;
+            case 30:
+                $content_txt = "支出推荐奖励";
+                $url = 'pages/user/index';
+                break;
+            default:
+                break;
+        }
         $params = [
             'order_no' => $param['order_no']
         ];
@@ -163,6 +178,10 @@ class NoticeMessage extends BaseModel
             'params' => json_encode($params)
         ];
         return $this->addWithBind($data, $param['user_id']);
+    }
+
+    public function orderMsg($param, $type){
+        ##10.订单取消 20.订单发货 30.订单收货
     }
 
     /**

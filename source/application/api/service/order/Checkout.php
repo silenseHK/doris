@@ -2,8 +2,10 @@
 
 namespace app\api\service\order;
 
+use app\api\model\GoodsExperience;
 use app\api\model\Order as OrderModel;
 
+use app\api\model\OrderGoods;
 use app\api\model\User;
 use app\api\model\User as UserModel;
 use app\api\model\Goods as GoodsModel;
@@ -214,6 +216,12 @@ class Checkout
             $this->param['shop_id'] > 0 && $this->orderData['extract_shop'] = ShopModel::detail($this->param['shop_id']);
         }
 
+        ##处理包邮的情况
+        if($this->orderData['free_freight_num'] > 0){
+            if($this->orderData['goods_num'] % $this->orderData['free_freight_num'] == 0){
+                $this->orderData['express_price'] = 0;
+            }
+        }
 
         // 计算订单最终金额
         $this->setOrderPayPrice();
@@ -388,6 +396,24 @@ class Checkout
                 if(!isset($this->orderData['grade_id'])){ ##最终等级
                     $this->orderData['grade_id'] = $this->user['grade_id'];
                 }
+                if($goods['is_experience'] == 1){ ##体验装
+                    ##检查是否已经下单
+                    $check_experience = OrderGoods::checkExperienceOrder($goods['goods_id'], $this->user['user_id']);
+                    if(is_string($check_experience))$this->setError($check_experience);
+
+                    ##检查销售时间
+                    if($goods['start_sale_time'] > time())$this->setError('商品尚未开售');
+                    if($goods['end_sale_time'] < time())$this->setError('商品已停止销售');
+
+                    $rebateInfo = \app\common\model\User::getExperienceRebate($this->user['user_id'], $goods['total_num']);
+                    if(!empty($rebateInfo)){
+                        $rebateMoney = self::sumRebate($rebateInfo);
+                        $rebateUsers = self::combineRebateUser($rebateInfo);
+                    }
+                    $this->orderData['rebate_user_id'] = isset($rebateUsers) ? $rebateUsers : "";
+                    $this->orderData['rebate_money'] = isset($rebateMoney)? $rebateMoney : 0;
+                    $this->orderData['rebate_info'] = !empty($rebateInfo)? json_encode($rebateInfo) : "";
+                }
             }else{ ##层级代理
                 $check = UserGoodsStock::checkStock($this->user, $goods['goods_id'], $goods['goods_sku']['goods_sku_id'], $goods['total_num']);
                 if(!$check['isStockEnough']){
@@ -397,7 +423,7 @@ class Checkout
                 $this->orderData['supply_user_id'] = $check['supplyUserId'];
                 $this->orderData['supply_user_grade_id'] = $check['supply_user_grade_id'];
                 ##获取获得返利的用户和返利金额
-                $rebateUser = \app\common\model\User::getRebateUser($this->user['user_id'], $goods['goods_id'], $goods['total_num'], $this->orderData['supply_user_id']);
+                $rebateUser = \app\common\model\User::getRebateUser($this->user['user_id'], $goods['goods_id'], $goods['total_num'], $this->orderData['supply_user_id'], $goods['rebate_type']);
                 if(!empty($rebateUser)){
                     $rebateMoney = self::sumRebate($rebateUser);
                     $rebateUsers = self::combineRebateUser($rebateUser);
@@ -407,7 +433,10 @@ class Checkout
                 $this->orderData['rebate_info'] = !empty($rebateUser)? json_encode($rebateUser) : "";
             }
             $this->orderData['sale_type'] = $goods['sale_type']; ##商品类型
+            $this->orderData['is_experience'] = $goods['is_experience']; ##是否体验装
             $this->orderData['user_grade_id'] = User::getUserGrade($this->user['user_id']);
+            $this->orderData['free_freight_num'] = $goods['free_freight_num']; ##免配送费商品基数
+            $this->orderData['goods_num'] = $goods['total_num']; ##商品数量
         }
 
     }
@@ -674,6 +703,10 @@ class Checkout
     {
         // 新增订单记录
         $status = $this->add($order, $this->param['remark']);
+        ## 体验装下单信息
+        if($order['is_experience']){
+            $this->addExperienceInfo($order);
+        }
         if ($order['delivery'] == DeliveryTypeEnum::EXPRESS) {
             // 记录收货地址
             $this->saveOrderAddress($order['address']);
@@ -813,6 +846,28 @@ class Checkout
 
         // 保存订单记录
         return $this->model->save($data);
+    }
+
+    /**
+     * 添加体验装下单信息
+     * @param $order
+     * @return bool|false|int
+     */
+    public function addExperienceInfo($order){
+        if($order['rebate_info']){
+            $order_id = $this->model->getLastInsID();
+            $rebate_info = json_decode($order['rebate_info'],true);
+            $data = [
+                'user_id' => $this->user['user_id'],
+                'first_user_id' => isset($rebate_info[0]) ? $rebate_info[0]['user_id'] : 0,
+                'second_user_id' => isset($rebate_info[1]) ? $rebate_info[1]['user_id'] : 0,
+                'order_id' => $order_id,
+                'goods_id' => $order['goods_list'][0]['goods_id']
+            ];
+            $model = new GoodsExperience();
+            return $model->save($data);
+        }
+        return true;
     }
 
     /**

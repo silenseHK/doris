@@ -87,6 +87,15 @@ class Goods extends Controller
         }
         $goods['spec'] = $spec;
 
+        $sale_status = 1;
+        $cur_time = time();
+        if($goods['is_experience']){
+            if($cur_time < $goods['start_sale_time'])$sale_status = 2;  ##待开始
+            if($cur_time > $goods['end_sale_time'])$sale_status = 3;  ##已结束
+        }
+
+        $sale_info = array_merge(compact('sale_status','cur_time'), ['start_sale_time'=>$goods['start_sale_time'], 'end_sale_time'=>$goods['end_sale_time']]);
+
         return $this->renderSuccess([
             // 商品详情
             'detail' => $goods,
@@ -94,6 +103,8 @@ class Goods extends Controller
             'cart_total_num' => $user ? (new CartModel($user))->getGoodsNum() : 0,
             // 多规格商品sku信息
             'specData' => $specData,
+            // 销售信息
+            'sale_info' => $sale_info
         ]);
     }
 

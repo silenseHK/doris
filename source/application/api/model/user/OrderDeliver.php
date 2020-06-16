@@ -204,6 +204,10 @@ class OrderDeliver extends OrderDeliverModel
             // 计算配送金额
             $ExpressService->setExpressPrice();
         }
+        $free_freight_num = $goodsList[0]['free_freight_num'];
+        if($free_freight_num > 0 && ($num % $free_freight_num == 0)){
+            return ['status'=>1,'freight'=>0];
+        }
         // 订单总运费金额
         return ['status'=>1,'freight'=>helper::number2($ExpressService->getTotalFreight())];
     }

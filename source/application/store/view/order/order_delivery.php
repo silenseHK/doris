@@ -19,7 +19,7 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                 <div class="am-form-group">
                                     <div class="am-btn-toolbar">
                                         <div class="am-btn-group am-btn-group-xs">
-                                            <?php if (checkPrivilege('order.operate/export')): ?>
+                                            <?php if (checkPrivilege('order.delivery/export')): ?>
                                                 <a class="j-export am-btn am-btn-success am-radius"
                                                    href="javascript:void(0);">
                                                     <i class="iconfont icon-daochu am-margin-right-xs"></i>订单导出
@@ -47,6 +47,29 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                         </select>
                                     </div>
 
+                                    <div class="am-form-group am-fl">
+                                        <?php $deliveryStatus = $request->get('deliver_status'); ?>
+                                        <select name="deliver_status"
+                                                data-am-selected="{btnSize: 'sm', placeholder: '配送状态'}">
+                                            <option value=""></option>
+                                            <option value="0"
+                                                <?= $deliveryStatus === '0' ? 'selected' : '' ?>>全部
+                                            </option>
+                                            <option value="10"
+                                                <?= $deliveryStatus === '10' ? 'selected' : '' ?>>待发货
+                                            </option>
+                                            <option value="20"
+                                                <?= $deliveryStatus === '20' ? 'selected' : '' ?>>已发货
+                                            </option>
+                                            <option value="30"
+                                                <?= $deliveryStatus === '30' ? 'selected' : '' ?>>已取消
+                                            </option>
+                                            <option value="40"
+                                                <?= $deliveryStatus === '40' ? 'selected' : '' ?>>已完成
+                                            </option>
+                                        </select>
+                                    </div>
+
                                     <div class="am-form-group tpl-form-border-form am-fl">
                                         <input type="text" name="start_time"
                                                class="am-form-field"
@@ -58,6 +81,11 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                                class="am-form-field"
                                                value="<?= $request->get('end_time') ?>" placeholder="请选择截止日期"
                                                data-am-datepicker>
+                                    </div>
+
+                                    <div class="am-form-group tpl-form-border-form am-fl" style="width: 200px;">
+                                        <input type="text" class="am-form-field" name="order_no"
+                                               placeholder="请输入订单号" value="<?= $request->get('order_no') ?>">
                                     </div>
 
                                     <div class="am-form-group am-fl">
@@ -256,15 +284,17 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
      * @param deliver_id
      */
     function cancelOrder(deliver_id){
-        var idx = layer.confirm('确认取消发货[自提]?', {
+        var idx = layer.confirm('确认取消发货/自提?', {
             btn: ['确定','取消'] //按钮
         }, function(){
             layer.close(idx);
             $.post("<?= url('order/cancelOrder') ?>", {deliver_id}, function(res){
                 layer.msg(res.msg);
-                // setTimeout(function(){
-                //     location.reload();
-                // }, 1500)
+                if(res.code==1){
+                    setTimeout(function(){
+                        location.reload();
+                    }, 1500)
+                }
             }, 'json')
         }, function(){
             layer.close(idx);

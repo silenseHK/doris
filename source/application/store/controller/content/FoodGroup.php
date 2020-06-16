@@ -55,4 +55,8 @@ class FoodGroup extends Controller
         }
     }
 
+    public function test(){
+        return $this->fetch();
+    }
+
 }

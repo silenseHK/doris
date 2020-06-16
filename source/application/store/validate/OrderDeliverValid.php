@@ -14,10 +14,11 @@ class OrderDeliverValid extends Validate
         'order' => 'require|array',
         'order.express_id' => 'require|number|>=:1',
         'order.express_no' => 'require',
+        'order.express_remark' => 'max:255'
     ];
 
     protected $scene = [
-        'deliver' => ['deliver_id', 'order', 'order.express_id', 'order.express_no']
+        'deliver' => ['deliver_id', 'order', 'order.express_id', 'order.express_no', 'order.express_remark']
     ];
 
 }

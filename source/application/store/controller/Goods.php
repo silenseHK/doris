@@ -5,7 +5,9 @@ namespace app\store\controller;
 use app\store\model\Goods as GoodsModel;
 use app\store\model\Category as CategoryModel;
 use app\store\model\GoodsSku;
+use app\store\model\UserGoodsStock;
 use app\store\service\Goods as GoodsService;
+use think\Exception;
 
 /**
  * 商品管理控制器
@@ -134,6 +136,29 @@ class Goods extends Controller
     public function getGoodsSpec(){
         $model = new GoodsSku();
         return $this->renderSuccess('','', $model->getGoodsSpec());
+    }
+
+    /**
+     * 获取规格库存
+     * @return array
+     */
+    public function getSkuStock(){
+        $model = new GoodsSku();
+        return $this->renderSuccess('','', $model->getSkuStock());
+    }
+
+    /**
+     * 补充库存
+     * @return array|bool
+     */
+    public function recharge(){
+        $model = new GoodsSku();
+        try{
+            $model->recharge();
+            return $this->renderSuccess('操作成功');
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
     }
 
 }

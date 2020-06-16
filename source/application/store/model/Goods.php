@@ -3,6 +3,7 @@
 namespace app\store\model;
 
 use app\common\model\Goods as GoodsModel;
+use app\common\model\GoodsStockLog;
 use think\Db;
 use think\Exception;
 
@@ -22,6 +23,8 @@ class Goods extends GoodsModel
         }
         $data['content'] = isset($data['content']) ? htmlspecialchars($data['content']) : '';
         $data['wxapp_id'] = $data['sku']['wxapp_id'] = self::$wxapp_id;
+        $data['start_sale_time'] = strtotime($data['start_sale_time']);
+        $data['end_sale_time'] = strtotime($data['end_sale_time']);
 
         // 开启事务
         $this->startTrans();
@@ -166,6 +169,8 @@ class Goods extends GoodsModel
         }
         $data['content'] = isset($data['content']) ? htmlspecialchars($data['content']) : '';
         $data['wxapp_id'] = $data['sku']['wxapp_id'] = self::$wxapp_id;
+        $data['start_sale_time'] = strtotime($data['start_sale_time']);
+        $data['end_sale_time'] = strtotime($data['end_sale_time']);
 
         // 开启事务
         $this->startTrans();
@@ -218,11 +223,15 @@ class Goods extends GoodsModel
             // 添加规格数据
             if ($data['spec_type'] == '10') {
                 // 单规格
+                $data['sku']['image_id'] = $data['images'][0];
                 if($isUpdate){
                     $model->save($data['sku'],['goods_id'=>$this['goods_id']]);
                 }else{
+                    $data['sku']['total_stock_num'] = $data['sku']['stock_num'];
                     $data['sku']['goods_id'] = $this['goods_id'];
                     $model->isUpdate(false)->save($data['sku']);
+                    $goods_sku_id = $model->getLastInsID();
+                    GoodsStockLog::addLog($goods_sku_id,10,10, $data['sku']['stock_num']);
                 }
             } else if ($data['spec_type'] == '20'){
 //                if($data['sale_type'] == 2){
@@ -304,6 +313,28 @@ class Goods extends GoodsModel
     }
 
     /**
+     * 减少代理商品的库存
+     * @param $goodsSkuId
+     * @param $num
+     * @return int|true
+     * @throws Exception
+     */
+    public static function decAgentGoodsStock($goodsSkuId, $num){
+        return Db::name('goods_sku')->where(['goods_sku_id'=>$goodsSkuId])->setDec('stock_num', $num);
+    }
+
+    /**
+     * 增加代理商品的库存
+     * @param $goodsSkuId
+     * @param $num
+     * @return int|true
+     * @throws Exception
+     */
+    public static function incAgentGoodsStock($goodsSkuId, $num){
+        return Db::name('goods_sku')->where(['goods_sku_id'=>$goodsSkuId])->setInc('stock_num', $num);
+    }
+
+    /**
      * 获取代理商品的积分信息
      * @param $goodsId
      * @return array|false|\PDOStatement|string|\think\Model
@@ -313,6 +344,16 @@ class Goods extends GoodsModel
      */
     public static function getAgentGoodsInfo($goodsId){
         return self::where(['goods_id'=>$goodsId])->field(['is_add_integral', 'integral_weight'])->find();
+    }
+
+    /**
+     * 返还库存
+     * @param $goods
+     * @throws Exception
+     */
+    public static function refund($goods){
+        self::where(['goods_id'=>$goods['goods_id']])->setInc('stock', $goods['total_num']);
+        GoodsSku::where(['goods_sku_id'=>$goods['goods_sku_id']])->setInc('stock_num',$goods['total_num']);
     }
 
 }

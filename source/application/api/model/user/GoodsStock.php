@@ -106,7 +106,8 @@ class GoodsStock extends UserGoodsStock
                 'change_num' => $num,
                 'remark' => '提货发货',
                 'change_type' => 30,
-                'change_direction' => 20
+                'change_direction' => 20,
+                'order_no' => $order['order_no']
             ];
             if((new GoodsStockLog)->isUpdate(false)->save($stockLogData) === false)throw new Exception('提交申请失败');
             return true;

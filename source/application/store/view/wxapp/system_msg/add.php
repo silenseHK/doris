@@ -21,10 +21,10 @@
                             </div>
 
                             <div class="am-form-group">
-                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require"> 详情 </label>
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require"> 简述 </label>
                                 <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">
                                     <input type="text" class="tpl-form-input" name="content"
-                                           value="" placeholder="请输入详情" required>
+                                           value="" placeholder="请输入简述" required>
                                 </div>
                             </div>
 
@@ -47,7 +47,7 @@
                             </div>
 
                             <div class="am-form-group">
-                                <label class="am-u-sm-3 am-u-lg-2 am-form-label">HTML </label>
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label">详情 </label>
                                 <div class="am-u-sm-9 am-u-end">
                                     <!-- 加载编辑器的容器 -->
                                     <textarea id="container" name="detail" type="text/plain"></textarea>

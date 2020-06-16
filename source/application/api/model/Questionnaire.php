@@ -47,6 +47,7 @@ class Questionnaire extends QuestionnaireModel
         if($answer){
             $is_submit = 1;
             $img = FoodGroup::getUserImg($answer['bmi']);
+            if($answer['create_time'] <= (time() - 7 * 24 * 60 * 60))$is_submit = 2;
         }
         $info['is_submit'] = $is_submit;
         $info['img'] = $img;

@@ -3,28 +3,16 @@
         <div class="am-u-sm-12 am-u-md-12 am-u-lg-12">
             <div class="widget am-cf">
                 <div class="widget-head am-cf">
-                    <div class="widget-title am-cf">答卷列表</div>
+                    <div class="widget-title am-cf">填写用户列表</div>
                 </div>
-                <div class="widget-body am-fr">
+                <div class="widget-body am-fl" style="width:50%;">
                     <!-- 工具栏 -->
                     <div class="page_toolbar am-margin-bottom-xl am-cf">
                         <form id="form-search" class="toolbar-form" action="">
                             <input type="hidden" name="s" value="/<?= $request->pathinfo() ?>">
                             <div class="am fr">
-                                <div class="am-form-group tpl-form-border-form am-fl">
-                                    <input type="text" name="start_time"
-                                           class="am-form-field"
-                                           value="<?= $request->get('start_time') ?>" placeholder="请选择起始日期"
-                                           data-am-datepicker>
-                                </div>
-                                <div class="am-form-group tpl-form-border-form am-fl">
-                                    <input type="text" name="end_time"
-                                           class="am-form-field"
-                                           value="<?= $request->get('end_time') ?>" placeholder="请选择截止日期"
-                                           data-am-datepicker>
-                                </div>
                                 <div class="am-form-group am-fl">
-                                    <div class="am-input-group am-input-group-sm tpl-form-border-form">
+                                    <div style="width:250px;" class="am-input-group am-input-group-sm tpl-form-border-form">
                                         <input type="text" class="am-form-field" name="keywords" placeholder="请输入用户电话"
                                                value="<?= $request->get('keywords') ?>">
                                         <div class="am-input-group-btn">
@@ -40,38 +28,30 @@
                          tpl-table-black am-text-nowrap">
                             <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>用户名/ID</th>
                                 <th>头像</th>
-                                <th>得分</th>
-                                <th>BMI</th>
-                                <th>提交时间</th>
                                 <th>操作</th>
                             </tr>
                             </thead>
                             <tbody>
                             <?php if (!$list->isEmpty()): foreach ($list as $item): ?>
                                 <tr>
-                                    <td class="am-text-middle"><?= $item['fill_id'] ?></td>
                                     <td class="am-text-middle">
-                                        <?= $item['user']['nickName'] . "/" . $item['user']['user_id']?>
+                                        <?= $item['nickName'] . "/" . $item['user_id']?>
                                     </td>
                                     <td class="am-text-middle">
-                                        <a href="<?= $item['user']['avatarUrl'] ?>" title="点击查看大图" target="_blank">
-                                            <img src="<?= $item['user']['avatarUrl'] ?>" width="72" height="72" alt="">
+                                        <a href="<?= $item['avatarUrl'] ?>" title="点击查看大图" target="_blank">
+                                            <img src="<?= $item['avatarUrl'] ?>" width="72" height="72" alt="">
                                         </a>
                                     </td>
-                                    <td class="am-text-middle"><?= $item['point'] ?></td>
-                                    <td class="am-text-middle"><?= $item['bmi'] ?></td>
-                                    <td class="am-text-middle"><?= $item['create_time'] ?></td>
                                     <td class="am-text-middle">
                                         <div class="tpl-table-black-operation">
                                             <a class="tpl-table-black-operation-default"
-                                               href="<?= url('content.questionnaire/userFillDetail', ['fill_id'=>$item['fill_id']]) ?>"
-                                               title="详情"
+                                               href="<?= url('content.questionnaire/fillList', ['user_id'=>$item['user_id'], 'questionnaire_id'=>$item['questionnaire_id']]) ?>"
+                                               title="答卷列表"
                                             >
-                                                <i class="iconfont am-icon-edit"></i>
-                                                详情
+                                                <i class="iconfont am-icon-edit">答卷列表</i>
+
                                             </a>
                                         </div>
                                     </td>

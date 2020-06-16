@@ -403,6 +403,16 @@
                                     </small>
                                 </div>
                             </div>
+
+                            <div class="am-form-group">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label">包邮基数</label>
+                                <div class="am-u-sm-9 am-u-end">
+                                    <input type="number" class="tpl-form-input" name="goods[free_freight_num]"
+                                           value="<?= $model['free_freight_num'] ?>">
+                                    <small>注意：没有固定数量包邮则填写0</small>
+                                </div>
+                            </div>
+
                             <div class="am-form-group">
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">商品状态 </label>
                                 <div class="am-u-sm-9 am-u-end">
@@ -459,7 +469,7 @@
                                 </div>
                             </div>
 
-                            <div class="am-form-group">
+                            <div class="am-form-group wrap-manage-reward" style="display: <?= $model['sale_type'] == 1 ? 'block' : 'none' ?>;">
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">团队管理奖 </label>
                                 <div class="am-u-sm-9 am-u-end">
                                     <label class="am-radio-inline">
@@ -470,6 +480,43 @@
                                         <input type="radio" name="goods[is_manage_reward]" value="0" data-am-ucheck <?= $model['is_manage_reward']==0?"checked":"" ?>>
                                         关闭
                                     </label>
+                                </div>
+                            </div>
+
+                            <div class="am-form-group wrap-rebate-template" style="display: <?= $model['sale_type'] == 1 ? 'block' : 'none' ?>;">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">返利模板 </label>
+                                <div class="am-u-sm-9 am-u-end">
+                                    <select name="goods[rebate_type]" required
+                                            data-am-selected="{searchBox: 1, btnSize: 'sm',  placeholder:'请选择运费模板'}">
+                                        <option value="">请选择返利模板</option>
+                                        <option value="0" <?= $model['rebate_type'] == 0 ? 'selected' : '' ?>>不返利</option>
+                                        <option value="1" <?= $model['rebate_type'] == 1 ? 'selected' : '' ?>>168太空素食返利模板</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="am-form-group wrap-experience" style="display: <?= $model['sale_type'] == 2 ? 'block' : 'none' ?>;">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">是否体验装 </label>
+                                <div class="am-u-sm-9 am-u-end">
+                                    <input type="hidden" name="goods[is_experience]" value="<?= $model['is_experience'] ?>" />
+                                    <label class="am-radio-inline">
+                                        <input disabled type="radio" name="goods[is_experience]" value="1" data-am-ucheck
+                                               <?= $model['is_experience'] == 1?"checked":"" ?> />
+                                        是
+                                    </label>
+                                    <label class="am-radio-inline">
+                                        <input disabled type="radio" name="goods[is_experience]" value="0" data-am-ucheck
+                                            <?= $model['is_experience'] == 0?"checked":"" ?> />
+                                        否
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="am-form-group" style="display: <?= $model['is_experience'] == 1 ? 'block' : 'none' ?>;">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">销售时间 </label>
+                                <div class="am-u-sm-9 am-u-end">
+                                    <input type="text" name="goods[start_sale_time]" class="layui-input" id="test5" value="<?= date('Y-m-d H:i:s',$model['start_sale_time']) ?>" placeholder="开售时间">
+                                    <input type="text" name="goods[end_sale_time]" class="layui-input" id="test6" value="<?= date('Y-m-d H:i:s',$model['end_sale_time']) ?>" placeholder="截止时间">
                                 </div>
                             </div>
 
@@ -500,6 +547,7 @@
 <script src="assets/common/plugins/umeditor/umeditor.config.js?v=<?= $version ?>"></script>
 <script src="assets/common/plugins/umeditor/umeditor.min.js"></script>
 <script src="assets/store/js/goods.spec.js?v=<?= $version ?>"></script>
+<script src="assets/common/plugins/layui/layui.all.js"></script>
 <script>
 
     $(function () {
@@ -591,7 +639,10 @@
 
             var $goodsSpecMany = $('.spec-wrap1')
                 , $goodsSpecMany2 = $('.spec-wrap2')
-                , $goodsSpecSingle = $('.goods-spec-single');
+                , $goodsSpecSingle = $('.goods-spec-single')
+                , $rebateTemplate = $('.wrap-rebate-template')
+                , $manageReward = $('.wrap-manage-reward')
+                , $experience = $('.wrap-experience');
 
             // e.currentTarget.value === '0' ? $panelGrade.toggle() : $panelGrade.toggle();
             $panelGrade.toggle();
@@ -603,6 +654,13 @@
             }else{
                 $goodsSpecMany.hide() && $goodsSpecSingle.show() &&$goodsSpecMany2.hide() ;
             }
+            if(e.currentTarget.value === '1'){
+                $rebateTemplate.show() && $manageReward.show();
+                $experience.hide();
+            }else{
+                $rebateTemplate.hide() && $manageReward.hide();
+                $experience.show();
+            }
         });
 
         // 单独设置折扣
@@ -611,6 +669,18 @@
             // e.currentTarget.value !== '0' ? $panelGradeAlone.hide() : $panelGradeAlone.show();
             $panelGradeAlone.toggle();
         });
+
+        layui.use('laydate', function() {
+            var laydate = layui.laydate;
+            laydate.render({
+                elem: '#test5'
+                ,type: 'datetime'
+            });
+            laydate.render({
+                elem: '#test6'
+                ,type: 'datetime'
+            });
+        })
 
     });
 </script>

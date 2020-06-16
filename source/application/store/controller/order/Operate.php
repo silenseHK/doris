@@ -40,6 +40,17 @@ class Operate extends Controller
     }
 
     /**
+     *  发货订单导出
+     * @param $dataType
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function deliveryExport($dataType){
+        return $this->model->exportList2($dataType, $this->request->param());
+    }
+
+    /**
      * 批量发货
      * @return array|bool|mixed
      * @throws \think\db\exception\DataNotFoundException

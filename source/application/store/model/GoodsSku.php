@@ -3,6 +3,9 @@
 namespace app\store\model;
 
 use app\common\model\GoodsSku as GoodsSkuModel;
+use app\common\model\GoodsStockLog;
+use think\db\Query;
+use think\Exception;
 
 /**
  * 商品规格模型
@@ -36,9 +39,12 @@ class GoodsSku extends GoodsSkuModel
                     'spec_sku_id' => $item['spec_sku_id'],
                     'goods_id' => $goods_id,
                     'wxapp_id' => self::$wxapp_id,
+                    'total_stock_num' => $form['stock_num']
                 ]);
                 unset($data['image_path']);
-                $ids[] = $this->insertGetId($data);
+                $goods_sku_id = $this->insertGetId($data);
+                $ids[] = $goods_sku_id;
+                GoodsStockLog::addLog($goods_sku_id,10,10, $form['stock_num']);
             }
         }
         ##删除
@@ -161,6 +167,72 @@ class GoodsSku extends GoodsSkuModel
             }
         }
         return compact('list','spec_id');
+    }
+
+    public static function getGoodsSpecList(){
+//        return (new self)->with(['goods','image'])->select();
+        return (new self)->alias('gs')
+            ->join('goods g','g.goods_id = gs.goods_id','LEFT')
+            ->where(
+                [
+                    'g.is_delete' => 0
+                ]
+            )
+            ->with(
+                [
+                    'image' => function(Query $query){
+                        $query->field(['file_id', 'storage', 'file_name']);
+                    }
+                ]
+            )
+            ->field("gs.total_stock_num,gs.stock_num,gs.spec_sku_id,gs.image_id,g.is_delete,g.goods_name")
+            ->select();
+    }
+
+    /**
+     * 规格商品的库存
+     * @param int $goods_sku_id
+     * @return mixed
+     */
+    public function getSkuStock($goods_sku_id=0){
+        if(!$goods_sku_id)
+            $goods_sku_id = input('post.goods_sku_id',0,'intval');
+        return $this->where(['goods_sku_id'=>$goods_sku_id])->value('stock_num');
+    }
+
+    /**
+     * 补充库存
+     * @return bool
+     * @throws Exception
+     */
+    public function recharge(){
+        $goods_sku_id = input('post.goods_sku_id',0,'intval');
+        $mode = input('post.mode','','str_filter');
+        $num = input('post.num',0,'intval');
+        if(!$goods_sku_id || !$mode || !$num || $num<=0){
+            throw new Exception('参数错误');
+        }
+
+        $goods_sku = self::get($goods_sku_id);
+
+        if($mode == 'dec'){ ##判断库存是否充足
+            $balance_stock = $this->getSkuStock($goods_sku_id);
+            if($balance_stock < $num)throw new Exception('当前库存不足');
+        }
+        $update = [
+            'stock_num' => [$mode, $num],
+            'total_stock_num' => [$mode, $num]
+        ];
+
+        $change_direction = $mode=='inc'?10:20;
+        GoodsStockLog::addLog($goods_sku_id,20,$change_direction,$num);
+
+        $res = $this->update($update, ['goods_sku_id'=>$goods_sku_id]);
+        if($res === false)throw new Exception('操作失败');
+
+        ##增加商品总库存
+        Goods::update(['stock'=>[$mode, $num]], ['goods_id'=>$goods_sku['goods_id']]);
+        return true;
     }
 
 }

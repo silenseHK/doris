@@ -85,8 +85,10 @@ class Order extends OrderModel
         $goodsList = $this['goods'];
         $agentGoods = [];
         foreach($goodsList as $goods){
-            if(!isset($agentGoods[$goods['goods_id']]))$agentGoods[$goods['goods_id']] = 0;
-            $agentGoods[$goods['goods_id']] += $goods['total_num'];
+            if($goods['sale_type'] == 1){
+                if(!isset($agentGoods[$goods['goods_id']]))$agentGoods[$goods['goods_id']] = 0;
+                $agentGoods[$goods['goods_id']] += $goods['total_num'];
+            }
         }
         if(!empty($agentGoods)){
             ##获取最新的供货人
@@ -526,7 +528,7 @@ class Order extends OrderModel
                     }
                 ]
             )
-            ->field(['order_id', 'order_no', 'create_time', 'user_id', 'order_price', 'pay_price', 'express_price', 'delivery_type', 'order_status', 'pay_status', 'delivery_status'])
+            ->field(['order_id', 'order_no', 'create_time', 'user_id', 'order_price', 'pay_price', 'express_price', 'delivery_type', 'order_status', 'pay_status', 'delivery_status', 'receipt_status'])
             ->page($page, $size)
             ->select();
         return $list;
@@ -566,7 +568,10 @@ class Order extends OrderModel
      * @return float|int
      */
     public static function getUserWaitIncomeMoney($user_id){
-        $money = self::where(
+        $model = new self;
+        #待入账= 出货待入账 + 体验装返利待入账
+        ##出货待入账
+        $supply_money = $model->where(
                 [
                     'supply_user_id' => $user_id,
                     'pay_status' => 20,
@@ -576,6 +581,21 @@ class Order extends OrderModel
                 ]
             )
             ->sum('order_price');
+        ##体验装返利待入账
+        $experience_list = $model->where(['rebate_user_id'=>['LIKE', "%[$user_id]%"], 'delivery_type'=>['IN', [10, 20]], 'pay_status'=>20, 'order_status'=>10])->field(['rebate_info'])->select();
+        $experience_money = 0;
+        if(!$experience_list->isEmpty()){
+            foreach($experience_list as $item){
+                foreach($item['rebate_info'] as $it){
+                    if($it['user_id'] == $user_id){
+                        $experience_money += $it['money'];
+                        continue;
+                    }
+                }
+            }
+        }
+
+        $money = $supply_money + $experience_money;
         return $money;
     }
 

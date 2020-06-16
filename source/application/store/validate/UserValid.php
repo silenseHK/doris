@@ -12,11 +12,16 @@ class UserValid extends Validate
     protected $rule = [
         'user_id' => 'require|number|>=:1',
         'mobile' => 'require|mobile',
-        'exchange_user_id' => 'require|number|>=:1'
+        'exchange_user_id' => 'require|number|>=:0',
+        'goods_id' => 'require|number|>=:1',
+        'num' => 'require|number|>=:1',
+        'is_platform_rebate' => 'require|number|in:0,1',
+        'remark' => 'require|max:200'
     ];
 
     protected $scene = [
         'exchange_team' => ['user_id', 'exchange_user_id'],  ##转换团队
+        'rebate' => ['user_id', 'goods_id', 'num', 'remark']
     ];
 
     /**

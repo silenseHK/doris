@@ -6,6 +6,8 @@ use app\api\model\User as UserModel;
 use app\common\library\wechat\WxSubMsg;
 use app\common\service\ManageReward;
 use app\store\model\Wxapp as WxappModel;
+use think\Cache;
+use think\Db;
 use think\Exception;
 use think\Hook;
 use app\api\model\user\Fill;
@@ -124,15 +126,57 @@ class User extends Controller
 //        var_dump($rewardModel->getError());
 //        $notify = new Notify();
 //        $notify->order();
+
 //        $user = $this->getUser();
 //        print_r($user);
 //        $user = $this->getUser();
 //        $config = WxappModel::getWxappCache();
 //        $wxSubMsg = new WxSubMsg($config['app_id'], $config['app_secret']);
+//        $res = $wxSubMsg->sendCommonMsg(5,$user);
 //        $res = $wxSubMsg->sendMsg($user,['jet lee', '15983587777'],'register_success');
-//        print_r($res);
-        $point = Fill::countPointBMI(6);
-        print_r($point) ;
+//        var_dump($res);echo $wxSubMsg->getError();
+//        $point = Fill::countPointBMI(6);
+//        print_r($point) ;
+//        $params = [
+//            'user_id' => 7
+//        ];
+//        Hook::listen('agent_instant_grade',$params);
+
+//        $list = Cache::get('');
+//        print_r($list);
+
+//        $list = Db::name('user_fill')->field(['fill_id', 'user_id'])->select();
+//        foreach($list as $item){
+//            $group_user_id = \app\common\model\User::getGroupUserId($item['user_id']);
+//            Db::name('user_fill')->where(['fill_id'=>$item['fill_id']])->setField('group_user_id',$group_user_id);
+//        }
+
+        //参数设置
+        $post_data = array();
+        $post_data["customer"] = '246697124CED07C190975319669E8B64';
+        $key= 'bDfciruN248' ;
+        $post_data["param"] = '{"com":"zhongtong","num":"640229783116"}';
+
+        $url='http://poll.kuaidi100.com/poll/query.do';
+        $post_data["sign"] = md5($post_data["param"].$key.$post_data["customer"]);
+        $post_data["sign"] = strtoupper($post_data["sign"]);
+        $o="";
+        foreach ($post_data as $k=>$v)
+        {
+            $o.= "$k=".urlencode($v)."&";		//默认UTF-8编码格式
+        }
+        $post_data=substr($o,0,-1);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_URL,$url);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
+        $result = curl_exec($ch);
+        $data = str_replace("\"",'"',$result );
+        $data = json_decode($data,true);
+
+//        $user_id = input('get.user_id',0,'intval');
+//        $user = UserModel::get($user_id);
     }
 
 }

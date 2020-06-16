@@ -5,6 +5,7 @@ namespace app\task\model;
 use app\common\model\User as UserModel;
 use app\task\model\user\GradeLog as GradeLogModel;
 use app\common\enum\user\grade\log\ChangeType as ChangeTypeEnum;
+use think\Hook;
 
 /**
  * 用户模型
@@ -106,13 +107,19 @@ class User extends UserModel
     /**
      * 设置单用户等级
      * @param $data
+     * @param $user
      * @return false|int
      */
-    public function setUserGrade($data){
+    public function setUserGrade($data, $user){
         ##更新会员等级
         $res = $this->isUpdate()->save(['user_id'=>$data['user_id'], 'grade_id'=>$data['new_grade_id']]);
         ##插入变更记录
         (new GradeLogModel())->recordsOne($data);
+        ##推荐升级
+        $params = [
+            'user_id' => $user['invitation_user_id']
+        ];
+        Hook::listen('agent_instant_grade',$params);
         return $res;
     }
 

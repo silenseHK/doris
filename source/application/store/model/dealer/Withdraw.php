@@ -10,6 +10,7 @@ use app\common\library\wechat\WxPay;
 use app\store\model\Wxapp as WxappModel;
 use app\common\model\dealer\Withdraw as WithdrawModel;
 use app\store\model\User as UserModel;
+use app\store\service\order\Export as ExportService;
 
 /**
  * 分销商提现明细模型
@@ -168,6 +169,20 @@ class Withdraw extends WithdrawModel
             return true;
         }
         return false;
+    }
+
+    /**
+     * 导出提现申请
+     * @param null $user_id
+     * @param int $apply_status
+     * @param int $pay_type
+     * @param string $search
+     * @throws \think\exception\DbException
+     */
+    public function exportList($user_id = null, $apply_status = -1, $pay_type = -1, $search = ''){
+        $list = $this->getList($user_id, $apply_status, $pay_type, $search)->toArray();
+        $exportService = new ExportService();
+        return $exportService->withdrawList($list['data']);
     }
 
 }

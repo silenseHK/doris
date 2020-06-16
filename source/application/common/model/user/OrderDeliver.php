@@ -147,4 +147,12 @@ class OrderDeliver extends BaseModel
         return $this->belongsTo('app\common\model\GoodsSku','goods_sku_id','goods_sku_id');
     }
 
+    /**
+     * 库存记录
+     * @return \think\model\relation\HasOne
+     */
+    public function stockLog(){
+        return $this->hasOne('app\common\model\UserGoodsStockLog','order_no','order_no');
+    }
+
 }

@@ -12,6 +12,10 @@ class NoticeMessage extends NoticeMessageModel
         return $this->type;
     }
 
+    public function getEffectTimeAttr($value, $data){
+        return date('Y-m-d H:i:s', $value);
+    }
+
     /**
      * 获取系统消息
      * @param $num
@@ -34,7 +38,9 @@ class NoticeMessage extends NoticeMessageModel
      * @throws \think\exception\DbException
      */
     public function getOneSystemMsg(){
-        return $this->where(['type'=>10, 'effect_time'=>['ELT', time()]])->field(['title', 'content'])->find();
+        $data = $this->where(['type'=>10, 'effect_time'=>['ELT', time()]])->field(['title', 'content', 'effect_time'])->find();
+        if($data)$data['wait_browse_num'] = 0;
+        return $data;
     }
 
     /**

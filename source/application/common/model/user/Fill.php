@@ -5,6 +5,7 @@ namespace app\common\model\user;
 
 
 use app\common\model\BaseModel;
+use app\common\model\User;
 
 class Fill extends BaseModel
 {
@@ -15,10 +16,20 @@ class Fill extends BaseModel
 
     protected $updateTime = false;
 
-    protected $insert = ['wxapp_id'];
+    protected $insert = ['wxapp_id', 'group_user_id'];
 
     public function setWxappIdAttr(){
         return static::$wxapp_id ? : 10001;
+    }
+
+    /**
+     * 处理团队user_id
+     * @param $value
+     * @param $data
+     * @return int
+     */
+    public function setGroupUserIdAttr($value, $data){
+        return User::getGroupUserId($data['user_id']);
     }
 
     public function user(){

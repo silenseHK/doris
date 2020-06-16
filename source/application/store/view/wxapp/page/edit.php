@@ -20,6 +20,10 @@
                                     <p class="item-icon"><i class="iconfont icon-tupian1"></i></p>
                                     <p>单图组</p>
                                 </nav>
+                                <nav class="special" @click="onAddItem('modelPic')">
+                                    <p class="item-icon"><i class="iconfont icon-tupian1"></i></p>
+                                    <p>弹窗广告</p>
+                                </nav>
                                 <nav class="special" @click="onAddItem('window')">
                                     <p class="item-icon"><i class="iconfont icon-newbilayout"></i></p>
                                     <p>图片橱窗</p>
@@ -141,6 +145,24 @@
                                                 <div class="item-image" v-for="imageSingle in item.data"
                                                      :style="{padding: item.style.paddingTop + 'px ' + item.style.paddingLeft + 'px 0'}">
                                                     <img :src="imageSingle.imgUrl">
+                                                </div>
+                                            </div>
+                                            <div class="btn-edit-del">
+                                                <div class="btn-del" @click.stop="onDeleleItem(index)">删除</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                                
+                                <!-- diy元素: 广告 -->
+                                <template v-else-if="item.type == 'modelPic'">
+                                    <div @click.stop="onEditer(index)">
+                                        <div class="drag optional" :class="{selected:index === selectedIndex}">
+                                            <div class="diy-imageSingle"
+                                                 :style="{ paddingBottom: item.style.paddingTop + 'px', background: item.style.background}">
+                                                <div class="item-image" v-for="modelPic in item.data"
+                                                     :style="{padding: item.style.paddingTop + 'px ' + item.style.paddingLeft + 'px 0'}">
+                                                    <img :src="modelPic.imgUrl">
                                                 </div>
                                             </div>
                                             <div class="btn-edit-del">
@@ -947,6 +969,75 @@
                                                     <label class="am-u-sm-3 am-form-label am-text-xs">链接地址 </label>
                                                     <div class="am-u-sm-8 am-u-end">
                                                         <input type="text" value="" v-model='imageSingle.linkUrl'>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </draggable>
+                                </div>
+                                <div class="j-data-add form-item-add" @click="onEditorAddData">
+                                    <i class="fa fa-plus"></i> 添加一个
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!--编辑器: 单图组2-->
+                        <div id="tpl_editor_imageSingle" v-if="curItem.type == 'modelPic'">
+                            <div class="editor-title"><span>{{ curItem.name }}</span></div>
+                            <form class="am-form tpl-form-line-form">
+                                <div class="am-form-group">
+                                    <label class="am-u-sm-3 am-form-label am-text-xs">关闭按钮下边距 </label>
+                                    <div class="am-u-sm-9 am-u-end">
+                                        <input class="tpl-form-input" type="range"
+                                               v-model="curItem.style.paddingTop" min="0" max="50">
+                                        <div class="display-value">
+                                            <span class="value">{{ curItem.style.paddingTop }}</span>px
+                                            (像素)
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="am-form-group">
+                                    <label class="am-u-sm-3 am-form-label am-text-xs">左右边距 </label>
+                                    <div class="am-u-sm-9 am-u-end">
+                                        <input class="tpl-form-input" type="range"
+                                               v-model="curItem.style.paddingLeft" min="0"
+                                               max="50">
+                                        <div class="display-value">
+                                            <span class="value">{{ curItem.style.paddingLeft }}</span>px
+                                            (像素)
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="am-form-group">
+                                    <label class="am-u-sm-3 am-form-label am-text-xs">背景颜色 </label>
+                                    <div class="am-u-sm-9 am-u-end">
+                                        <input class="" type="color" v-model="curItem.style.background">
+                                        <button type="button" class="btn-resetColor am-btn am-btn-xs"
+                                                @click.stop="onEditorResetColor(curItem.style, 'background', '#ffffff')">
+                                            重置
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="form-items">
+                                    <draggable :list="curItem.data"
+                                               :options="{ animation: 120, filter: 'input', preventOnFilter: false }">
+                                        <div class="form-item drag" v-for="(modelPic, index) in curItem.data">
+                                            <i class="iconfont icon-shanchu item-delete"
+                                               @click="onEditorDeleleData(index,selectedIndex)"></i>
+                                            <div class="item-inner">
+                                                <div class="am-form-group">
+                                                    <label class="am-u-sm-3 am-form-label am-text-xs">图片 </label>
+                                                    <div class="am-u-sm-8 am-u-end">
+                                                        <div class="data-image">
+                                                            <img :src="modelPic.imgUrl" alt=""
+                                                                 @click="onEditorSelectImage(modelPic, 'imgUrl')">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="am-form-group">
+                                                    <label class="am-u-sm-3 am-form-label am-text-xs">链接地址 </label>
+                                                    <div class="am-u-sm-8 am-u-end">
+                                                        <input type="text" value="" v-model='modelPic.linkUrl'>
                                                     </div>
                                                 </div>
                                             </div>

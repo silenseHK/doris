@@ -3,8 +3,10 @@
 namespace app\store\model;
 
 use app\common\model\Order as OrderModel;
-
+use app\common\service\order\Refund;
 use app\store\model\User as UserModel;
+use app\store\model\user\BalanceLog;
+use app\store\model\user\IntegralLog;
 use app\store\model\UserCoupon as UserCouponModel;
 use app\store\service\order\Export as Exportservice;
 
@@ -14,6 +16,7 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
 use app\common\service\Message as MessageService;
 use app\common\service\order\Refund as RefundService;
 use app\common\service\wechat\wow\Order as WowService;
+use think\Db;
 use think\db\Query;
 use think\Exception;
 
@@ -151,6 +154,22 @@ class Order extends OrderModel
         $list = $this->getListAll($dataType, $query);
         // 导出csv文件
         return (new Exportservice)->orderList($list);
+    }
+
+    /**
+     * 订单导出
+     * @param $dataType
+     * @param $query
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function exportList2($dataType, $query)
+    {
+        // 获取订单列表
+        $list = $this->getListAll($dataType, $query);
+        // 导出csv文件
+        return (new Exportservice)->orderList2($list);
     }
 
     /**
@@ -568,6 +587,280 @@ class Order extends OrderModel
             ->where('is_delete', '=', 0)
             ->column('user_id');
         return count($userIds);
+    }
+
+    public function warehouse(){
+        $goods_id = 21;
+        ##库存
+        $stock_info = GoodsSku::where(['goods_id'=>$goods_id])->field(['stock_num', 'total_stock_num', 'goods_sku_id'])->find();
+        ##发货量
+        $deliver_info = OrderGoods::getDeliverInfo($stock_info['goods_sku_id']);
+        ##云库存
+        $cloud_stock = UserGoodsStock::getCloudStock($stock_info['goods_sku_id']);
+        ##出货量[平台出货]
+        $ship_info = OrderGoods::getShipInfo($stock_info['goods_sku_id']);
+        $nums = compact('stock_info','cloud_stock','deliver_info','ship_info');
+
+        ##时间变化的量
+        $time_nums = $this->getTimeNums($goods_id);
+
+        ##库存
+        $spec_list = GoodsSku::getGoodsSpecList();
+
+        ##待发货
+        $deliver_list = OrderGoods::getDeliverList();
+
+        return compact('nums','time_nums','spec_list','deliver_list');
+    }
+
+    public function getTimeNums($goods_id=21){
+        $goods_sku_id = GoodsSku::where(['goods_id'=>$goods_id])->value('goods_sku_id');
+        $start_time = input('start_time','','str_filter');
+        $end_time = input('end_time','','str_filter');
+        if($start_time && $end_time){
+            $start_time = strtotime($start_time . " 00:00:01");
+            $end_time = strtotime($end_time . " 23:59:59");
+        }else{
+            $start_time = $end_time = 0;
+        }
+        ##待发货量
+        $wait_deliver = OrderGoods::getWaitDeliverInfo($goods_sku_id, $start_time, $end_time);
+        ##待提货量
+        $wait_take = OrderGoods::getWaitTakeInfo($goods_sku_id, $start_time, $end_time);
+        ##已发货量
+        $wait_receipt = OrderGoods::getWaitReceiptInfo($goods_sku_id, $start_time, $end_time);
+        ##已完成量
+        $complete = OrderGoods::getCompleteInfo($goods_sku_id, $start_time, $end_time);
+        return compact('wait_deliver','wait_take','wait_receipt','complete');
+    }
+
+    /**
+     * 退款
+     * @return bool
+     * @throws Exception
+     * @throws \think\exception\DbException
+     */
+    public function refund(){
+        ##参数
+        $order_id = input('post.order_id',0,'intval');
+        $remark = input('post.remark','','str_filter');
+        ##操作
+        $order_info = self::get(['order_id'=>$order_id], ['goods', 'user', 'supplyUser']);
+//        if(in_array($order_info['order_status']['value'], [20, 21, 40]) || $order_info['pay_status']['value'] != 20)throw new Exception('该订单不支持此操作');
+//        print_r($order_info->toArray());die;
+        $supply_refund_money = $rebate_refund_money = 0;
+        if($order_info['order_status']['value'] == 30){ ##已完成订单
+            ##检查订单
+            if($order_info['supply_user_id'] > 0){
+                ##查看出货人余额
+                $supply_refund_money = $order_info['order_price'] - $order_info['rebate_money'];
+                if($order_info['supply_user']['balance'] < $supply_refund_money)throw new Exception('出货人余额不足');
+            }
+            if($order_info['rebate_money'] > 0){
+                $rebate_refund_money = $order_info['rebate_money'];
+                ##检查返利用户余额
+                foreach($order_info['rebate_info'] as $item){
+                    if($item['money'] > User::getUserBalance($item['user_id']))throw new Exception('返利用户余额不足');
+                }
+            }
+        }
+        $refund_money = $order_info['pay_price'];
+        if($order_info['pay_status']['value'] == 20)$refund_money = $order_info['order_price'];
+
+        ##退款
+        $refund_data = [
+            'order_id' => $order_id,
+            'order_goods_id' => $order_info['goods'][0]['goods_id'],
+            'refund_money' => $refund_money,
+            'remark' => $remark,
+            'order_status' => $order_info['order_status']['value']
+        ];
+        Db::startTrans();
+        try{
+            ##恢复库存
+            $flag = $order_info['order_status']['value'] == 30 ? 3 : 2;
+            if($order_info['supply_user_id'] > 0){
+                UserGoodsStock::refundStock($order_info['supply_user_id'], $order_info['goods'][0]['goods_id'], $order_info['goods'][0]['goods_sku_id'], $order_info['goods'][0]['total_num'], $flag, $order_info['order_no']);
+            }else{
+                Goods::refund($order_info['goods'][0]);
+            }
+            ##扣除进货的库存
+            if($order_info['delivery_type']['value'] == 30){
+                UserGoodsStock::rebackStock($order_info['user_id'], $order_info['goods'][0]['goods_id'], $order_info['goods'][0]['goods_sku_id'], $order_info['goods'][0]['total_num'], $order_info['order_no']);
+            }
+            ##改变订单状态为已退款
+            $res = self::where(['order_id'=>$order_id])->setField('order_status',40);
+            if($res === false)throw new Exception('操作失败');
+            ##返还积分和等级、返还返利金额、
+            if($order_info['order_status']['value'] == 30){
+                $integral_info = IntegralLog::get(['order_id'=>$order_id]);
+                if($integral_info){
+                    IntegralLog::refund($integral_info, $order_id);
+                }
+            }
+            ##返还货款
+            if($supply_refund_money > 0){
+                BalanceLog::refund($order_info['supply_user_id'], $supply_refund_money, $order_id,1);
+            }
+            ##返还返利金额
+            if($rebate_refund_money > 0){
+                foreach($order_info['rebate_info'] as $item){
+                    BalanceLog::refund($item['user_id'], $item['money'], $order_id,2);
+                }
+            }
+            ##更新订单状态
+            self::where(['order_id'=>$order_id])->setField('order_status',40);
+            ##增加退款记录
+            OrderRefundLog::add($refund_data);
+            ##退款
+            $refund = new Refund();
+            $res = $refund->execute($order_info, $refund_money);
+            if(!$res)throw new Exception('退款失败');
+            Db::commit();
+            return true;
+        }catch(Exception $e){
+            Db::rollback();
+            $this->error = $e->getMessage();
+            return false;
+        }
+    }
+
+    public function getUserOrderList(){
+        ##参数
+        $user_id = input('post.user_id',0,'intval');
+        $start_time = input('post.start_time','','str_filter');
+        $end_time = input('post.end_time','','str_filter');
+        $goods_sku_id = input('post.goods_sku_id',0,'intval');
+        $where = [
+            'o.pay_status' => 20,
+            'og.goods_sku_id' => $goods_sku_id
+        ];
+        if($start_time && $end_time){
+            $start_time = strtotime($start_time);
+            $end_time = strtotime($end_time);
+            $where['o.create_time'] = ['BETWEEN', [$start_time, $end_time]];
+        }
+        ##数据
+        $list = $this->alias('o')
+            ->join('order_goods og','o.order_id = og.order_id','LEFT')
+            ->where($where)
+            ->where(function(Query $query) use ($user_id){
+                $query->where(['o.user_id'=>$user_id])->whereOr(['o.supply_user_id'=>$user_id])->whereOr(['o.rebate_user_id'=> ['LIKE', "%[{$user_id}]%"]]);
+            })
+            ->with(
+                [
+                    'stockLog',
+                    'balanceLog',
+                    'supplyUser',
+                    'user',
+                    'supplyGrade',
+                    'userGrade',
+                    'goods'
+                ]
+            )
+            ->order('o.create_time','desc')
+            ->paginate(15,false,[
+                'type' => 'Bootstrap',
+                'var_page' => 'page',
+                'path' => 'javascript:ajax_order_go([PAGE]);'
+            ]);
+        $page = $list->render();
+//        print_r($list->toArray());die;
+        return compact('page','list');
+    }
+
+    /**
+     * 用户微信支付的订单
+     * @param $user_id
+     * @param $start_time
+     * @param $end_time
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getUserWxPayOrderList(){
+        ##参数
+        $user_id = input('post.user_id',0,'intval');
+        $start_time = input('post.start_time','','str_filter');
+        $end_time = input('post.end_time','','str_filter');
+        $where = [
+            'user_id'=>$user_id,
+            'order_status' => ['IN', [10, 30]],
+            'pay_status' => 20,
+            'pay_type' => ['IN', [20, 30]]
+        ];
+         if($start_time && $end_time){
+            $start_time = strtotime($start_time);
+            $end_time = strtotime($end_time);
+            $where['create_time'] = ['BETWEEN', [$start_time, $end_time]];
+         }
+         $list = $this
+             ->where($where)
+             ->with(
+                [
+                    'stockLog',
+                    'supplyUser',
+                    'user',
+                    'supplyGrade',
+                    'userGrade',
+                    'goods' => function(Query $query){
+                        $query->with(['sku.image']);
+                    }
+                ]
+             )
+             ->order('create_time','desc')
+             ->paginate(10,false,[
+                 'type' => 'Bootstrap',
+                 'var_page' => 'page',
+                 'path' => 'javascript:ajax_wxpay_go([PAGE]);'
+             ]);
+
+        $page = $list->render();
+        return compact('page','list');
+    }
+
+    /**
+     * 获取运费信息
+     * @return array
+     * @throws \think\exception\DbException
+     */
+    public function getOrderFreight(){
+        ##参数
+        $start_time = input('post.start_time','','str_filter');
+        $end_time = input('post.end_time','','str_filter');
+        $where = [
+            'order_status' => ['IN', [10, 30, 40]],
+            'delivery_status' => 20,
+            'pay_status' => 20,
+            'delivery_type' => 10,
+            'express_price' => ['GT', 0]
+        ];
+        if($start_time && $end_time){
+            $start_time = strtotime($start_time);
+            $end_time = strtotime($end_time);
+            $where['create_time'] = ['BETWEEN', [$start_time, $end_time]];
+        }
+        $list = $this
+            ->with(
+                [
+                    'goods.spec.image',
+                    'user',
+                    'address'
+                ]
+            )
+            ->where($where)
+            ->order('create_time','desc')
+            ->paginate(10,false,[
+                'type' => 'Bootstrap',
+                'var_page' => 'page',
+                'path' => 'javascript:ajax_order_freight_go([PAGE]);'
+            ]);
+        ##总运费
+        $total_freight = 0;
+        if(!$list->isEmpty())$total_freight = $this->where($where)->sum('express_price');
+        $page = $list->render();
+        return compact('page','list','total_freight');
     }
 
 }

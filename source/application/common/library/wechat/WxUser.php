@@ -2,6 +2,8 @@
 
 namespace app\common\library\wechat;
 
+use app\common\library\wechat\bizdatacrypt\WXBizDataCrypt;
+
 /**
  * 微信小程序用户管理类
  * Class WxUser
@@ -33,6 +35,25 @@ class WxUser extends WxBase
             return false;
         }
         return $result;
+    }
+
+    /**
+     * 解密获取用户的unionId
+     * @param $sessionKey
+     * @param $encryptedData
+     * @param $iv
+     * @return bool|mixed
+     */
+    public function unionId($sessionKey, $encryptedData, $iv){
+        $pc = new WXBizDataCrypt($this->appId, $sessionKey);
+        $errCode = $pc->decryptData($encryptedData, $iv, $data );
+        print_r($data);die;
+        if ($errCode == 0){
+            return $data['unionId'];
+        } else {
+            $this->error = "获取unionID失败,错误码：{$errCode}";
+            return false;
+        }
     }
 
 }

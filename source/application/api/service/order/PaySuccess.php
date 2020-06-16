@@ -59,9 +59,10 @@ class PaySuccess extends Basics
      * 订单支付成功业务处理
      * @param $payType
      * @param array $payData
+     * @param int $is_integral
      * @return bool
      */
-    public function onPaySuccess($payType, $payData = [])
+    public function onPaySuccess($payType, $payData = [], $is_integral=1)
     {
         if (empty($this->model)) {
             $this->error = '未找到该订单信息';
@@ -69,7 +70,7 @@ class PaySuccess extends Basics
         }
         // 更新付款状态
         try{
-            $status = $this->updatePayStatus($payType, $payData);
+            $status = $this->updatePayStatus($payType, $payData, $is_integral);
             // 订单支付成功行为
             if ($status == true) {
                 Hook::listen('order_pay_success', $this->model, OrderTypeEnum::MASTER);
@@ -85,10 +86,12 @@ class PaySuccess extends Basics
      * 更新付款状态
      * @param $payType
      * @param array $payData
+     * @param int $is_integral
      * @return bool
      */
-    private function updatePayStatus($payType, $payData = [])
+    private function updatePayStatus($payType, $payData = [], $is_integral=1)
     {
+
         // 验证余额支付时用户余额是否满足
         if ($payType == PayTypeEnum::BALANCE) {
             if ($this->user['balance'] < $this->model['pay_price']) {
@@ -96,7 +99,7 @@ class PaySuccess extends Basics
                 return false;
             }
         }
-        $this->model->transaction(function () use ($payType, $payData) {
+        $this->model->transaction(function () use ($payType, $payData, $is_integral) {
             // 更新商品库存、销量
             (new GoodsModel)->updateStockSales($this->model);
             // 整理订单信息
@@ -117,7 +120,7 @@ class PaySuccess extends Basics
             
             ## 增加用户积分[补充库存的订单]
 //            print_r($this->model['goods']->toArray());die;
-            $integralLogId = $this->model['delivery_type']['value'] == 30 ? $this->user->setIncIntegral($this->model['goods']) : 0;
+            $integralLogId = ($this->model['delivery_type']['value'] == 30 && $is_integral) ? $this->user->setIncIntegral($this->model['goods']) : 0;
 
             ## 补充用户库存 && 减少供应用户库存 && 增加供应用户余额
             $this->user->addGoodsStock($this->model, $integralLogId);

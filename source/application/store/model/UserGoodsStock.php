@@ -210,4 +210,75 @@ class UserGoodsStock extends UserGoodsStockModel
         }
     }
 
+    /**
+     * 获取云库存信息
+     * @param $goods_sku_id
+     * @return array
+     */
+    public static function getCloudStock($goods_sku_id){
+        $positive = self::where(['goods_sku_id'=>$goods_sku_id, 'stock'=>['GT', 0]])->sum('stock');
+        $negative = self::where(['goods_sku_id'=>$goods_sku_id, 'stock'=>['LT', 0]])->sum('stock');
+        return compact('positive','negative');
+    }
+
+    /**
+     * 退款库存处理
+     * @param $user_id
+     * @param $goods_id
+     * @param $goods_sku_id
+     * @param $num
+     * @param $flag
+     * @param $order_no
+     * @throws Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function refundStock($user_id, $goods_id, $goods_sku_id, $num, $flag, $order_no){
+        $stock_info = self::where(['user_id'=>$user_id, 'goods_sku_id'=>$goods_sku_id])->find();
+        ##flag [待发货|待收货 => 2  已完成 => 3]
+        self::disFreezeStockByUserGoodsId($user_id, $goods_sku_id, $num, $flag);
+        $log_data = [
+            'user_id' => $user_id,
+            'goods_id' => $goods_id,
+            'goods_sku_id' => $goods_sku_id,
+            'balance_stock' => $stock_info['stock'],
+            'change_type' => 50,
+            'change_num' => $num,
+            'change_direction' => 10,
+            'remark' => '用户退款',
+            'order_no' => $order_no
+        ];
+        UserGoodsStockLog::insertData($log_data);
+    }
+
+    /**
+     * 进货退款返还库存
+     * @param $user_id
+     * @param $goods_id
+     * @param $goods_sku_id
+     * @param $num
+     * @param $order_no
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function rebackStock($user_id, $goods_id, $goods_sku_id, $num, $order_no){
+        $stock_info = self::where(['user_id'=>$user_id, 'goods_sku_id'=>$goods_sku_id])->find();
+        ##flag [待发货|待收货 => 2  已完成 => 3]
+        self::update(['history_stock'=>['dec', $num], 'stock'=>['dec', $num]], ['id'=>$stock_info['id']]);
+        $log_data = [
+            'user_id' => $user_id,
+            'goods_id' => $goods_id,
+            'goods_sku_id' => $goods_sku_id,
+            'balance_stock' => $stock_info['stock'],
+            'change_type' => 50,
+            'change_num' => $num,
+            'change_direction' => 10,
+            'remark' => '订单退款',
+            'order_no' => $order_no
+        ];
+        UserGoodsStockLog::insertData($log_data);
+    }
+
 }

@@ -122,12 +122,20 @@
                                                     <i class="am-icon-pencil"></i> 编辑
                                                 </a>
                                             <?php endif; ?>
+
+                                            <?php if (checkPrivilege('goods/addStock')): ?>
+                                                <a href="javascript:void(0);" data-goods-id="<?= $item['goods_id'] ?>" class="item-add-stock">
+                                                    <i class="am-icon-plus"></i> 补充库存
+                                                </a>
+                                            <?php endif; ?>
+
                                             <?php if (checkPrivilege('goods/delete')): ?>
                                                 <a href="javascript:;" class="item-delete tpl-table-black-operation-del"
                                                    data-id="<?= $item['goods_id'] ?>">
                                                     <i class="am-icon-trash"></i> 删除
                                                 </a>
                                             <?php endif; ?>
+
                                             <?php /* if (checkPrivilege('goods/copy')): ?>
                                                 <a class="tpl-table-black-operation-green" href="<?= url('goods/copy',
                                                     ['goods_id' => $item['goods_id']]) ?>">
@@ -156,6 +164,71 @@
         </div>
     </div>
 </div>
+
+<script id="tpl-add-stock" type="text/template">
+        <form class="am-form tpl-form-line-form" method="post" action="">
+                <div class="am-padding-xs">
+                    <div class="am-tab-panel am-padding-0">
+                        {{ if spec_list.length >= 1 }}
+                        <div class="am-form-group">
+                            <label class="am-u-sm-3 am-form-label">
+                                补充库存商品
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <select id="doc-select-1" name="" onchange="goodsSku.call(this)">
+                                    <option value="0">请选择商品</option>
+                                    {{each spec_list item key}}
+                                    <option {{ if item.goods_sku_id == goods_sku_id }} selected {{ /if }} value="{{ item.goods_sku_id }}">{{ item['attr'] }}</option>
+                                    {{/each}}
+                                </select>
+                            </div>
+                        </div>
+                        {{ /if }}
+
+                        <input class="ipt-goods-sku-id" type="hidden" name="goods_sku_id" value="{{ goods_sku_id }}">
+
+                        <div class="am-form-group">
+                            <label class="am-u-sm-3 am-form-label">
+                                当前库存
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <div class="am-form--static stock-wrap">{{stock}}</div>
+                            </div>
+                        </div>
+
+                        <div class="am-form-group">
+                            <label class="am-u-sm-3 am-form-label">
+                                补充方式
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <label class="am-radio-inline">
+                                    <input type="radio" name="mode"
+                                           value="inc" data-am-ucheck checked>
+                                    增加
+                                </label>
+                                <label class="am-radio-inline">
+                                    <input type="radio" name="mode" value="dec" data-am-ucheck>
+                                    减少
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="am-form-group">
+                            <label class="am-u-sm-3 am-form-label">
+                                变更数量
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <input type="number" min="0" class="tpl-form-input"
+                                       placeholder="请输入要变更的数量" name="num" value="0" required>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+        </form>
+</script>
+
 <script>
     $(function () {
 
@@ -187,6 +260,47 @@
         var url = "<?= url('goods/delete') ?>";
         $('.item-delete').delete('goods_id', url);
 
+        $('.item-add-stock').on('click', function(){
+            let goods_id = $(this).data('goods-id');
+            $.post("<?= url('goods/getGoodsSpec') ?>", {goods_id}, function(res){
+                let data = [];
+                let goods_sku_id = res.data.list[0].goods_sku_id
+                data['spec_list'] = res.data.list;
+                data['goods_sku_id'] = goods_sku_id;
+                $.post("<?= url('goods/getSkuStock') ?>", {goods_sku_id}, function(result){
+                    data['stock'] = result.data;
+                    $.showModal({
+                        title: '补充库存'
+                        , area: '460px'
+                        , content: template('tpl-add-stock', data)
+                        , uCheck: true
+                        , success: function ($content) {
+
+                        }
+                        , yes: function ($content) {
+                            $content.find('form').myAjaxSubmit({
+                                url: '<?= url('goods/recharge') ?>',
+                                data: {
+
+                                },
+                            });
+                            return true;
+                        }
+                    });
+                }, 'json')
+            }, 'json')
+        })
+
     });
+
+    function goodsSku(){
+        let goods_sku_id = parseInt($(this).val());
+        if(!goods_sku_id)return false;
+        $.post("<?= url('goods/getSkuStock') ?>", {goods_sku_id}, function(result){
+            $('.stock-wrap').text(result.data);
+            $('.ipt-goods-sku-id').val(goods_sku_id);
+        }, 'json')
+    }
+
 </script>
 

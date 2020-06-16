@@ -7,6 +7,7 @@ use app\api\model\dealer\Setting;
 use app\api\model\dealer\User as DealerUserModel;
 use app\api\model\dealer\Referee as RefereeModel;
 use app\api\model\User;
+use app\api\model\user\Fill;
 use app\api\model\user\Grade;
 use think\Exception;
 
@@ -65,8 +66,8 @@ class Team extends Controller
      * @return array
      */
     public function gradeList(){
+        $user = $this->getUser();
         try{
-            $user = $this->getUser();
             $model = new Grade();
             return $this->renderSuccess([
                 'list' => $model->getGradeList(),
@@ -81,9 +82,41 @@ class Team extends Controller
      * @return array
      */
     public function memberList(){
+        $user = $this->getUser();
         try{
-            $user = $this->getUser();
             return $this->renderSuccess($user->getMemberList($this->request->get()));
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 团队答卷列表
+     * @return array
+     * @throws \app\common\exception\BaseException
+     * @throws \think\exception\DbException
+     */
+    public function answerList(){
+        $user = $this->getUser();
+        try{
+            $model = new Fill();
+            return $this->renderSuccess($model->getAnswerList($user['user_id']));
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 问卷详情
+     * @return array
+     * @throws \app\common\exception\BaseException
+     * @throws \think\exception\DbException
+     */
+    public function answerDetail(){
+        $user = $this->getUser();
+        try{
+            $model = new Fill();
+            return $this->renderSuccess($model->getAnswerDetail());
         }catch(Exception $e){
             return $this->renderError($e->getMessage());
         }

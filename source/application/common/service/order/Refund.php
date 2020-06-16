@@ -70,11 +70,11 @@ class Refund
      * @throws \think\exception\DbException
      */
     public function freight(&$order){
-        if($order['deliver_type'] == 10 && $order['freight_money'] > 0){
+        if($order['deliver_type']['value'] == 10 && $order['freight_money'] > 0){
             $money = $order['freight_money'];
             $wxConfig = WxappModel::getWxappCache($order['wxapp_id']);
             $WxPay = new WxPay($wxConfig);
-            return $WxPay->refund($order['transaction_id'], $order['pay_price'], $money);
+            return $WxPay->refund($order['transaction_id'], $order['freight_money'], $money);
         }
         return false;
     }

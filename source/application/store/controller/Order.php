@@ -235,8 +235,53 @@ class Order extends Controller
         }
     }
 
+    /**
+     * 退款
+     * @return array|bool
+     */
+    public function refund(){
+        try{
+            $model = new OrderModel();
+            if(!$model->refund()){throw new Exception($model->getError());};
+            return $this->renderSuccess('退款成功');
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 补货订单
+     * @return mixed
+     */
     public function order_stock(){
         return $this->getStockList('补货订单', DeliveryType::STOCK);
+    }
+
+    /**
+     * 仓管
+     * @return mixed
+     */
+    public function warehouse(){
+        $model = new OrderModel();
+        return $this->fetch('',$model->warehouse());
+    }
+
+    /**
+     * 时间筛选仓库信息
+     * @return array
+     */
+    public function getTimeWarehouseInfo(){
+        $model = new OrderModel();
+        $data = $model->getTimeNums();
+        return $this->renderSuccess('','',$data);
+    }
+
+    /**
+     * 运费明细
+     * @return mixed
+     */
+    public function freight(){
+        return $this->fetch();
     }
 
 }

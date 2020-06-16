@@ -25,6 +25,16 @@ class Export
         '微信支付交易号'
     ];
 
+    private $deliveryTitleArray2 = [
+        '订单号', '商品信息', '数量',
+        '买家', '买家id', '留言', '收货人姓名', '联系电话', '收货人地址', '物流公司', '物流单号',
+    ];
+
+    private $withdrawTitleArray = [
+        '用户ID', '微信昵称', '手机号',
+        '提现金额', '提现方式', '收款信息', '交款方式', '申请时间', '审核时间', '状态'
+    ];
+
     /**
      * 提货发货订单导出
      * @param $list
@@ -57,6 +67,34 @@ class Export
         // 导出csv文件
         $filename = 'delivery-order-' . date('YmdHis');
         return export_excel($filename . '.csv', $this->deliveryTitleArray, $dataArray);
+    }
+
+    /**
+     * 提货发货订单导出
+     * @param $list
+     */
+    public function deliveryOrderList2($list){
+        ##表格内容
+        $dataArray = [];
+        foreach($list as $order){
+            $dataArray[] = [
+                '订单号' => $this->filterValue($order['order_no']),
+                '商品信息' => $this->filterDeliveryGoodsInfo($order),
+                '数量' => $this->filterValue($order['goods_num']),
+                '买家' => $this->filterValue($order['user']['nickName']),
+                '买家用户id' => $this->filterValue($order['user']['user_id']),
+                '买家留言' => $this->filterValue($order['remark']),
+                '配送方式' => $this->filterValue($order['deliver_type']['text']),
+                '收货人姓名' => $this->filterValue($order['receiver_user']),
+                '联系电话' => $this->filterValue($order['receiver_mobile']),
+                '收货人地址' => $this->filterValue($order['address']),
+                '物流公司' => $this->filterValue($order['express']['express_name']),
+                '物流单号' => $this->filterValue($order['express_no']),
+            ];
+        }
+        // 导出csv文件
+        $filename = 'delivery-order-' . date('YmdHis');
+        return export_excel($filename . '.csv', $this->deliveryTitleArray2, $dataArray);
     }
 
     /**
@@ -104,6 +142,90 @@ class Export
         // 导出csv文件
         $filename = 'order-' . date('YmdHis');
         return export_excel($filename . '.csv', $this->tileArray, $dataArray);
+    }
+
+    /**
+     * 订单导出
+     * @param $list
+     */
+    public function orderList2($list)
+    {
+        // 表格内容
+        $dataArray = [];
+        foreach ($list as $order) {
+            /* @var OrderAddressModel $address */
+            $address = $order['address'];
+            $dataArray[] = [
+                '订单号' => $this->filterValue($order['order_no']),
+                '商品信息' => $this->filterGoodsInfo($order),
+                '数量' => $this->filterValue($order['goods'][0]['total_num']),
+                '买家' => $this->filterValue($order['user']['nickName']),
+                '买家id' => $this->filterValue($order['user']['user_id']),
+                '买家留言' => $this->filterValue($order['buyer_remark']),
+                '收货人姓名' => $this->filterValue($order['address']['name']),
+                '联系电话' => $this->filterValue($order['address']['phone']),
+                '收货人地址' => $this->filterValue($address ? $address->getFullAddress() : ''),
+                '物流公司' => $this->filterValue($order['express']['express_name']),
+                '物流单号' => $this->filterValue($order['express_no'])
+            ];
+        }
+        // 导出csv文件
+        $filename = 'order-' . date('YmdHis');
+        return export_excel($filename . '.csv', $this->deliveryTitleArray2, $dataArray);
+    }
+
+    /**
+     * 导出提现申请Excel
+     * @param $list
+     */
+    public function withdrawList($list){
+        // 表格内容
+        $dataArray = [];
+        foreach ($list as $item) {
+            /* @var OrderAddressModel $address */
+            switch($item['pay_type']['value']){
+                case 20:
+                    $withdraw_info = "{$item['alipay_name']}|{$item['alipay_account']}";
+                    break;
+                case 30:
+                    $withdraw_info = "{$item['bank_name']}|{$item['bank_account']}|{$item['bank_card']}";
+                    break;
+                default:
+                    $withdraw_info = "";
+                    break;
+            }
+            switch($item['apply_status']){
+                case 10:
+                    $status_text = "待审核";
+                    break;
+                case 20:
+                    $status_text = "审核通过";
+                    break;
+                case 30:
+                    $status_text = "已驳回";
+                    break;
+                case 40:
+                    $status_text = "已打款";
+                    break;
+                default:
+                    $status_text = "已取消";
+            }
+            $dataArray[] = [
+                '用户ID' => $this->filterValue($item['user_id']),
+                '微信昵称' => $this->filterValue($item['nickName']),
+                '手机号' => $this->filterValue($item['mobile']),
+                '提现金额' => $this->filterValue($item['money']),
+                '提现方式' => $this->filterValue($item['pay_type']['text']),
+                '收款信息' => $this->filterValue($withdraw_info),
+                '交款方式' => $this->filterValue(""),
+                '申请时间' => $this->filterValue($item['create_time']),
+                '审核时间' => $this->filterValue($item['audit_time'] ?: '--'),
+                '状态' => $this->filterValue($status_text)
+            ];
+        }
+        // 导出csv文件
+        $filename = 'withdraw-' . date('YmdHis');
+        return export_excel($filename . '.csv', $this->withdrawTitleArray, $dataArray);
     }
 
     /**

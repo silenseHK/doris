@@ -4,6 +4,7 @@
 namespace app\common\library\wechat;
 
 
+use app\common\model\NoticeMessage;
 use app\common\model\Setting;
 
 class WxSubMsg extends WxBase
@@ -86,6 +87,57 @@ class WxSubMsg extends WxBase
         ];
         $result = $this->post($url, $this->jsonEncode($params));
         $response = $this->jsonDecode($result);
+    }
+
+    /**
+     * 发送公用订阅消息
+     * @param $message_id
+     * @param $user
+     * @return bool
+     * @throws \app\common\exception\BaseException
+     * @throws \think\exception\DbException
+     */
+    public function sendCommonMsg($message_id, $user){
+        $info = NoticeMessage::get(['id'=>$message_id]);
+        $params = $this->filterCommonParam($info, $user);
+        $accessToken = $this->getAccessToken();
+        $url = "https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token={$accessToken}";
+        $result = $this->post($url, $params);
+        $response = $this->jsonDecode($result);
+        if (!isset($response['errcode'])) {
+            $this->error = 'not found errcode';
+            return false;
+        }
+        if ($response['errcode'] != 0) {
+            $this->error = $response['errmsg'];
+            return false;
+        }
+        return true;
+    }
+
+    public function filterCommonParam($info, $user){
+        $page = $info['url']? : "pages/index/index";
+        $pa = $info['params'];
+        if($pa){
+            $page .= '?';
+            $pa = json_decode($pa,true);
+            foreach($pa as $k => $v){
+                $page .= "{$k}={$v}&";
+            }
+            $page = trim($page,'&');
+        }
+        $data = [
+            'thing6' => [ //活动名称
+                'value' => $info['title']
+            ],
+            'thing7' => [ //活动内容
+                'value' => $info['content']
+            ]
+        ];
+        $template_id = 'BKUWE9eb2uAd2AFt9iuffitK1kMmp8CWKikIlHpsw5I';
+        $touser = $user['open_id'];
+        $params = compact('touser','template_id','page','data');
+        return $this->jsonEncode($params);
     }
 
     /**

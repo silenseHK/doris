@@ -75,4 +75,9 @@ return [
         'app\\task\\behavior\\user\\CompleteOrder',
     ],
 
+    // 代理推荐升级
+    'agent_instant_grade' => [
+        'app\\task\\behavior\\user\\AgentInstantGrade',
+    ],
+
 ];

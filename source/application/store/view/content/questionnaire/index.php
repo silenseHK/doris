@@ -83,6 +83,7 @@
                                     <td class="am-text-middle"><?= $item['create_time'] ?></td>
                                     <td class="am-text-middle">
                                         <div class="tpl-table-black-operation">
+                                            <?php if (checkPrivilege('content.questionnaire/edit')): ?>
                                             <a class="tpl-table-black-operation-default"
                                                href="<?= url('content.questionnaire/edit', ['questionnaire_id'=>$item['questionnaire_id']]) ?>"
                                                title="编辑"
@@ -90,6 +91,8 @@
                                                 <i class="iconfont am-icon-edit"></i>
                                                 编辑
                                             </a>
+                                            <?php endif;?>
+                                            <?php if (checkPrivilege('content.questionnaire/userfilllist')): ?>
                                             <a class="tpl-table-black-operation-default"
                                                href="<?= url('content.questionnaire/userFillList', ['questionnaire_id'=>$item['questionnaire_id']]) ?>"
                                                title="答卷"
@@ -97,6 +100,8 @@
                                                 <i class="iconfont am-icon-newspaper-o"></i>
                                                 答卷
                                             </a>
+                                            <?php endif;?>
+                                            <?php if (checkPrivilege('content.questionnaire/del')): ?>
                                             <a class="tpl-table-black-operation-default btn-del"
                                                data-id="<?= $item['questionnaire_id'] ?>"
                                                href="javascript:void(0);"
@@ -105,6 +110,7 @@
                                                 <i class="iconfont am-icon-close"></i>
                                                 删除
                                             </a>
+                                            <?php endif;?>
                                         </div>
                                     </td>
                                 </tr>

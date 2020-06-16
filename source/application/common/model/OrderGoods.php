@@ -75,6 +75,14 @@ class OrderGoods extends BaseModel
     }
 
     /**
+     * 关联用户
+     * @return \think\model\relation\BelongsTo
+     */
+    public function user(){
+        return $this->belongsTo('app\common\model\User','user_id','user_id');
+    }
+
+    /**
      * 订单商品详情
      * @param $where
      * @return OrderGoods|null

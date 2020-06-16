@@ -381,6 +381,9 @@ class Goods extends BaseModel
                     ];
                     $goodsSpecSave[] = $specData;
                     $goodsData['stock'] = ['dec', $goods['total_num']];
+
+                    ##增加库存变化记录
+                    GoodsStockLog::addLog($goods['goods_sku_id'],30,20,$goods['total_num'],$model['order_no']);
                 }
                 $goodsSave[] = $goodsData;
             }

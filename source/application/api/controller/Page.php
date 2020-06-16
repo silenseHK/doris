@@ -58,4 +58,17 @@ class Page extends Controller
         return $this->renderSuccess($data);
     }
 
+    /**
+     * 小程序web_view页面参数
+     * @return array
+     */
+    public function webView(){
+        $page = [
+            'experience_rank' => [
+                'url' => request()->domain() . "/web_view/experience_rank/index.html"
+            ]
+        ];
+        return $this->renderSuccess($page);
+    }
+
 }

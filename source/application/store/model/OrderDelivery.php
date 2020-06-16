@@ -69,6 +69,11 @@ class OrderDelivery extends OrderDeliver
      * @param $params
      */
     public function setWhere($params){
+        if(isset($params['order_no'])){
+            $order_no = str_filter($params['order_no']);
+            if($order_no)
+                $where['od.order_no'] = $order_no;
+        }
         if(isset($params['keywords'])){
             $keywords = str_filter($params['keywords']);
             if($keywords)
@@ -89,6 +94,9 @@ class OrderDelivery extends OrderDeliver
         }
         if(isset($params['deliver_type']) && $params['deliver_type'] > 0){
             $where['od.deliver_type'] = intval($params['deliver_type']);
+        }
+        if(isset($params['deliver_status']) && $params['deliver_status'] > 0){
+            $where['deliver_status'] = intval($params['deliver_status']);
         }
         $where['od.pay_status'] = 20;
         if(isset($where) && !empty($where))
@@ -218,6 +226,7 @@ class OrderDelivery extends OrderDeliver
         $data = [
             'express_id' => intval($post['order']['express_id']),
             'express_no' => str_filter($post['order']['express_no']),
+            'express_remark' => str_filter($post['order']['express_remark']),
             'deliver_status' => 20,
             'deliver_time' => time()
         ];
@@ -255,7 +264,236 @@ class OrderDelivery extends OrderDeliver
             )
             ->field(['od.deliver_id', 'od.order_no', 'od.user_id', 'od.goods_id', 'od.goods_num', 'od.address', 'od.receiver_user', 'od.receiver_mobile', 'od.express_id', 'od.express_no', 'od.freight_money', 'od.remark', 'od.create_time', 'od.deliver_type', 'od.deliver_status', 'od.pay_status', 'od.pay_time', 'u.nickName', 'u.avatarUrl', 'u.mobile', 'u.grade_Id', 'ug.name as grade_name', 'od.deliver_time', 'od.complete_time', 'od.transaction_id'])
             ->select();
-        return (new Exportservice)->deliveryOrderList($list);
+        return (new Exportservice)->deliveryOrderList2($list);
+    }
+
+    /**
+     * 获取发货信息
+     * @param $goods_sku_id
+     * @param $start_time
+     * @param $end_time
+     * @return float|int
+     */
+    public static function getDeliverInfo($goods_sku_id, $start_time=0, $end_time=0){
+        $where = ['goods_sku_id'=>$goods_sku_id];
+        if($start_time && $end_time){
+            $where['create_time'] = ['BETWEEN', [$start_time, $end_time]];
+        }
+        $num = (new self)
+            ->where($where)
+            ->where(function($query){
+                $query->where(
+                    [
+                        'deliver_type' => 10,
+                        'deliver_status' => ['IN', ['20', '40']]
+                    ]
+                )
+                ->whereOr(
+                    [
+                        'deliver_type' => 20,
+                        'deliver_status' => 40
+                    ]
+                );
+            })
+            ->sum('goods_num');
+        return $num;
+    }
+
+    /**
+     * 已完成信息
+     * @param $goods_sku_id
+     * @param int $start_time
+     * @param int $end_time
+     * @return float|int
+     */
+    public static function getCompleteInfo($goods_sku_id, $start_time=0, $end_time=0){
+        $where = [
+            'goods_sku_id'=>$goods_sku_id,
+            'deliver_status' => 40
+        ];
+        if($start_time && $end_time){
+            $where['create_time'] = ['BETWEEN', [$start_time, $end_time]];
+        }
+        $num = (new self)
+            ->where($where)
+            ->sum('goods_num');
+        return $num;
+    }
+
+    /**
+     * 待发货信息
+     * @param $goods_sku_id
+     * @param $start_time
+     * @param $end_time
+     * @return float|int
+     */
+    public static function getWaitDeliverInfo($goods_sku_id, $start_time, $end_time){
+        $where = [
+            'goods_sku_id' => $goods_sku_id,
+            'pay_status' => 20,
+            'deliver_status' => 10,
+            'deliver_type' => 10
+        ];
+        if($start_time && $end_time){
+            $where['create_time'] = ['BETWEEN', [$start_time, $end_time]];
+        }
+        return (new self)->where($where)->sum('goods_num');
+    }
+
+    /**
+     * 待自提信息
+     * @param $goods_sku_id
+     * @param $start_time
+     * @param $end_time
+     * @return float|int
+     */
+    public static function getWaitTakeInfo($goods_sku_id, $start_time, $end_time){
+        $where = [
+            'goods_sku_id' => $goods_sku_id,
+            'pay_status' => 20,
+            'deliver_status' => 20,
+            'deliver_type' => 20
+        ];
+        if($start_time && $end_time){
+            $where['create_time'] = ['BETWEEN', [$start_time, $end_time]];
+        }
+        return (new self)->where($where)->sum('goods_num');
+    }
+
+    /**
+     * 待收货信息
+     * @param $goods_sku_id
+     * @param $start_time
+     * @param $end_time
+     * @return float|int
+     */
+    public static function getWaitReceiptInfo($goods_sku_id, $start_time, $end_time){
+        $where = [
+            'goods_sku_id' => $goods_sku_id,
+            'pay_status' => 20,
+            'deliver_status' => 20,
+            'deliver_type' => 10
+        ];
+        if($start_time && $end_time){
+            $where['create_time'] = ['BETWEEN', [$start_time, $end_time]];
+        }
+        return (new self)->where($where)->sum('goods_num');
+    }
+
+    /**
+     * 提货发货列表
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function getDeliverList(){
+        $list = (new self)->alias('od')
+            ->join('goods g','od.goods_id = g.goods_id','LEFT')
+            ->join('goods_sku gs','gs.goods_sku_id = od.goods_sku_id','LEFT')
+            ->where([
+                'od.pay_status' => 20
+            ])
+            ->where(function($query){
+                $query->where(
+                        [
+                            'od.deliver_type' => 10,
+                            'od.deliver_status' => 10
+                        ]
+                    )
+                    ->whereOr(function($query){
+                        $query -> where([
+                            'od.deliver_type' => 20,
+                            'od.deliver_status' => 20
+                        ]);
+                    });
+            })
+            ->field('od.deliver_id,od.goods_id,od.goods_sku_id,od.goods_num,g.goods_name,gs.image_id,gs.spec_sku_id')
+            ->select()->toArray();
+        return $list;
+    }
+
+    /**
+     * 用户订单
+     * @return array
+     * @throws \think\exception\DbException
+     */
+    public function getUserOrderList(){
+        ##参数
+        $user_id = input('post.user_id',0,'intval');
+        $start_time = input('post.start_time','','str_filter');
+        $end_time = input('post.end_time','','str_filter');
+        $where = [
+            'user_id' => $user_id,
+            'deliver_status' => ['NEQ', 30],
+            'pay_status' => 20
+        ];
+        if($start_time && $end_time){
+            $start_time = strtotime($start_time);
+            $end_time = strtotime($end_time);
+            $where['create_time'] = ['BETWEEN', [$start_time, $end_time]];
+        }
+        ##数据
+        $list = $this
+            ->where($where)
+            ->with(
+                [
+                    'stockLog',
+                    'user.grade',
+                    'goods',
+                    'spec.image'
+                ]
+            )
+            ->order('create_time','desc')
+            ->paginate(10,false,[
+                'type' => 'Bootstrap',
+                'var_page' => 'page',
+                'path' => 'javascript:ajax_delivery_go([PAGE]);'
+            ]);
+        $page = $list->render();
+        return compact('page','list');
+    }
+
+    /**
+     * 提货发货运费明细
+     * @return array
+     * @throws \think\exception\DbException
+     */
+    public function getDeliveryFreight(){
+        ##参数
+        $start_time = input('post.start_time','','str_filter');
+        $end_time = input('post.end_time','','str_filter');
+        $where = [
+            'deliver_type' => 10,
+            'pay_status' => 20,
+            'freight_money' => ['GT', 0]
+        ];
+        if($start_time && $end_time){
+            $start_time = strtotime($start_time);
+            $end_time = strtotime($end_time);
+            $where['create_time'] = ['BETWEEN', [$start_time, $end_time]];
+        }
+        ##数据
+        $list = $this
+            ->where($where)
+            ->with(
+                [
+                    'user',
+                    'goods',
+                    'spec.image'
+                ]
+            )
+            ->order('create_time','desc')
+            ->paginate(10,false,[
+                'type' => 'Bootstrap',
+                'var_page' => 'page',
+                'path' => 'javascript:ajax_delivery_go([PAGE]);'
+            ]);
+        ##总运费
+        $total_freight = 0;
+        if(!$list->isEmpty())$total_freight = $this->where($where)->sum('freight_money');
+        $page = $list->render();
+        return compact('page','list','total_freight');
     }
 
 }

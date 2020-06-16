@@ -334,6 +334,19 @@ function str_filter($str){
 }
 
 /**
+ * 过滤搜索字段
+ * @param $str
+ * @return string|string[]
+ */
+function search_filter($str){
+    $str = str_filter($str);
+    $str = str_replace('*','',$str);
+    $str = str_replace('_','',$str);
+    $str = str_replace('%','',$str);
+    return $str;
+}
+
+/**
  * 获取今天开始的时间戳
  * @return false|int
  */
@@ -461,5 +474,105 @@ function keywords_filter($str){
  */
 function mobile_hide($mobile){
     return substr_replace($mobile,'****',3,4);
+}
+
+/**
+ * 分类树
+ * @param $array
+ * @param int $pid
+ * @param int $level
+ * @return array
+ */
+function getTree($array, $pid =0, $level = 0){
+
+    $f_name=__FUNCTION__; // 定义当前函数名
+
+    //声明静态数组,避免递归调用时,多次声明导致数组覆盖
+    static $list = [];
+
+    foreach ($array as $key => $value){
+        //第一次遍历,找到父节点为根节点的节点 也就是pid=0的节点
+        if ($value['pid'] == $pid){
+            //父节点为根节点的节点,级别为0，也就是第一级
+            $flg = str_repeat('|--',$level);
+            // 更新 名称值
+            $value['title'] = $flg.$value['title'];
+            // 输出 名称
+            //把数组放到list中
+            $list[] = $value;
+            //把这个节点从数组中移除,减少后续递归消耗
+            unset($array[$key]);
+            //开始递归,查找父ID为该节点ID的节点,级别则为原级别+1
+            $f_name($array, $value['lesson_cate_id'], $level+1);
+        }
+    }
+    return $list;
+}
+
+/**
+ * 无限级分类树
+ * @param $arr
+ * @param int $pid
+ * @return array
+ */
+function cateTree($arr, $pid=0, $field='id'){
+    $list = [];
+    foreach($arr as $key => $item){
+        if($item['pid'] == $pid){
+            $list[$item[$field]] = $item;
+            unset($arr[$key]);
+            $list[$item[$field]]['child'] = cateTree($arr, $item[$field], $field);
+        }
+    }
+    return $list;
+}
+
+/**
+ * 数组多条件排序
+ * @return mixed|null
+ * @throws Exception
+ */
+function sortArrByManyField(){
+
+    $args = func_get_args(); // 获取函数的参数的数组
+
+    if(empty($args)){
+
+        return null;
+
+    }
+
+    $arr = array_shift($args);
+
+    if(!is_array($arr)){
+
+        throw new Exception("第一个参数不为数组");
+
+    }
+
+    foreach($args as $key => $field){
+
+        if(is_string($field)){
+
+            $temp = array();
+
+            foreach($arr as $index=> $val){
+
+                $temp[$index] = $val[$field];
+
+            }
+
+            $args[$key] = $temp;
+
+        }
+
+    }
+
+    $args[] = &$arr;//引用值
+
+    call_user_func_array('array_multisort',$args);
+
+    return array_pop($args);
+
 }
 

@@ -16,8 +16,8 @@ class Message extends Controller
      * @return array
      */
     public function index(){
+        $user = $this->getUser();
         try{
-            $user = $this->getUser();
             $model = new NoticeMessageUser();
             return $this->renderSuccess($model->index($user));
         }catch(Exception $e){
@@ -30,8 +30,8 @@ class Message extends Controller
      * @return array
      */
     public function lists(){
+        $user = $this->getUser();
         try{
-            $user = $this->getUser();
             $model = new NoticeMessageUser();
             return $this->renderSuccess($model->lists($user));
         }catch(Exception $e){

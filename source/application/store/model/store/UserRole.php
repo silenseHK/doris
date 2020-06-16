@@ -91,4 +91,13 @@ class UserRole extends UserRoleModel
         return self::destroy($where);
     }
 
+    /**
+     * 获取某个角色的管理员id
+     * @param $role_id
+     * @return array
+     */
+    public static function getStoreUserIds($role_id){
+        return self::where(['role_id'=>$role_id])->column('store_user_id');
+    }
+
 }

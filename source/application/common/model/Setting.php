@@ -133,10 +133,10 @@ class Setting extends BaseModel
                     'engine' => [
                         'local' => [],
                         'qiniu' => [
-                            'bucket' => '',
-                            'access_key' => '',
-                            'secret_key' => '',
-                            'domain' => 'http://'
+                            'bucket' => 'wjwl666',
+                            'access_key' => 'LQ_z42jj0cb7aZAH7s1HW70HYmFx_SCjBeiIcF5e',
+                            'secret_key' => 'z_tSkXbGJb4EsytlojOJ92cIR1OSfh1KRd9Fu8zn',
+                            'domain' => 'http://qiniu.kiki12318.xyz'
                         ],
                         'aliyun' => [
                             'bucket' => '',

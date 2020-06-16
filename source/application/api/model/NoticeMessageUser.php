@@ -42,13 +42,14 @@ class NoticeMessageUser extends NoticeMessageUserModel
      * 获取一条信息
      * @param $user_id
      * @param $type
-     * @return array|false|\PDOStatement|string|\think\Model
+     * @return array|bool|false|\PDOStatement|string|\think\Model|null
+     * @throws Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\ModelNotFoundException
-     * @throws \think\exception\DbException
+     * @throws \think\exception\DbException\
      */
     public function getOneMsg($user_id, $type){
-        return $this->alias('nmu')
+        $data = $this->alias('nmu')
             ->join('notice_message nm','nm.id = nmu.message_id','LEFT')
             ->where(
                 [
@@ -57,9 +58,15 @@ class NoticeMessageUser extends NoticeMessageUserModel
                     'nm.effect_time' => ['ELT', time()]
                 ]
             )
-            ->field(['nm.title', 'nm.content'])
+            ->field(['nm.title', 'nm.content', 'nm.effect_time'])
             ->order('nm.effect_time','desc')
             ->find();
+        if($data){
+            $data['effect_time'] = date('Y-m-d H:i:s', $data['effect_time']);
+            $data['wait_browse_num'] = $this->countDisBrowseNum($user_id, $type);
+        }
+
+        return $data;
     }
 
     /**
@@ -74,7 +81,7 @@ class NoticeMessageUser extends NoticeMessageUserModel
      * @throws \think\exception\DbException
      */
     public function getSomeMsg($user_id, $type, $num, $page=1){
-        return $this->alias('nmu')
+        $list = $this->alias('nmu')
             ->join('notice_message nm','nm.id = nmu.message_id','LEFT')
             ->where(
                 [
@@ -87,6 +94,8 @@ class NoticeMessageUser extends NoticeMessageUserModel
             ->order('nm.effect_time','desc')
             ->page($page, $num)
             ->select();
+        if(!$list->isEmpty())foreach($list as &$v)$v['effect_time'] = date('Y-m-d H:i:s',$v['effect_time']);
+        return $list;
     }
 
     /**
@@ -124,8 +133,60 @@ class NoticeMessageUser extends NoticeMessageUserModel
             $list = $model->getSystemMsg($size, $page);
         }else{
             $list = $this->getMsg($user['user_id'], $size, $type, $page);
+            ##将用户信息置为已读
+            $this->browse($user['user_id'], $type);
         }
         return compact('list');
+    }
+
+    /**
+     * 计算未读信息
+     * @param $user_id
+     * @return int|string
+     * @throws Exception
+     */
+    public static function countDisReadMessage($user_id){
+        return self::where(['user_id'=>$user_id,'browse_time'=>0])->count();
+    }
+
+    /**
+     * 计算用户未读消息数 【根据分类】
+     * @param $user_id
+     * @param $type
+     * @return int|string
+     * @throws Exception
+     */
+    public function countDisBrowseNum($user_id, $type){
+        return $this->alias('nmu')
+            ->join('notice_message nm','nm.id = nmu.message_id','LEFT')
+            ->where(
+                [
+                    'nmu.user_id' => $user_id,
+                    'nm.type' => $type,
+                    'nm.effect_time' => ['ELT', time()],
+                    'nmu.browse_time' => 0
+                ]
+            )
+            ->count();
+    }
+
+    /**
+     * 阅读消息
+     * @param $user_id
+     * @param $type
+     */
+    public function browse($user_id, $type){
+        $this->alias('nmu')
+            ->join('notice_message nm','nm.id = nmu.message_id','LEFT')
+            ->where(
+                [
+                    'nmu.user_id' => $user_id,
+                    'nm.type' => $type,
+                    'nm.effect_time' => ['ELT', time()],
+                    'nmu.browse_time' => 0
+                ]
+            )
+            ->setField('browse_time', time());
     }
 
 }

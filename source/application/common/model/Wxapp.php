@@ -62,6 +62,7 @@ class Wxapp extends BaseModel
             if (empty($data)) throw new BaseException(['msg' => '未找到当前小程序信息']);
             Cache::tag('cache')->set('wxapp_' . $wxapp_id, $data);
         }
+        self::$wxapp_id = $wxapp_id;
         return $data;
     }
 

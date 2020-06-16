@@ -138,7 +138,7 @@ class Goods extends Controller
         try{
             $user = $this->getUser();
             $model = new OrderDeliver();
-            throw new Exception('暂不支持此功能');
+//            throw new Exception('暂不支持此功能');
             return $this->renderSuccess($model->expressInfo($user));
         }catch(Exception $e){
             return $this->renderError($e->getMessage());

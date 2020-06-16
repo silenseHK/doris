@@ -144,7 +144,7 @@ class Order extends BaseModel
      * @return array|mixed
      */
     public function getRebateInfoAttr($value, $data){
-        if($data['delivery_type'] != 30 || !$value)return [];
+        if(!$value)return [];
         $rebateInfo = json_decode($value,true);
         foreach($rebateInfo as &$item){
             $item['user'] = User::getUserInfo($item['user_id']);
@@ -162,8 +162,8 @@ class Order extends BaseModel
     public function getStateTextAttr($value, $data)
     {
         // 订单状态
-        if (in_array($data['order_status'], [20, 30])) {
-            $orderStatus = [20 => '已取消', 30 => '已完成'];
+        if (in_array($data['order_status'], [20, 30, 40])) {
+            $orderStatus = [20 => '已取消', 30 => '已完成', 40=> '已退款'];
             return $orderStatus[$data['order_status']];
         }
         // 付款状态
@@ -257,7 +257,7 @@ class Order extends BaseModel
      */
     public function getOrderStatusAttr($value)
     {
-        $status = [10 => '进行中', 20 => '已取消', 21 => '待取消', 30 => '已完成'];
+        $status = [10 => '进行中', 20 => '已取消', 21 => '待取消', 30 => '已完成', 40 => '已退款'];
         return ['text' => $status[$value], 'value' => $value];
     }
 
@@ -402,6 +402,22 @@ class Order extends BaseModel
             (new WowService(self::$wxapp_id))->update([$completed]);
             return $status;
         });
+    }
+
+    /**
+     * 库存变化记录
+     * @return \think\model\relation\BelongsTo
+     */
+    public function stockLog(){
+        return $this->hasMany('app\common\model\UserGoodsStockLog','order_no','order_no');
+    }
+
+    /**
+     * 余额变化
+     * @return \think\model\relation\BelongsTo
+     */
+    public function balanceLog(){
+        return $this->hasMany('app\common\model\user\BalanceLog','order_id','order_id');
     }
 
 }

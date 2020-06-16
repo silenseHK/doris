@@ -98,12 +98,13 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                 <th>进货</th>
                                 <th>出货</th>
                                 <th>返利</th>
+                                <th>付款状态</th>
                                 <th>支付方式</th>
 <!--                                <th>操作</th>-->
                             </tr>
                             </thead>
                             <tbody>
-                            <?php $colspan = 7; ?>
+                            <?php $colspan = 8; ?>
                             <?php if (!$list->isEmpty()): foreach ($list as $order): ?>
                                 <tr class="order-empty">
                                     <td colspan="<?= $colspan ?>"></td>
@@ -161,6 +162,11 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                                 <?php else:?>
                                                     无返利
                                                 <?php endif;?>
+                                            </td>
+                                            <td class="am-text-middle" rowspan="<?= $goodsCount ?>">
+                                                <span class="am-badge am-badge-secondary">
+                                                    <?= $order['pay_status']['text'] ?>
+                                                </span>
                                             </td>
                                             <td class="am-text-middle" rowspan="<?= $goodsCount ?>">
                                                 <span class="am-badge am-badge-secondary">

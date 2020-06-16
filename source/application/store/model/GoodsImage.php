@@ -11,4 +11,5 @@ use app\common\model\GoodsImage as GoodsImageModel;
  */
 class GoodsImage extends GoodsImageModel
 {
+
 }

@@ -4,12 +4,15 @@
 namespace app\api\controller;
 
 
+use app\api\model\user\Fill;
 use app\common\model\FoodGroup;
 use think\Exception;
 use app\api\model\Questionnaire as QuestionnaireModel;
 
 class Questionnaire extends Controller
 {
+
+    protected $no = '202004220001';
 
     /**
      * 问卷信息
@@ -58,14 +61,31 @@ class Questionnaire extends Controller
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    public function healthQuestionnaire(){
+    public function healthQuestionnaire($flag=0){
         $user = $this->getUser();
-        $questionnaire_no = '202004220001';
+        $questionnaire_no = $this->no;
+        if($flag)return $questionnaire_no;
         $model = new QuestionnaireModel();
         $info = $model->info($questionnaire_no, $user);
         $title = $info['title'];
         $url = request()->domain() . "/web_view/questionnaire/index.html?questionnaire_no={$questionnaire_no}";
         return $this->renderSuccess(compact('url','questionnaire_no','title'));
+    }
+
+    /**
+     * 用户填写问卷列表
+     * @return array
+     * @throws \app\common\exception\BaseException
+     * @throws \think\exception\DbException
+     */
+    public function userFillList(){
+        $user = $this->getUser();
+        try{
+            $model = new Fill();
+            return $this->renderSuccess($model->getUserFillList($user, $this->no));
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
     }
 
 }

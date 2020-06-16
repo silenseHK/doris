@@ -21,13 +21,17 @@ class User extends Controller
      * @param string $nickName 昵称
      * @param int $gender 性别
      * @param int $grade 会员等级
+     * @param string $start_time 开始时间
+     * @param string $end_time 结束时间
+     * @param int $user_id 用户id
+     * @param string $mobile 手机号
      * @return mixed
      * @throws \think\exception\DbException
      */
-    public function index($nickName = '', $gender = null, $grade = null)
+    public function index($nickName = '', $gender = null, $grade = null, $start_time = '', $end_time = '', $user_id = null, $mobile = '')
     {
         $model = new UserModel;
-        $list = $model->getList($nickName, $gender, $grade);
+        $list = $model->getList($nickName, $gender, $grade, $start_time, $end_time, $user_id, $mobile);
         // 会员等级列表
         $gradeList = GradeModel::getUsableList();
         ## 多级代理商品

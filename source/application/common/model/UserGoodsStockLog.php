@@ -106,4 +106,12 @@ class UserGoodsStockLog extends BaseModel
         return $this->where($where)->sum('change_num');
     }
 
+    /**
+     * 积分记录
+     * @return \think\model\relation\BelongsTo
+     */
+    public function integralLog(){
+        return $this->belongsTo('app\common\model\user\IntegralLog','integral_log_id','log_id');
+    }
+
 }

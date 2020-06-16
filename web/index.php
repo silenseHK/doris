@@ -1,9 +1,9 @@
 <?php
 
 // [ 应用入口文件 ]
-//header('Access-Control-Allow-Origin: *');  //跨域问题
-//header('Access-Control-Allow-Methods:POST'); //接受POST
-//header('Access-Control-Allow-Headers:x-requested-with,content-type');  //接受header头类型
+header('Access-Control-Allow-Origin: *');  //跨域问题
+header('Access-Control-Allow-Methods:POST'); //接受POST
+header('Access-Control-Allow-Headers:x-requested-with,content-type');  //接受header头类型
 
 // 定义运行目录
 define('WEB_PATH', __DIR__ . '/');

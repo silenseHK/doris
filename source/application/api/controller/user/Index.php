@@ -3,10 +3,13 @@
 namespace app\api\controller\user;
 
 use app\api\controller\Controller;
+use app\api\model\GoodsExperience;
 use app\api\model\Order as OrderModel;
+use app\api\model\OrderGoods;
 use app\api\model\Setting as SettingModel;
+use app\api\model\User;
 use app\api\model\UserCoupon as UserCouponModel;
-use app\common\model\User;
+use think\Exception;
 
 /**
  * 个人中心主页
@@ -26,8 +29,15 @@ class Index extends Controller
     {
         // 当前用户信息
         $user = $this->getUser(false);
+        $userModel = new User();
         // 订单总数
         $model = new OrderModel;
+
+        ##待入账金额
+        $wait_income_money = 0;
+        if($user)
+            $wait_income_money = OrderModel::getUserWaitIncomeMoney($user['user_id']);
+        $wait_income_money = round($wait_income_money,2);
         return $this->renderSuccess([
             'userInfo' => $user,
             'orderCount' => [
@@ -42,6 +52,11 @@ class Index extends Controller
             'couponCount' => (new UserCouponModel)->getCount($user['user_id']),
 //            'menus' => $user->getMenus()   // 个人中心菜单列表
             'menus' => $menus = [
+                'team' => [
+                    'name' => '我的团队',
+                    'url' => 'pages/user/team/team',
+                    'icon' => 'daili'
+                ],
                 'address' => [
                     'name' => '收货地址',
                     'url' => 'pages/address/index',
@@ -52,13 +67,29 @@ class Index extends Controller
                     'url' => 'pages/user/help/index',
                     'icon' => 'help'
                 ],
-            ]  // 个人中心菜单列表
+
+            ],  // 个人中心菜单列表
+            'message' => $userModel->getMessageNum($user['user_id']),
+            'wait_income_money' => $wait_income_money
         ]);
     }
 
-    public function test(){
-        $res = User::getAgentGoodsPrice(1,10,1);
-        print_r($res);
+    /**
+     * 体验装推荐下单排行榜
+     * @return array
+     * @throws \app\common\exception\BaseException
+     * @throws \think\exception\DbException
+     */
+    public function experienceRankList(){
+        // 当前用户信息
+        $user = $this->getUser();
+        try{
+            $model = new GoodsExperience();
+            $list = $model->getExperienceRankList();
+            return $this->renderSuccess($list);
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
     }
 
 }

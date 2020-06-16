@@ -68,6 +68,11 @@ class Questionnaire extends Controller
         return $this->fetch('',$model->getIndexData());
     }
 
+    public function fillList(){
+        $model = new Fill();
+        return $this->fetch('',$model->getFillList());
+    }
+
     public function userFillDetail(){
         $model = new Fill();
         return $this->fetch('',$model->userFillDetail());

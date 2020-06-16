@@ -4,6 +4,7 @@
 namespace app\store\controller\user;
 
 
+use app\store\model\User;
 use app\store\model\user\ExchangeTeamLog;
 use app\store\controller\Controller;
 use app\store\model\User as UserModel;
@@ -70,8 +71,28 @@ class Team extends Controller
         }
     }
 
+    /**
+     * 团队列表
+     * @return mixed
+     */
     public function teamLists(){
+        $model = new User();
+        return $this->fetch('',$model->teamLists());
+    }
 
+    /**
+     * 后台转化成为战略董事
+     * @return array|bool
+     */
+    public function beStrategy(){
+        try{
+            $model = new UserModel();
+            $res = $model->beStrategy();
+            if($res !== true)throw new Exception($res);
+            return $this->renderSuccess('操作成功');
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
     }
 
 }

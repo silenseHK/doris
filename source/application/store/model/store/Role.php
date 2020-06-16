@@ -184,4 +184,12 @@ class Role extends RoleModel
         return $prefix;
     }
 
+    /**
+     * 获取营养师的角色id
+     * @return mixed
+     */
+    public static function getDieticianId(){
+        return self::where(['role_name'=>'营养师'])->value('role_id');
+    }
+
 }

@@ -18,11 +18,8 @@ class Agent extends Controller
      * @return array
      */
     public function index(){
+        $this->user = $this->getUser();
         try{
-            if (!$token = $this->request->param('token')) {
-                return $this->renderSuccess('');
-            }
-            $this->user = $this->getUser();
             return $this->renderSuccess($this->user->getAgentData());
         }catch(Exception $e){
             return $this->renderError($e->getMessage());

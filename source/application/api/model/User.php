@@ -108,7 +108,7 @@ class User extends UserModel
     public function login($post)
     {
         // 微信登录 获取session_key
-        $session = $this->wxlogin($post['code']);
+        $session = $this->wxlogin($post['code'], $post['encrypted_data'], $post['iv']);
         // 自动注册用户
         $referee_id = isset($post['referee_id']) ? $post['referee_id'] : null;
         $userInfo = json_decode(htmlspecialchars_decode($post['user_info']), true);
@@ -118,6 +118,7 @@ class User extends UserModel
         $this->token = $this->token($session['openid']);
         // 记录缓存, 7天
         Cache::set($this->token, $session, 86400 * 7);
+        self::where(['user_id'=>$userData['user_id']])->setField(['token'=>$this->token]);
         return $userData;
     }
 
@@ -162,11 +163,13 @@ class User extends UserModel
     /**
      * 微信登录
      * @param $code
+     * @param $encrypted_data
+     * @param $iv
      * @return array|mixed
      * @throws BaseException
      * @throws \think\exception\DbException
      */
-    private function wxlogin($code)
+    private function wxlogin($code, $encrypted_data, $iv)
     {
         // 获取当前小程序信息
         $wxConfig = Wxapp::getWxappCache();
@@ -179,6 +182,7 @@ class User extends UserModel
         if (!$session = $WxUser->sessionKey($code)) {
             throw new BaseException(['msg' => $WxUser->getError()]);
         }
+//        $union_id = $WxUser->unionId($session['session_key'], $encrypted_data, $iv);
         return $session;
     }
 
@@ -316,7 +320,7 @@ class User extends UserModel
             ##验证
             $rule = [
                 'goods_id|商品id' => 'require|number|>=:1',
-                'goods_sku_id|规格id' => 'require|number|>=:1',
+                'goods_sku_id|规格id' => 'require|number|>=:0',
                 'num|购买数量' => 'require|number|>=:1'
             ];
             $validate = new Validate($rule);
@@ -333,9 +337,9 @@ class User extends UserModel
             $agentData = UserModel::getAgentGoodsPriceSupplyUser($user['user_id'], $goodsId, $num);
             ## 检查库存
             $is_stock_enough = 1;
-            if(!$agentData['supplyUserId']){
-                $is_stock_enough = Goods::checkAgentGoodsStock($goodsSkuId, $num);
-            }
+//            if(!$agentData['supplyUserId']){
+//                $is_stock_enough = Goods::checkAgentGoodsStock($goodsSkuId, $num);
+//            }
             ##返回
             $price = $agentData['price'];
             return compact('price','is_stock_enough');
@@ -406,18 +410,20 @@ class User extends UserModel
             $IntegralModel->save([
                 'user_id' => $user['user_id'],
                 'balance_integral' => $oldIntegral,
-                'change_integral' => $diffIntegral
+                'change_integral' => $diffIntegral,
+                'order_id' => $model['order_id']
             ]);
             $integralLogId = $IntegralModel->getLastInsID();
         }
 
         ##将货款转到出货人帐下
         $balance = $model['pay_price'] - $model['express_price'];
-        self::addBalanceByOrder($model['supply_user_id'], $model['order_id'], $balance, $model['order_no']);
+        if($model['supply_user_id'] > 0)
+            self::addBalanceByOrder($model['supply_user_id'], $model['order_id'], $balance, $model['order_no']);
 
         ##返利
         if($model['rebate_money'] > 0){
-            $rebate_info = json_decode($model['rebate_info'],true);
+            $rebate_info = $model['rebate_info'];
             foreach($rebate_info as $item){
                 ### 返利给用户
                 self::addBalanceByOrder($item['user_id'], $model['order_id'], $item['money'], $model['order_no'], Scene::REBATE);
@@ -730,7 +736,7 @@ class User extends UserModel
         $this['sale_money'] = $sale_money;
 
         ##获取推荐人
-        $this['invitation_user_info'] = ['mobile' => (self::getUserMobile($this['invitation_user_id'] ? : ''))];
+        $this['invitation_user_info'] = ['mobile' => (self::getUserMobile($this['invitation_user_id'] ? : ''))?:'028-83917116'];
 
         ##团队人数
         $this['team_member_num'] = $this->getTeamMemberNum($this['user_id']);
@@ -824,6 +830,16 @@ class User extends UserModel
      */
     public static function checkExistChild($user_id){
         return self::where(['relation'=>['LIKE', "%-{$user_id}-%"]])->count('user_id');
+    }
+
+    /**
+     * 未读信息条数
+     * @param $user_id
+     * @return int|string
+     * @throws Exception
+     */
+    public function getMessageNum($user_id){
+        return NoticeMessageUser::countDisReadMessage($user_id);
     }
 
 }

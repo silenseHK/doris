@@ -209,6 +209,12 @@ $detail = isset($detail) ? $detail : null;
                                         </div>
                                     </div>
                                     <div class="am-form-group">
+                                        <label class="am-u-sm-3 am-u-lg-2 am-form-label">备注 </label>
+                                        <div class="am-u-sm-9 am-u-end">
+                                            <textarea name="order[express_remark]" class="" rows="4" id="doc-ta-1"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="am-form-group">
                                         <div class="am-u-sm-9 am-u-sm-push-3 am-margin-top-lg">
                                             <button type="submit" class="j-submit am-btn am-btn-sm am-btn-secondary">
                                                 确认发货
@@ -226,6 +232,7 @@ $detail = isset($detail) ? $detail : null;
                                         <th>物流公司</th>
                                         <th>物流单号</th>
                                         <th>发货状态</th>
+                                        <th>备注</th>
                                         <th>发货时间</th>
                                     </tr>
                                     <tr>
@@ -236,6 +243,7 @@ $detail = isset($detail) ? $detail : null;
                                             <?= $detail['deliver_status']['value'] == 20 ? 'am-badge-success' : '' ?>">
                                                     <?= $detail['deliver_status']['text'] ?></span>
                                         </td>
+                                        <td><?= $detail['express_remark'] ?></td>
                                         <td>
                                             <?= date('Y-m-d H:i:s', $detail['deliver_time']) ?>
                                         </td>
@@ -255,9 +263,9 @@ $detail = isset($detail) ? $detail : null;
                             <div class="widget-title am-fl">自提核销</div>
                         </div>
                         <?php if ($detail['deliver_status']['value'] == 20): ?>
-                            <?php if (checkPrivilege('order.operate/extract')): ?>
+                            <?php if (checkPrivilege('order/submitselforder')): ?>
                                 <form id="delivery" class="my-form am-form tpl-form-line-form" method="post"
-                                      action="<?= url('order/submitSelfOrder', ['deliver_id' => $detail['deliver_id']]) ?>">
+                                      action="<?= url('order/submitselforder', ['deliver_id' => $detail['deliver_id']]) ?>">
                                     <div class="am-form-group">
                                         <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">买家取货状态 </label>
                                         <div class="am-u-sm-9 am-u-end">

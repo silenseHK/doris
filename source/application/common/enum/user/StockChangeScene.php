@@ -20,6 +20,9 @@ class StockChangeScene extends EnumBasics
     ## 补充库存
     const BUY = 40;
 
+    ## 退款
+    const REFUND = 50;
+
     public static function data(){
         return [
             self::SALE => [
@@ -37,6 +40,10 @@ class StockChangeScene extends EnumBasics
             self::BUY => [
                 'value' => self::BUY,
                 'text' => '补充库存'
+            ],
+            self::REFUND => [
+                'value' => self::REFUND,
+                'text' => '用户退款'
             ],
         ];
     }

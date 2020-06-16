@@ -76,7 +76,7 @@ class UserGoodsStock extends BaseModel
      * @throws \think\Exception
      */
     public static function incStock($id, $stock){
-        return (new self)->where(['id'=>$id])->setInc('stock', $stock);
+        return (new self)->where(['id'=>$id])->update(['stock'=>['inc',$stock],'history_stock'=>['inc',$stock]]);
     }
 
     /**
@@ -87,7 +87,7 @@ class UserGoodsStock extends BaseModel
      * @throws \think\Exception
      */
     public static function decStock($id, $stock){
-        return (new self)->where(['id'=>$id])->setDec('stock', $stock);
+        return (new self)->where(['id'=>$id])->update(['stock'=>['dec', $stock], 'history_sale'=>['inc', $stock]]);
     }
 
     /**
@@ -119,6 +119,7 @@ class UserGoodsStock extends BaseModel
                 'user_id' => $userId,
                 'goods_id' => $goodsId,
                 'goods_sku_id' => $goodsSkuId,
+                'history_sale' => abs($stock),
                 'stock' => $stock
             ]);
         }
@@ -227,6 +228,8 @@ class UserGoodsStock extends BaseModel
             case 2: ##减少冻结库存 增加现有库存
                 $res = self::update(['freeze_stock'=>['dec', $stock], 'stock'=> ['inc', $stock]], $where);
                 break;
+            case 3: ##减少历史出库 增加现有库存
+                $res = self::update(['history_sale'=>['dec', $stock], 'stock'=> ['inc', $stock]], $where);
         }
         return $res;
     }

@@ -193,4 +193,25 @@ class User extends StoreUserModel
         return true;
     }
 
+    /**
+     * 获取营养师列表
+     * @return array
+     * @throws \think\Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getDietician(){
+        ##获取营养师的role_id
+        $role_id = (int)(Role::getDieticianId());
+        ##获取营养师的账号id
+        $store_user_ids = UserRole::getStoreUserIds($role_id);
+        ##数据
+        $list = self::where(['store_user_id'=>['IN',$store_user_ids]])->select();
+        foreach($list as &$item){
+            $item['team_member_num'] = DieticianTeam::countTeamNum($item['store_user_id']);
+        }
+        return compact('list');
+    }
+
 }

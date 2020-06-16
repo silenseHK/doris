@@ -56,6 +56,23 @@ class Upload extends Controller
         return json(['code' => 1, 'msg' => '图片上传成功', 'data' => $uploadFile]);
     }
 
+    public function video($group_id = -1){
+        $this->config['default'] = 'qiniu';
+        // 实例化存储驱动
+        $StorageDriver = new StorageDriver($this->config);
+        // 设置上传文件的信息
+        $StorageDriver->setUploadFile('file');
+        // 上传图片
+        if (!$StorageDriver->upload()) {
+            return json(['code' => 0, 'msg' => '视频上传失败' . $StorageDriver->getError()]);
+        }
+
+        // 图片上传路径
+        $fileName = $StorageDriver->getFileName();
+        // 图片上传成功
+        return json(['code' => 1, 'msg' => '图片上传成功', 'data' => ['url'=>$this->videoPath($fileName)]]);
+    }
+
     /**
      * 添加文件库上传记录
      * @param $group_id
@@ -83,6 +100,18 @@ class Upload extends Controller
             'extension' => pathinfo($fileInfo['name'], PATHINFO_EXTENSION),
         ]);
         return $model;
+    }
+
+    /**
+     * 视频地址
+     * @param $fileName
+     * @return string
+     */
+    private function videoPath($fileName){
+        $storage = $this->config['default'];
+        $fileUrl = isset($this->config['engine'][$storage]['domain'])
+            ? $this->config['engine'][$storage]['domain'] . "/" : \app\common\model\UploadFile::$base_url . 'uploads/';
+        return $fileUrl . $fileName;
     }
 
 }

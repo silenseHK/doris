@@ -17,6 +17,9 @@ class PayType extends EnumBasics
     // 微信支付
     const WECHAT = 20;
 
+    //线下
+    const ADMIN = 30;
+
     /**
      * 获取枚举数据
      * @return array
@@ -30,6 +33,10 @@ class PayType extends EnumBasics
             ],
             self::WECHAT => [
                 'name' => '微信支付',
+                'value' => self::WECHAT,
+            ],
+            self::ADMIN => [
+                'name' => '线下支付',
                 'value' => self::WECHAT,
             ],
         ];

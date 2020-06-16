@@ -89,4 +89,13 @@ class UploadFile extends UploadFileModel
         return $this->where('file_id', 'in', $fileIds)->update(compact('group_id'));
     }
 
+    public static function getImage($image_id){
+        $data = self::where(['file_id'=>$image_id])->field(['file_id','storage', 'file_name', 'file_url'])->find();
+        if(!$data)return "";
+        if ($data['storage'] === 'local') {
+            return self::$base_url . 'uploads/' . $data['file_name'];
+        }
+        return $data['file_url'] . '/' . $data['file_name'];
+    }
+
 }

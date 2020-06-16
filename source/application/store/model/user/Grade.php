@@ -163,4 +163,15 @@ class Grade extends GradeModel
         return RebateEnum::data()[$value];
     }
 
+    /**
+     * 可选择等级列表
+     * @return false|\PDOStatement|string|\think\Collection
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function getGradeList(){
+        return self::where(['is_delete'=>0, 'status'=>1])->field(['grade_id', 'name'])->order('weight','asc')->select();
+    }
+
 }

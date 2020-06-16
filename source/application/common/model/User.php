@@ -356,7 +356,7 @@ class User extends BaseModel
     public function addGoodsStock($model, $integralLogId){
 
         $goodsList = $model['goods'];
-        $data = $stock = $decStock = [];
+        $data = $stock = $decStock = $goodsName = [];
         $balance = 0;
         foreach($goodsList as $goods){
             if($goods['sale_type'] == 1){ ##层级代理商品
@@ -393,6 +393,7 @@ class User extends BaseModel
                     $balance += $goods['total_pay_price'];
                 }
             }
+            $goodsName[$goods['goods_id']] = $goods['goods_name'];
         }
         ##货款扣除运费
         if($balance)$balance = $balance - $model['express_price'];
@@ -403,10 +404,11 @@ class User extends BaseModel
             }
             foreach($data as $k => $v){
                 $data[$k]['change_type'] = 40;
+                $data[$k]['order_no'] = $model['order_no'];
             }
             UserGoodsStockLog::insertAllData($data);
         }
-
+        $noticeMessage = new NoticeMessage();
         ##减少供货人库存
         if(!empty($decStock)){
             $desData = [];
@@ -422,20 +424,25 @@ class User extends BaseModel
                     'change_type' => 10,
                     'change_direction' => 20,
                     'opposite_user_id' => $this['user_id'],
-                    'remark' => '出货减库存'
+                    'remark' => '出货减库存',
+                    'order_no' => $model['order_no']
                 ];
                 ##减少库存
-                if($model['delivery_type']['value'] == 30){ ##非补充库存订单直接减库存
+                if($model['delivery_type']['value'] == 30){ ##补充库存订单直接减库存
                     UserGoodsStock::editStock($model['supply_user_id'], $val['goods_id'], $key, $val['stock'], 'dec');
-                }else{  ##补充库存订单 减库存+增加冻结库存
+                }else{  ##非补充库存订单 减库存+增加冻结库存
                     UserGoodsStock::freezeStockByUserGoodsId($model['supply_user_id'],$val['goods_id'], $key, $val['stock'], 1);
                 }
+                ##消息通知
+                $cur_stock = UserGoodsStock::getStock($model['supply_user_id'], $key);
+                $noticeMessage->stockChangeMsg(['goods_name'=>$goodsName[$val['goods_id']], 'diff_num'=>$val['stock'], 'order_id'=>$model['order_id'], 'cur_num'=>$cur_stock, 'user_id'=>$model['supply_user_id']],20);
             }
             ##插入库存变更日志
             UserGoodsStockLog::insertAllData($desData);
             if($model['delivery_type']['value'] == 30){ ##补充库存订单直接增加出货人余额
                 ##增加可用余额
                 self::addBalanceByOrder($model['supply_user_id'], $model['order_id'], $balance, $model['order_no']);
+                $noticeMessage->balanceChangeMsg(['order_no'=>$model['order_no'], 'money'=>$balance, 'user_id'=>$model['supply_user_id']],10);
             }
         }
 
@@ -457,13 +464,17 @@ class User extends BaseModel
                         'remark' => $item['remark'],
                         'grade_id' => $item['grade_id']
                     ]);
+                    $noticeMessage->balanceChangeMsg(['order_no'=>$model['order_no'], 'money'=>$item['money'], 'user_id'=>$item['user_id']],20);
                 }
+
                 ##出货人返利
                 if($model['supply_user_id'] > 0){
                     self::reduceBalanceByOrder($model['supply_user_id'], $model['order_id'], $model['rebate_money'], $model['order_no']);
+                    $noticeMessage->balanceChangeMsg(['order_no'=>$model['order_no'], 'money'=>$model['rebate_money'], 'user_id'=>$model['supply_user_id']],20);
                 }
             }
         }
+
 //        if(!empty($rebate) && $model['delivery_type']['value'] == 30){
 //            ##查找获利人
 //            $rebateUserId = $model['rebate_user_id'];
@@ -580,13 +591,14 @@ class User extends BaseModel
      * @param $goodsId
      * @param $num
      * @param $supplyUserId
+     * @param $rebate_type
      * @return array
      * @throws Exception
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    public static function getRebateUser($userId, $goodsId, $num, $supplyUserId){
+    public static function getRebateUser($userId, $goodsId, $num, $supplyUserId, $rebate_type=0){
         ##获取用户最新的信息
         #获取商品信息
         $userInfo = self::getRecentUserInfo($userId, $goodsId, $num);
@@ -595,7 +607,7 @@ class User extends BaseModel
             [
                 'grade_id' => $userInfo['grade_id'],
                 'weight' => $userInfo['grade']['weight'],
-                'grade_type' => $userInfo['grade']['grade_type']
+                'grade_type' => isset($userInfo['grade']['grade_type']['value']) ? $userInfo['grade']['grade_type']['value'] : $userInfo['grade']['grade_type']
             ]);
         ##游客不返利
         if($gradeInfo['grade_type'] == GradeType::LOW){
@@ -609,7 +621,10 @@ class User extends BaseModel
                 $rebateUser = self::VIPGetRebate($userInfo['relation'], $supplyUserId);
                 if(!$rebateUser)return [];
                 $rebateConf = RebateConfig::getConf()[RebateConfig::VIP][RebateConfig::VIP];
-                $money = $rebateConf['rebate'] * $num;
+                $money = $rebateConf['rebate'][$rebate_type] * $num;
+                if($money == 0){
+                    return [];
+                }
                 return [
                     [
                         'user_id' => $rebateUser['user_id'],
@@ -628,29 +643,33 @@ class User extends BaseModel
                     $agentUserId = $agentUser['user_id'];
                     $rtn = [];
                     $agentConf = RebateConfig::getConf()[RebateConfig::AGENT][RebateConfig::AGENT];
-                    $agent_money = $agentConf['rebate'] * $num;
+                    $agent_money = $agentConf['rebate'][$rebate_type] * $num;
                     ##查看总代前是否有VIP
                     $vipUser = self::agentGetRebate($userInfo['relation'], $agentUserId, 'vip');
                     if($vipUser){ ##有VIP
                         $vipUserId = $vipUser['user_id'];
                         $vipConf = RebateConfig::getConf()[RebateConfig::AGENT][RebateConfig::VIP];
-                        $vip_money = $vipConf['rebate'] * $num;
+                        $vip_money = $vipConf['rebate'][$rebate_type] * $num;
                         $agent_money = $agent_money - $vip_money;
+                        if($vip_money > 0){
+                            $rtn[] = [
+                                'user_id' => $vipUserId,
+                                'grade_id' => $vipUser['grade_id'],
+                                'money' => $vip_money,
+                                'remark' => $vipConf['text'],
+                                'num' => $num
+                            ];
+                        }
+                    }
+                    if($agent_money > 0){
                         $rtn[] = [
-                            'user_id' => $vipUserId,
-                            'grade_id' => $vipUser['grade_id'],
-                            'money' => $vip_money,
-                            'remark' => $vipConf['text'],
+                            'user_id' => $agentUserId,
+                            'grade_id' => $agentUser['grade_id'],
+                            'money' => $agent_money,
+                            'remark' => $agentConf['text'],
                             'num' => $num
                         ];
                     }
-                    $rtn[] = [
-                        'user_id' => $agentUserId,
-                        'grade_id' => $agentUser['grade_id'],
-                        'money' => $agent_money,
-                        'remark' => $agentConf['text'],
-                        'num' => $num
-                    ];
                     return $rtn;
                 }else{ ##没有总代理
                     ##查找上级到供货人之前是否有VIP
@@ -658,7 +677,10 @@ class User extends BaseModel
                     if($vipUser){ ##有vip
                         $vipUserId = $vipUser['user_id'];
                         $vipConf = RebateConfig::getConf()[RebateConfig::AGENT][RebateConfig::VIP];
-                        $vip_money = $vipConf['rebate'] * $num;
+                        $vip_money = $vipConf['rebate'][$rebate_type] * $num;
+                        if($vip_money == 0){
+                            return [];
+                        }
                         return [
                             [
                                 'user_id' => $vipUserId,
@@ -682,7 +704,10 @@ class User extends BaseModel
                     if($agentUser){ ##有总代
                         $agentUserId = $agentUser['user_id'];
                         $agentConf = RebateConfig::getConf()[RebateConfig::STRATEGY][RebateConfig::AGENT];
-                        $money = $agentConf['rebate'] * $num;
+                        $money = $agentConf['rebate'][$rebate_type] * $num;
+                        if($money == 0){
+                            return [];
+                        }
                         return [
                             [
                                 'user_id' => $agentUserId,
@@ -703,46 +728,52 @@ class User extends BaseModel
                         foreach($strategyUser as $k => $item){
                             if($k == 0){
                                 $strategyConf = RebateConfig::getConf()[RebateConfig::STRATEGY][RebateConfig::STRATEGY];
-                                $money = $strategyConf['rebate'] * $num;
+                                $money = $strategyConf['rebate'][$rebate_type] * $num;
                             }else{
                                 $strategyConf = RebateConfig::getConf()[RebateConfig::STRATEGY][RebateConfig::STRATEGY_INDIRECT];
-                                $money = $strategyConf['rebate'] * $num;
+                                $money = $strategyConf['rebate'][$rebate_type] * $num;
                             }
-                            $rtn[] = [
-                                'user_id' => $item['user_id'],
-                                'grade_id' => $item['grade_id'],
-                                'money' => $money,
-                                'remark' => $strategyConf['text'],
-                                'num' => $num
-                            ];
+                            if($money > 0){
+                                $rtn[] = [
+                                    'user_id' => $item['user_id'],
+                                    'grade_id' => $item['grade_id'],
+                                    'money' => $money,
+                                    'remark' => $strategyConf['text'],
+                                    'num' => $num
+                                ];
+                            }
                         }
                     }else{ ##有总代
                         $agentUserId = $agentUser['user_id'];
                         ##获取总代推战略懂事 低推高奖励
                         $agentConf = RebateConfig::getConf()[RebateConfig::STRATEGY][RebateConfig::AGENT];
-                        $agent_money = $agentConf['rebate'] * $num;
-                        $rtn[] = [
-                            'user_id' => $agentUserId,
-                            'grade_id' => $agentUser['grade_id'],
-                            'money' => $agent_money,
-                            'remark' => $agentConf['text'],
-                            'num' => $num
-                        ];
+                        $agent_money = $agentConf['rebate'][$rebate_type] * $num;
+                        if($agent_money > 0){
+                            $rtn[] = [
+                                'user_id' => $agentUserId,
+                                'grade_id' => $agentUser['grade_id'],
+                                'money' => $agent_money,
+                                'remark' => $agentConf['text'],
+                                'num' => $num
+                            ];
+                        }
                         foreach($strategyUser as $k => $item){
                             if($k == 0){
                                 $strategyConf = RebateConfig::getConf()[RebateConfig::STRATEGY][RebateConfig::STRATEGY];
-                                $money = $strategyConf['rebate'] * $num - $agent_money;
+                                $money = $strategyConf['rebate'][$rebate_type] * $num - $agent_money;
                             }else{
                                 $strategyConf = RebateConfig::getConf()[RebateConfig::STRATEGY][RebateConfig::STRATEGY_INDIRECT];
-                                $money = $strategyConf['rebate'] * $num;
+                                $money = $strategyConf['rebate'][$rebate_type] * $num;
                             }
-                            $rtn[] = [
-                                'user_id' => $item['user_id'],
-                                'grade_id' => $item['grade_id'],
-                                'money' => $money,
-                                'remark' => $strategyConf['text'],
-                                'num' => $num
-                            ];
+                            if($money > 0){
+                                $rtn[] = [
+                                    'user_id' => $item['user_id'],
+                                    'grade_id' => $item['grade_id'],
+                                    'money' => $money,
+                                    'remark' => $strategyConf['text'],
+                                    'num' => $num
+                                ];
+                            }
                         }
                     }
                     return $rtn;
@@ -753,21 +784,28 @@ class User extends BaseModel
         }
         ## 董事or合伙人
         if($gradeInfo['grade_type'] == GradeType::HIDE){
+            $rtn = [];
             ##查找上级到供货人为止是否有合伙人和董事
             $hideUser = self::hideGetRebate($userInfo['relation']);
             if($hideUser){ ##有董事和合伙人
-                $hideUserId = $hideUser['user_id'];
-                $hideConf = RebateConfig::getConf()[RebateConfig::DIRECTOR][RebateConfig::DIRECTOR];
-                $money = $hideConf['rebate'] * $num;
-                return [
-                    [
-                        'user_id' => $hideUserId,
-                        'grade_id' => $hideUser['grade_id'],
-                        'money' => $money,
-                        'remark' => $hideConf['text'],
-                        'num' => $num
-                    ]
-                ];
+                foreach($hideUser as $k => $item){
+                    if($k == 0){
+                        $hideConf = RebateConfig::getConf()[RebateConfig::DIRECTOR][RebateConfig::DIRECTOR];
+                    }else{
+                        $hideConf = RebateConfig::getConf()[RebateConfig::DIRECTOR][RebateConfig::DIRECTOR_INDIRECT];
+                    }
+                    $money = $hideConf['rebate'][$rebate_type] * $num;
+                    if($money > 0){
+                        $rtn[] = [
+                            'user_id' => $item['user_id'],
+                            'grade_id' => $item['grade_id'],
+                            'money' => $money,
+                            'remark' => $hideConf['text'],
+                            'num' => $num
+                        ];
+                    }
+                }
+                return $rtn;
             }else{ ##没有董事和合伙人
                 return [];
             }
@@ -936,9 +974,71 @@ class User extends BaseModel
                     $query->field(['grade_id', 'weight']);
                 }
             ]
-        )->find();
+        )->limit(2)->select();
         if(!$rebateUser)return [];
-        return $rebateUser;
+        return $rebateUser->toArray();
+    }
+
+    /**
+     * 直升战略董事的返利信息
+     * @param $user_id
+     * @param $num
+     * @param $rebate_type
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function getStrategyRebateUser($user_id, $num, $rebate_type){
+        $rtn = [];
+        $userInfo = self::get(['user_id'=>$user_id]);
+        $relation = trim($userInfo['relation'],'-');
+        if(!$relation)return $rtn;
+        $relation = explode('-', $relation);
+        if(!$relation[0])return $rtn;
+        ##董事 grade_id and 合伙人 grade_id
+        $grade_id_1 = Grade::getGradeId(GradeSize::DIRECTOR);
+        $grade_id_2 = Grade::getGradeId(GradeSize::PARTNER);
+        $where = [
+            'user_id' => ['IN', $relation],
+            'grade_id' => ['IN', [$grade_id_1, $grade_id_2]],
+            'is_delete' => 0
+        ];
+        $orderFilter = implode(',', $relation);
+        $rebateUser = self::where($where)->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->with(
+            [
+                'grade' => function(Query $query){
+                    $query->field(['grade_id', 'weight']);
+                }
+            ]
+        )->limit(3)->select();
+        if(!$rebateUser)return [];
+        $rebateUser = $rebateUser->toArray();
+        foreach($rebateUser as $k => $item){
+            $per_money = 0;
+            $remark = '';
+            if($k == 0){ ##第一个用户获得差价
+                $per_money = 20;
+                $remark = '战略董事第一单进货差价';
+            }elseif($k == 1){
+                $conf = RebateConfig::getConf()[RebateConfig::DIRECTOR][RebateConfig::DIRECTOR];
+                $per_money = $conf['rebate'][$rebate_type];
+                $remark = '战略董事第一单进货返利';
+            }elseif($k == 2){
+                $conf = RebateConfig::getConf()[RebateConfig::DIRECTOR][RebateConfig::DIRECTOR_INDIRECT];
+                $per_money = $conf['rebate'][$rebate_type];
+                $remark = '战略董事第一单进货间接返利';
+            }
+            $money = $per_money * $num;
+            $rtn[] = [
+                'user_id' => $item['user_id'],
+                'grade_id' => $item['grade_id'],
+                'money' => $money,
+                'remark' => $remark,
+                'num' => $num
+            ];
+        }
+        return $rtn;
     }
 
     /**
@@ -960,6 +1060,36 @@ class User extends BaseModel
             $filter = $relation;
         }
         return $filter;
+    }
+
+    /**
+     * 体验装返利规则
+     * @param $user_id
+     * @param $num
+     * @return array
+     * @throws \think\exception\DbException
+     */
+    public static function getExperienceRebate($user_id, $num){
+        $rebate_info = [];
+        $user = self::get($user_id);
+        ##获取前两个推荐人
+        $relation = trim($user['relation'],'-');
+        if($relation){
+            $relation = explode('-', $relation);
+            foreach($relation as $k => $v){
+                if($k >= 2)break;
+                $per_money = $k == 0? 10 : ($k==1? 5: 0);
+                $money = $per_money * $num;
+                $rebate_info[] = [
+                    'user_id' => $v,
+                    'grade_id' => self::getUserGrade2($v),
+                    'money' => $money,
+                    'remark' => '体验装推荐奖',
+                    'num' => $num
+                ];
+            }
+        }
+        return $rebate_info;
     }
 
     /**
@@ -989,15 +1119,20 @@ class User extends BaseModel
         $userInfo = self::where(['user_id'=>$user_id, 'is_delete'=>0])->field(['user_id', 'invitation_user_id', 'relation'])->find();
         if(!$user_id)throw new Exception('用户不存在');
         ##获取新邀请人信息
-        $invitationUserInfo = self::where(['user_id'=>$new_invitation_user_id, 'is_delete'=>0])->field(['user_id', 'relation'])->find();
-        if(!$invitationUserInfo)throw new Exception('邀请人信息不存在');
-        ##判断新邀请人是否为申请人的下级
-        if($invitationUserInfo['relation']){
-            $id_arr = explode('-', trim($invitationUserInfo['relation'],"-"));
-            if(in_array($user_id, $id_arr))throw new Exception('该操作不被允许');
+        if($new_invitation_user_id > 0){
+            $invitationUserInfo = self::where(['user_id'=>$new_invitation_user_id, 'is_delete'=>0])->field(['user_id', 'relation'])->find();
+            if(!$invitationUserInfo)throw new Exception('邀请人信息不存在');
+            ##判断新邀请人是否为申请人的下级
+            if($invitationUserInfo['relation']){
+                $id_arr = explode('-', trim($invitationUserInfo['relation'],"-"));
+                if(in_array($user_id, $id_arr))throw new Exception('该操作不被允许');
+            }
+            ##最新的关系网
+            $relation = "-" . trim($new_invitation_user_id . $invitationUserInfo['relation'],'-') . "-";
+        }else{
+            $relation = "";
         }
-        ##最新的关系网
-        $relation = "-" . trim($new_invitation_user_id . $invitationUserInfo['relation'],'-') . "-";
+
         ##查找申请人的下级团队
         $lowerLevelTeam = self::getLowerLevelTeam($user_id);
         $newRelationArr = self::createNewRelation($lowerLevelTeam, $user_id, $relation);
@@ -1036,6 +1171,7 @@ class User extends BaseModel
      * @return mixed
      */
     public static function createNewRelation($arr, $user_id, $relation){
+        if(!$relation)$relation = '-';
         foreach($arr as &$v){
             $v['relation'] = str_replace(strstr($v['relation'],"-{$user_id}-"),"-{$user_id}" . $relation, $v['relation']);
         }
@@ -1082,6 +1218,41 @@ class User extends BaseModel
     public static function checkUserExist($user_id){
         $count = self::where(compact('user_id'))->count('user_id');
         return $count > 0;
+    }
+
+    /**
+     * 获取平台下的团队长user_id
+     * @return array
+     */
+    public static function getPlatformUserId(){
+        return self::where(['invitation_user_id'=>0, 'grade_id'=>['LT', GradeSize::PARTNER]])->column('user_id');
+    }
+
+    /**
+     * 获取团队长user_id
+     * @param $user_id
+     * @return int
+     */
+    public static function getGroupUserId($user_id){
+        $user = self::where(['user_id'=>$user_id])->field(['relation', 'grade_id'])->find();
+        $grade_id = Grade::getGradeId(GradeSize::PARTNER);
+        if($user['grade_id'] == $grade_id)return $user_id;
+        $relation = $user['relation'];
+        $relation = trim($relation,'-');
+        if(!$relation)return 0;
+        $filter = explode('-',$relation);
+        $filter2 = implode(',',$filter);
+        $user_id = self::where(['grade_id'=>$grade_id,'user_id'=>['IN',$filter]])->orderRaw("field(user_id," . $filter2 . ")")->value('user_id');
+        return $user_id?:0;
+    }
+
+    /**
+     * 获取用户等级id
+     * @param $user_id
+     * @return bool|float|mixed|string|null
+     */
+    public static function getUserGrade2($user_id){
+        return self::where(['user_id'=>$user_id])->value('grade_id');
     }
 
 }

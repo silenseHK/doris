@@ -77,11 +77,11 @@ return [
     'order' => [
         'name' => '订单管理',
         'icon' => 'icon-order',
-        'index' => 'order/all_list',
+        'index' => 'order/warehouse',
         'submenu' => [
             [
                 'name' => '消费订单',
-                'active' => true,
+                'active' => false,
                 'submenu' => [
                     [
                         'name' => '全部订单',
@@ -125,6 +125,14 @@ return [
             [
                 'name' => '提货发货',
                 'index' => 'order/order_delivery',
+            ],
+            [
+                'name' => '仓库信息',
+                'index' => 'order/warehouse',
+            ],
+            [
+                'name' => '运费明细',
+                'index' => 'order/freight',
             ],
         ]
     ],
@@ -182,6 +190,10 @@ return [
                     [
                         'name' => '团队管理奖',
                         'index' => 'user.team/manage_reward',
+                    ],
+                    [
+                        'name' => '营养师管理团队',
+                        'index' => 'user.dietician/lists',
                     ],
                 ]
             ],
@@ -289,6 +301,40 @@ return [
                         'name' => '配餐列表',
                         'index' => 'content.food_group/index',
                     ],
+                    [
+                        'name' => '配餐列表',
+                        'index' => 'content.food_group/test',
+                    ],
+                ]
+            ],
+            [
+                'name' => '百问百答',
+                'submenu' => [
+                    [
+                        'name' => '问答列表',
+                        'index' => 'content.online_questions/index',
+                    ],
+                    [
+                        'name' => '分类列表',
+                        'index' => 'content.online_questions/cateindex',
+                    ]
+                ]
+            ],
+        ]
+    ],
+    'finance' => [
+        'name' => '财务管理',
+        'icon' => 'am-icon-money',
+        'index' => 'finance.dealer.withdraw/index',
+        'submenu' => [
+            [
+                'name' => '提现申请',
+                'active' => true,
+                'submenu' => [
+                    [
+                        'name' => '提现申请',
+                        'index' => 'finance.dealer.withdraw/index',
+                    ],
                 ]
             ],
         ]
@@ -368,6 +414,20 @@ return [
             [
                 'name' => '满额包邮',
                 'index' => 'market.basic/full_free',
+            ],
+            [
+                'name' => '体验装',
+//                'active' => true,
+                'submenu' => [
+                    [
+                        'name' => '订单',
+                        'index' => 'market.experience/orders',
+                    ],
+                    [
+                        'name' => '排行',
+                        'index' => 'market.experience/rank'
+                    ],
+                ]
             ],
         ],
     ],
@@ -449,10 +509,6 @@ return [
 //                        'name' => '分销订单',
 //                        'index' => 'apps.dealer.order/index',
 //                    ],
-                    [
-                        'name' => '提现申请',
-                        'index' => 'apps.dealer.withdraw/index',
-                    ],
                     [
                         'name' => '分销设置',
                         'index' => 'apps.dealer.setting/index',
@@ -574,6 +630,16 @@ return [
 //                    ]
 //                ]
 //            ],
+            [
+                'name' => '小程序直播',
+                'index' => 'apps.live.room/index',
+                'submenu' => [
+                    [
+                        'name' => '直播间管理',
+                        'index' => 'apps.live.room/index',
+                    ],
+                ]
+            ],
         ]
     ],
     'setting' => [
@@ -668,5 +734,42 @@ return [
                 ]
             ]
         ],
+    ],
+    'college' => [
+        'name' => '商学院',
+        'icon' => 'icon-guanliyuan',
+        'index' => 'college.lesson/cateindex',
+        'submenu' => [
+            [
+                'name' => '课程分类',
+                'index' => 'college.lesson/cateindex',
+                'uris' => [
+                    'college.lesson/cateindex',
+                    'college.lesson/cateadd',
+                    'college.lesson/cateedit',
+                    'college.lesson/catedelete',
+                ],
+            ],
+            [
+                'name' => '讲师管理',
+                'index' => 'college.lecturer/index',
+                'uris' => [
+                    'college.lecturer/index',
+                    'college.lecturer/add',
+                    'college.lecturer/edit',
+                    'college.lecturer/delete',
+                ],
+            ],
+            [
+                'name' => '课程管理',
+                'index' => 'college.lesson/index',
+                'uris' => [
+                    'college.lesson/index',
+                    'college.lesson/add',
+                    'college.lesson/edit',
+                    'college.lesson/delete',
+                ],
+            ],
+        ]
     ],
 ];

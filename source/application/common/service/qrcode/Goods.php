@@ -57,8 +57,10 @@ class Goods extends Base
         // 商品海报背景图
         $backdrop = __DIR__ . '/resource/goods_bg.png';
         // 下载商品首图
-        $goodsUrl = $this->saveTempImage($wxappId, $this->goods['image'][1]['file_path'], 'goods');
+        $file_path = isset($this->goods['image'][1])?$this->goods['image'][1]['file_path']:$this->goods['image'][0]['file_path'];
+        $goodsUrl = $this->saveTempImage($wxappId, $file_path, 'goods');
         // 小程序码参数
+//        $scene = "gid:{$this->goods['goods_id']}" . ",referee_id:" . ($this->user_id ?: '') . ",uid:" . ($this->user_id ?: '');
         $scene = "gid:{$this->goods['goods_id']}" . ",referee_id:" . ($this->user_id ?: '');
         // 下载小程序码
         $qrcode = $this->saveQrcode($wxappId, $scene, $this->pages[$this->goodsType]);

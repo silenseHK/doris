@@ -93,6 +93,27 @@ class WxappPage extends BaseModel
                     ]
                 ]
             ],
+            'modelPic' => [
+                'name' => '弹窗广告',
+                'type' => 'modelPic',
+                'style' => [
+                    'paddingTop' => 0,
+                    'paddingLeft' => 0,
+                    'background' => '#ffffff'
+                ],
+                'data' => [
+                    [
+                        'imgUrl' => self::$base_url . 'assets/store/img/diy/banner/01.png',
+                        'imgName' => 'image-1.jpg',
+                        'linkUrl' => ''
+                    ],
+                    [
+                        'imgUrl' => self::$base_url . 'assets/store/img/diy/banner/01.png',
+                        'imgName' => 'banner-2.jpg',
+                        'linkUrl' => ''
+                    ]
+                ]
+            ],
             'navBar' => [
                 'name' => '导航组',
                 'type' => 'navBar',

@@ -3,7 +3,7 @@
         <div class="am-u-sm-12 am-u-md-12 am-u-lg-12">
             <div class="widget am-cf">
                 <div class="widget-head am-cf">
-                    <div class="widget-title am-cf">余额明细</div>
+                    <div class="widget-title am-cf">系统消息</div>
                 </div>
                 <div class="widget-body am-fr">
                     <!-- 工具栏 -->
