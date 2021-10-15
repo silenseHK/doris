@@ -2,10 +2,10 @@
 
 // 数据库配置
 $config = [
-    'host' => '127.0.0.1',
+    'host' => '119.27.174.111',
     'database' => 'doris',
-    'username' => 'root',
-    'password' => 'root',
+    'username' => 'doris',
+    'password' => 'KifJMfJxcepCaffF',
     'port' => '3306',
     'charset' => 'utf8',
 ];

@@ -8,16 +8,49 @@
                 <div class="widget-body am-fr">
                     <!-- 工具栏 -->
                     <div class="page_toolbar am-margin-bottom-xs am-cf">
-                        <div class="am-form-group">
-                            <?php if (checkPrivilege('shop/add')): ?>
-                                <div class="am-btn-group am-btn-group-xs">
-                                    <a class="am-btn am-btn-default am-btn-success"
-                                       href="<?= url('shop/add') ?>">
-                                        <span class="am-icon-plus"></span> 新增
-                                    </a>
+                        <form class="toolbar-form" action="" id="form-search">
+                            <input type="hidden" name="s" value="/<?= $request->pathinfo() ?>">
+                            <div class="am-u-sm-12 am-u-md-3">
+                                <?php if (checkPrivilege('shop/add')): ?>
+                                    <div class="am-btn-group am-btn-group-xs">
+                                        <a class="am-btn am-btn-default am-btn-success"
+                                           href="<?= url('add') ?>">
+                                            <span class="am-icon-plus"></span> 新增
+                                        </a>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <input type="hidden" name="user_id" value="<?= $request->get('user_id') ?>">
+                            <div class="am-u-sm-12 am-u-md-9">
+                                <div class="am fr">
+                                    <div class="am-form-group am-fl">
+                                        <select name="c_id"
+                                                data-am-selected="{btnSize: 'sm', placeholder: '分公司'}">
+                                            <option value=""></option>
+                                            <option value="0" <?= $request->get('c_id') === '0' ? 'selected' : '' ?>>
+                                                全部
+                                            </option>
+                                            <?php foreach ($company_list as $key => $item): ?>
+                                            <option value="<?= $item['id'] ?>" <?= $request->get('c_id') == $item['id'] ? 'selected' : '' ?>>
+                                                <?= $item['title'] ?>
+                                            </option>
+                                            <?php endforeach ?>
+                                        </select>
+                                    </div>
+                                    <div class="am-form-group am-fl">
+                                        <div class="am-input-group am-input-group-sm tpl-form-border-form">
+                                            <input type="text" class="am-form-field" name="title"
+                                                   placeholder="请输入员工名"
+                                                   value="<?= $request->get('title') ?>">
+                                            <div class="am-input-group-btn">
+                                                <button class="am-btn am-btn-default am-icon-search"
+                                                        type="submit"></button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            <?php endif; ?>
-                        </div>
+                            </div>
+                        </form>
                     </div>
                     <div class="am-scrollable-horizontal am-u-sm-12">
                         <table width="100%" class="am-table am-table-compact am-table-striped
@@ -57,12 +90,12 @@
 
                                     <td class="am-text-middle">
                                         <div class="tpl-table-black-operation">
-                                            <?php if (checkPrivilege('shop/edit')): ?>
-                                                <a href="<?= url('shop/edit', ['shop_id' => $item['id']]) ?>">
+                                            <?php if (checkPrivilege('project.staff/edit')): ?>
+                                                <a href="<?= url('project.staff/edit', ['id' => $item['id']]) ?>">
                                                     <i class="am-icon-pencil"></i> 编辑
                                                 </a>
                                             <?php endif; ?>
-                                            <?php if (checkPrivilege('shop/delete')): ?>
+                                            <?php if (checkPrivilege('project.staff/delete')): ?>
                                                 <a href="javascript:void(0);"
                                                    class="item-delete tpl-table-black-operation-del"
                                                    data-id="<?= $item['id'] ?>">
@@ -95,8 +128,8 @@
     $(function () {
 
         // 删除元素
-        var url = "<?= url('shop/delete') ?>";
-        $('.item-delete').delete('shop_id', url, '删除后不可恢复，确定要删除吗？');
+        var url = "<?= url('project.staff/delete') ?>";
+        $('.item-delete').delete('id', url, '删除后不可恢复，确定要删除吗？');
 
     });
 </script>

@@ -831,43 +831,43 @@ return [
             ]
         ],
     ],
-//    'college' => [
-//        'name' => '商学院',
-//        'icon' => 'icon-guanliyuan',
-//        'index' => 'college.lesson/cateindex',
-//        'submenu' => [
-//            [
-//                'name' => '课程分类',
-//                'index' => 'college.lesson/cateindex',
-//                'uris' => [
-//                    'college.lesson/cateindex',
-//                    'college.lesson/cateadd',
-//                    'college.lesson/cateedit',
-//                    'college.lesson/catedelete',
-//                ],
-//            ],
-//            [
-//                'name' => '讲师管理',
-//                'index' => 'college.lecturer/index',
-//                'uris' => [
-//                    'college.lecturer/index',
-//                    'college.lecturer/add',
-//                    'college.lecturer/edit',
-//                    'college.lecturer/delete',
-//                ],
-//            ],
-//            [
-//                'name' => '课程管理',
-//                'index' => 'college.lesson/index',
-//                'uris' => [
-//                    'college.lesson/index',
-//                    'college.lesson/add',
-//                    'college.lesson/edit',
-//                    'college.lesson/delete',
-//                ],
-//            ],
-//        ]
-//    ],
+    'college' => [
+        'name' => '商学院',
+        'icon' => 'icon-guanliyuan',
+        'index' => 'college.lesson/cateindex',
+        'submenu' => [
+            [
+                'name' => '课程分类',
+                'index' => 'college.lesson/cateindex',
+                'uris' => [
+                    'college.lesson/cateindex',
+                    'college.lesson/cateadd',
+                    'college.lesson/cateedit',
+                    'college.lesson/catedelete',
+                ],
+            ],
+            [
+                'name' => '讲师管理',
+                'index' => 'college.lecturer/index',
+                'uris' => [
+                    'college.lecturer/index',
+                    'college.lecturer/add',
+                    'college.lecturer/edit',
+                    'college.lecturer/delete',
+                ],
+            ],
+            [
+                'name' => '课程管理',
+                'index' => 'college.lesson/index',
+                'uris' => [
+                    'college.lesson/index',
+                    'college.lesson/add',
+                    'college.lesson/edit',
+                    'college.lesson/delete',
+                ],
+            ],
+        ]
+    ],
 //    'operate' => [
 //        'name' => '运营管理',
 //        'icon' => 'icon-guanliyuan',
@@ -882,18 +882,32 @@ return [
 //            ]
 //        ]
 //    ],
-    'staff' => [
-        'name' => '员工管理',
+    'project' => [
+        'name' => '组织架构',
         'icon' => 'icon-guanliyuan',
         'index' => 'project.staff/lists',
         'submenu' => [
             [
-                'name' => '员工列表',
+                'name' => '分公司管理',
+                'index' => 'project.company/lists',
+                'uris' => [
+                    'project.company/lists'
+                ],
+            ],
+            [
+                'name' => '部门管理',
+                'index' => 'project.department/lists',
+                'uris' => [
+                    'project.department/lists'
+                ],
+            ],
+            [
+                'name' => '员工管理',
                 'index' => 'project.staff/lists',
                 'uris' => [
-                    'project.staff/lists'
+                    'project.staff/lists',
                 ],
-            ]
+            ],
         ]
     ],
 ];

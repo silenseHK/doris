@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: 27989
- * Date: 2021/10/15
- * Time: 9:49
- */
+
 
 namespace app\store\controller\project;
 
@@ -14,29 +9,26 @@ use app\store\model\project\P_Company;
 use app\store\model\project\P_Department;
 use app\store\model\project\P_Role;
 use app\store\model\project\P_Staff;
-use app\store\validate\StaffValid;
+use app\store\validate\DepartmentValid;
+use think\db\Query;
 
-class Staff extends Controller
+class Department extends Controller
 {
 
-    protected $staffModel, $companyModel, $departmentModel, $roleModel;
+    protected $companyModel, $departmentModel;
 
     protected $validate;
 
     public function __construct
     (
-        P_Staff $p_Staff,
         P_Company $p_company,
         P_Department $p_department,
-        P_Role $p_Role,
-        StaffValid $validate
+        DepartmentValid $validate
     )
     {
         parent::__construct();
-        $this->staffModel = $p_Staff;
         $this->companyModel = $p_company;
         $this->departmentModel = $p_department;
-        $this->roleModel = $p_Role;
         $this->validate = $validate;
     }
 
@@ -44,7 +36,7 @@ class Staff extends Controller
     {
         ##参数
         $title = input('title','');
-        $obj = $this->staffModel;
+        $obj = $this->departmentModel;
         if($title){
             $obj->whereLike('title',"%{$title}%");
         }
@@ -52,8 +44,18 @@ class Staff extends Controller
         if($c_id){
             $obj->where('c_id', $c_id);
         }
-        ##员工列表
-        $lists = $obj->paginate(15, false, [
+        ##部门列表
+        $lists = $obj
+            ->with(
+                [
+                    'company' => function(Query $query)
+                    {
+                        $query->field('id, title');
+                    }
+                ]
+            )
+            ->order('c_id','asc')
+            ->paginate(15, false, [
             'query' => \request()->request()
         ]);
         ##分公司列表

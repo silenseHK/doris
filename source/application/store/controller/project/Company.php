@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: 27989
- * Date: 2021/10/15
- * Time: 9:49
- */
+
 
 namespace app\store\controller\project;
 
@@ -14,29 +9,23 @@ use app\store\model\project\P_Company;
 use app\store\model\project\P_Department;
 use app\store\model\project\P_Role;
 use app\store\model\project\P_Staff;
-use app\store\validate\StaffValid;
+use app\store\validate\CompanyValid;
 
-class Staff extends Controller
+class Company extends Controller
 {
 
-    protected $staffModel, $companyModel, $departmentModel, $roleModel;
+    protected $companyModel;
 
     protected $validate;
 
     public function __construct
     (
-        P_Staff $p_Staff,
         P_Company $p_company,
-        P_Department $p_department,
-        P_Role $p_Role,
-        StaffValid $validate
+        CompanyValid $validate
     )
     {
         parent::__construct();
-        $this->staffModel = $p_Staff;
         $this->companyModel = $p_company;
-        $this->departmentModel = $p_department;
-        $this->roleModel = $p_Role;
         $this->validate = $validate;
     }
 
@@ -44,21 +33,12 @@ class Staff extends Controller
     {
         ##参数
         $title = input('title','');
-        $obj = $this->staffModel;
-        if($title){
-            $obj->whereLike('title',"%{$title}%");
-        }
-        $c_id = input('c_id',0);
-        if($c_id){
-            $obj->where('c_id', $c_id);
-        }
-        ##员工列表
+        $obj = $this->companyModel;
+        ##分公司列表
         $lists = $obj->paginate(15, false, [
             'query' => \request()->request()
         ]);
-        ##分公司列表
-        $company_list = $this->companyModel->lists();
-        return $this->fetch('lists',compact('lists','company_list'));
+        return $this->fetch('lists',compact('lists'));
     }
 
     public function add()
@@ -69,18 +49,12 @@ class Staff extends Controller
                 return $this->renderError($this->validate->getError());
             }
             ##获取数据
-            if(!$this->staffModel->add()){
+            if(!$this->companyModel->add()){
                 return $this->renderError('操作失败');
             }
             return $this->renderSuccess('操作成功');
         }else{
-            ##分公司列表
-            $company_ist = $this->companyModel->lists();
-            ##角色列表
-            $role_list = $this->roleModel->lists();
-            ##部门列表
-            $department_list = $this->departmentModel->listsGroupByCompany();
-            return $this->fetch('',compact('company_ist','role_list','department_list'));
+            return $this->fetch();
         }
     }
 
@@ -93,24 +67,16 @@ class Staff extends Controller
                 return $this->renderError($this->validate->getError());
             }
             ##获取数据
-            if(!$this->staffModel->edit()){
+            if(!$this->companyModel->edit()){
                 return $this->renderError('操作失败');
             }
             return $this->renderSuccess('操作成功');
         }else{
-            ##员工信息
-            $info = $this->staffModel->where('id',$id)->field('id, title, pwd, account, a_id, c_id, role_id, status, is_expert')->find();
+            ##公司信息
+            $info = $this->companyModel->where('id',$id)->field('id, title')->find();
             if(!$info)
-                return $this->renderError('员工数据已删除或不存在');
-            $info = $info->getData();
-            $info['pwd'] = '';
-            ##分公司列表
-            $company_ist = $this->companyModel->lists();
-            ##角色列表
-            $role_list = $this->roleModel->lists();
-            ##部门列表
-            $department_list = $this->departmentModel->listsGroupByCompany();
-            return $this->fetch('',compact('company_ist','role_list','department_list','info'));
+                return $this->renderError('分公司数据已删除或不存在');
+            return $this->fetch('',compact('info'));
         }
     }
 
@@ -123,7 +89,7 @@ class Staff extends Controller
             }
             $id = request()->post('id');
             ##删除
-            if(!$this->staffModel->where('id',$id)->setField('delete_time',time())){
+            if(!$this->companyModel->where('id',$id)->setField('delete_time',time())){
                 return $this->renderError('操作失败');
             }
             return $this->renderSuccess('操作成功');
