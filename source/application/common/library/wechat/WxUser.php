@@ -47,8 +47,8 @@ class WxUser extends WxBase
     public function unionId($sessionKey, $encryptedData, $iv){
         $pc = new WXBizDataCrypt($this->appId, $sessionKey);
         $errCode = $pc->decryptData($encryptedData, $iv, $data );
-        print_r($data);die;
         if ($errCode == 0){
+            $data = json_decode($data, true);
             return $data['unionId'];
         } else {
             $this->error = "获取unionID失败,错误码：{$errCode}";

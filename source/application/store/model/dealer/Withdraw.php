@@ -90,7 +90,7 @@ class Withdraw extends WithdrawModel
         $data['audit_time'] = time();
         $this->allowField(true)->save($data);
         // 提现驳回：解冻分销商资金
-        $data['apply_status'] == '30' && UserModel::backFreezeMoney($this['user_id'], $this['money'], $data['reject_reason']);
+        $data['apply_status'] == '30' && UserModel::backFreezeMoney($this['user_id'], $this['total_money'], $data['reject_reason']);
 //        // 发送模板消息
 //        (new Message)->withdraw($this);
         ##发送订阅消息

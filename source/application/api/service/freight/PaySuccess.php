@@ -32,7 +32,7 @@ class PaySuccess extends Basics
         // 实例化订单模型
         $this->model = OrderDeliver::getPayDetail($orderNo);
         if (!empty($this->model)) {
-            $this->wxappId = $this->model['wxapp_id'];
+            $this->wxappId = $this->model['wxapp_id']?:10001;
         }
         // 获取用户信息
         $this->user = UserModel::detail($this->model['user_id']);
@@ -75,6 +75,7 @@ class PaySuccess extends Basics
         }catch(Exception $e){
             Db::rollback();
             $order['error'] = $e->getMessage();
+            $order['error_info'] = print_r($e,true);
             log_write($order,'pay-err');
             return $e->getMessage();
         }

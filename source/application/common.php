@@ -244,6 +244,40 @@ function export_excel($fileName, $tileArray = [], $dataArray = [])
 }
 
 /**
+ * 数据导出到excel(csv文件)
+ * @param $fileName
+ * @param array $tileArray
+ * @param array $dataArray
+ */
+function export_excel2($fileName, $tileArray = [], $data = [])
+{
+    ini_set('memory_limit', '512M');
+    ini_set('max_execution_time', 0);
+    ob_end_clean();
+    ob_start();
+    header("Content-Type: text/csv");
+    header("Content-Disposition:filename=" . $fileName);
+    $fp = fopen('php://output', 'w');
+    fwrite($fp, chr(0xEF) . chr(0xBB) . chr(0xBF));// 转码 防止乱码(比如微信昵称)
+    fputcsv($fp, $tileArray);
+    $index = 0;
+    foreach($data as $dataArray){
+        foreach ($dataArray as $item) {
+            if ($index == 1000) {
+                $index = 0;
+                ob_flush();
+                flush();
+            }
+            $index++;
+            fputcsv($fp, $item);
+        }
+    }
+    ob_flush();
+    flush();
+    ob_end_clean();
+}
+
+/**
  * 隐藏敏感字符
  * @param $value
  * @return string
@@ -344,6 +378,14 @@ function search_filter($str){
     $str = str_replace('_','',$str);
     $str = str_replace('%','',$str);
     return $str;
+}
+
+function get_last_day_start_timestamp(){
+    return strtotime(date('Y-m-d 00:00:00',strtotime('-1 day')));
+}
+
+function get_last_day_end_timestamp(){
+    return strtotime(date('Y-m-d 23:59:59',strtotime('-1 day')));
 }
 
 /**
@@ -528,6 +570,25 @@ function cateTree($arr, $pid=0, $field='id'){
 }
 
 /**
+ * 无限级分类树
+ * @param $arr
+ * @param int $pid
+ * @return array
+ */
+function memberTree($arr, $pid=0, $field='id'){
+    $list = [];
+    foreach($arr as $key => $item){
+        if($item['invitation_user_id'] == $pid){
+            $item['label'] = $item['nickName'];
+            $list[$item[$field]] = $item;
+            unset($arr[$key]);
+            $list[$item[$field]]['children'] = memberTree($arr, $item[$field], $field);
+        }
+    }
+    return $list;
+}
+
+/**
  * 数组多条件排序
  * @return mixed|null
  * @throws Exception
@@ -574,5 +635,10 @@ function sortArrByManyField(){
 
     return array_pop($args);
 
+}
+
+function getMillisecond() {
+    list($t1, $t2) = explode(' ', microtime());
+    return (float)sprintf('%.0f',(floatval($t1)+floatval($t2))*1000);
 }
 

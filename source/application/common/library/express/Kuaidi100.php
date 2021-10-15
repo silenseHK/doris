@@ -51,7 +51,7 @@ class Kuaidi100
         ];
         $postData['sign'] = strtoupper(md5($postData['param'] . $this->config['key'] . $postData['customer']));
         // 请求快递100 api
-        $url = 'https://poll.kuaidi100.com/poll/query.do';
+        $url = 'http://poll.kuaidi100.com/poll/query.do';
         $result = curlPost($url, http_build_query($postData));
         $express = json_decode($result, true);
         // 记录错误信息

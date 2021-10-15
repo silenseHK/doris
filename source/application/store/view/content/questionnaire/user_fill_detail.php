@@ -32,15 +32,15 @@
 
                             <el-form-item v-for="item in questions" :label="item.question.label" :prop="item.question.name">
                                 <!-- 填空 -->
-                                <el-input v-if="item.question.type.value == 10" v-model="item.answer"></el-input>
+                                <el-input v-if="item.question.type.value == 10 && item.is_show" v-model="item.answer"></el-input>
 
                                 <!-- 单选 -->
-                                <el-radio-group v-if="item.question.type.value == 20" v-model="item.answer_mark" size="small">
+                                <el-radio-group v-if="item.question.type.value == 20 && item.is_show" v-model="item.answer_mark" size="small">
                                     <el-radio v-for="it in item.question.option" :label="it.mark" border>{{it.label}}</el-radio>
                                 </el-radio-group>
 
                                 <!-- 多选 -->
-                                <el-checkbox-group v-if="item.question.type.value == 30" v-model="item.answer_mark">
+                                <el-checkbox-group v-if="item.question.type.value == 30 && item.is_show" v-model="item.answer_mark">
                                         <el-checkbox v-for="it in item.question.option" v-if="it.is_input == 0" :label="it.mark" name="">{{it.label}}</el-checkbox>
 
                                         <el-checkbox v-for="it in item.question.option" v-if="it.is_input == 1" :label="it.mark" name="">
@@ -56,7 +56,7 @@
 
                                 <!--文本框-->
                                 <el-input
-                                        v-if="item.question.type.value == 40"
+                                        v-if="item.question.type.value == 40 && item.is_show"
                                         type="textarea"
                                         :autosize="{ minRows: 2, maxRows: 4}"
                                         placeholder="请输入内容"
@@ -97,7 +97,7 @@
                 title: '',
                 questionnaire_no: '',
                 status: 1,
-                questions:<?= $data['user_answer'] ?>,
+                questions:<?= json_encode($data['user_answer']) ?>,
 
                 labelPosition: 'top',
                 rules: {

@@ -1,4 +1,5 @@
 <link rel="stylesheet" href="assets/common/plugins/umeditor/themes/default/css/umeditor.css">
+<link rel="stylesheet" href="https://at.alicdn.com/t/font_1911230_bpq02v96xvv.css">
 
 <div class="row-content am-cf">
     <div class="row">
@@ -24,7 +25,7 @@
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">类型 </label>
                                 <div class="am-u-sm-2 am-u-end">
                                     <select @change="changeType" name="type" required v-model="type">
-                                            <option v-for="type in type_list" :value="type.value">{{type.text}}</option>
+                                        <option v-for="type in type_list" :value="type.value">{{type.text}}</option>
                                     </select>
                                 </div>
                             </div>
@@ -34,6 +35,22 @@
                                 <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">
                                     <input type="text" class="tpl-form-input" name="name" v-model="name"
                                            value="" placeholder="请输入name" required>
+                                </div>
+                            </div>
+
+                            <div class="am-form-group">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label"> 图标 </label>
+                                <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">
+                                    <input type="text" class="tpl-form-input" name="icon" v-model="icon"
+                                           value="" placeholder="请输入图标类class" required>
+                                </div>
+                            </div>
+
+                            <div class="am-form-group" v-if="type == 30">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require"> 多选限制 </label>
+                                <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">
+                                    <input type="text" class="tpl-form-input" name="choose_limit" v-model="choose_limit"
+                                           value="" placeholder="请输入多选限制，0为不限制" required>
                                 </div>
                             </div>
 
@@ -51,13 +68,36 @@
                                 </div>
                             </div>
 
+                            <div class="am-form-group" v-show="type == 30 || type == 20">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">结果分析 </label>
+                                <div class="am-u-sm-9 am-u-end">
+                                    <label class="am-radio-inline">
+                                        <input type="radio" name="is_analysis" value="1" data-am-ucheck v-model="is_analysis">
+                                        <span>是</span>
+                                    </label>
+                                    <label class="am-radio-inline">
+                                        <input type="radio" name="is_analysis" value="0" data-am-ucheck v-model="is_analysis">
+                                        <span>否</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="am-form-group">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label"> Tips </label>
+                                <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">
+                                    <input type="text" class="tpl-form-input" name="tips" v-model="tips"
+                                           value="" placeholder="不填写则不显示" required>
+                                </div>
+                            </div>
+
                             <div class="am-form-group" v-show="showOption">
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">选项 </label>
                                 <div class="am-u-sm-9 am-u-end">
                                     <label v-for="(item,index) in answer" class="am-radio-inline">
-                                        <span>{{item.mark}}</span>
+                                        <span>{{item.mark}}.</span>
                                         <span>{{item.label}}</span>
                                         <span>({{item.point}}分)</span>
+                                        <i class="iconfont" :class="item.icon"></i>
                                         <i @click="delOption($event, index)" class="am-icon-ban am-icon-fw"></i>
                                     </label>
                                     <button @click="alertAddModel" type="button" class="j-submit am-btn-success am-btn-sm"> 添加选项
@@ -97,10 +137,26 @@
                         </div>
 
                         <div class="am-form-group">
+                            <label class="am-u-sm-3 am-u-lg-2 am-form-label"> 图标 </label>
+                            <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">
+                                <input type="text" class="tpl-form-input" name="option_icon" v-model="option_icon"
+                                       value="" placeholder="请输入图标类class" required>
+                            </div>
+                        </div>
+
+                        <div class="am-form-group">
                             <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require"> 分数 </label>
                             <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">
                                 <input type="text" class="tpl-form-input" name="option_point" v-model="option_point"
                                        value="" placeholder="请输入分数" required>
+                            </div>
+                        </div>
+
+                        <div class="am-form-group" v-if="is_analysis == 1">
+                            <label class="am-u-sm-3 am-u-lg-2 am-form-label"> 结果分析 </label>
+                            <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">
+                                <input type="text" class="tpl-form-input" name="option_analysis" v-model="option_analysis"
+                                       value="" placeholder="请输入结果分析" required>
                             </div>
                         </div>
 
@@ -134,7 +190,7 @@
         </div>
     </div>
 </div>
-
+{{include file="layouts/_template/file_library" /}}
 <script src="assets/common/js/vue.min.js"></script>
 <script>
     $(function () {
@@ -154,9 +210,15 @@
                 option_label: '',
                 option_point: 0,
                 option_is_input: 0,
+                option_icon: '',
+                option_analysis: '',
                 type: 10,
+                icon:'',
                 is_require: 0,
+                is_analysis: 0,
+                tips: '',
                 name: '',
+                choose_limit: 0,
                 label: '',
                 showOption: false,
                 type_list: <?= json_encode($typeList) ?>
@@ -169,6 +231,7 @@
                     }else{
                         this.showOption = false
                     }
+                    this.choose_limit = 0;
                 },
                 alertAddModel : function(){
                     this.showModel = true
@@ -182,19 +245,20 @@
                             label: this.option_label,
                             point: this.option_point,
                             is_input: this.option_is_input,
+                            icon: this.option_icon,
+                            analysis: this.option_analysis
                         }
                         this.answer.push(option);
-                        this.option_mark = this.option_label = '';
+                        this.option_mark = this.option_label = this.option_analysis = this.option_icon = '';
                         this.option_is_input = this.option_point = 0;
                         this.showModel = false;
-                        console.log(this.answer)
                     }
                 },
                 cancelOption: function(){
                     this.showModel = false;
                 },
                 submit: function(){
-                    let [name, label, is_require, type] = [this.name, this.label, this.is_require, this.type];
+                    let [name, label, is_require, type, icon, choose_limit, is_analysis, tips] = [this.name, this.label, this.is_require, this.type, this.icon, this.choose_limit, this.is_analysis, this.tips];
                     console.log(name, label, is_require, type)
                     if(!name || !label || !type){
                         layer.msg('请填写必填项', {label:1})
@@ -206,7 +270,7 @@
                     }
                     let answer = this.answer
                     let that = this;
-                    $.post("<?= url('content.questionnaire.question/add') ?>", {name,label,is_require,type,answer}, function(res){
+                    $.post("<?= url('content.questionnaire.question/add') ?>", {name,label,is_require,type,icon,choose_limit,is_analysis,answer,tips}, function(res){
                         if(res.code == 1){
                             layer.msg('操作成功', {label:1})
                             that.name = that.label = '';
@@ -214,6 +278,9 @@
                             that.showModel = false;
                             that.showOption = false;
                             that.is_require = 1;
+                            that.is_analysis = 0;
+                            that.icon = '';
+                            that.choose_limit = 0;
                             that.answer = [];
                         }
                     }, 'json')
@@ -223,8 +290,6 @@
                 }
             },
         })
-
-
 
     });
 </script>

@@ -25,6 +25,10 @@ class FillAnswer extends BaseModel
         return $this->belongsTo('app\common\model\Question','question_id','question_id');
     }
 
+    public function getAnswerAttr($value){
+        return stripslashes($value);
+    }
+
     public function getAnswerMarkAttr($value){
         $value = trim($value,'-');
         if(!$value)return [];

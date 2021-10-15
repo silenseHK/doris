@@ -15,11 +15,12 @@ class questionnaireValidate extends Validate
         'page' => 'number|>=:1',
         'size' => 'number|>=:1|<=:15',
         'mobile' => 'mobile',
-        'fill_id' => 'require|number|>=:1'
+        'fill_id' => 'require|number|>=:1',
+        'referee_id' => 'number|>=:1'
     ];
 
     protected $scene = [
-        'submit' => ['questionnaire_id', 'answer'],
+        'submit' => ['questionnaire_id', 'answer', 'referee_id'],
         'answer_list' => ['page', 'size', 'mobile'],
         'answer_detail' => ['fill_id']
     ];

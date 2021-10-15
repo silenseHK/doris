@@ -124,17 +124,20 @@
                                         <div class="am-u-sm-9 am-u-md-6 am-u-lg-1 am-u-end">
                                             <!-- 会员等级列表-->
                                             <?php foreach ($gradeList as $item): ?>
+                                                <?php if($item['weight'] < 80):?>
                                                 <div class="am-input-group am-margin-bottom-sm">
                                                     <span class="am-input-group-label am-input-group-label__left" style="background: none;border-right: 1px solid #dcdfe6;border-radius:4px">
                                                         <?= $item['name'] ?>：
                                                     </span>
                                                 </div>
+                                                <?php endif;?>
                                             <?php endforeach; ?>
 
                                         </div>
                                         <div class="am-u-sm-9 am-u-md-6 am-u-lg-3 am-u-end">
                                             <!-- 会员价格列表-->
                                             <?php foreach ($gradeList as $k => $item): ?>
+                                                <?php if($item['weight'] < 80):?>
                                                 <div class="am-input-group am-margin-bottom-sm">
                                                     <span class="am-input-group-label am-input-group-label__left">
                                                         价格
@@ -145,6 +148,7 @@
                                                     <span class="am-input-group-label am-input-group-label__right">元</span>
 
                                                 </div>
+                                                <?php endif;?>
                                             <?php endforeach; ?>
 
                                             <div class="help-block">
@@ -490,7 +494,7 @@
                                             data-am-selected="{searchBox: 1, btnSize: 'sm',  placeholder:'请选择运费模板'}">
                                         <option value="">请选择返利模板</option>
                                         <option value="0" <?= $model['rebate_type'] == 0 ? 'selected' : '' ?>>不返利</option>
-                                        <option value="1" <?= $model['rebate_type'] == 1 ? 'selected' : '' ?>>168太空素食返利模板</option>
+                                        <option value="1" <?= $model['rebate_type'] == 1 ? 'selected' : '' ?>>摩卡路返利模板</option>
                                     </select>
                                 </div>
                             </div>

@@ -109,17 +109,20 @@
                                         <div class="am-u-sm-9 am-u-md-6 am-u-lg-1 am-u-end">
                                             <!-- 会员等级列表-->
                                             <?php foreach ($gradeList as $item): ?>
+                                                <?php if($item['weight'] < 80):?>
                                                 <div class="am-input-group am-margin-bottom-sm">
                                                     <span class="am-input-group-label am-input-group-label__left" style="background: none;border-right: 1px solid #dcdfe6;border-radius:4px">
                                                         <?= $item['name'] ?>：
                                                     </span>
                                                 </div>
+                                                <?php endif;?>
                                             <?php endforeach; ?>
 
                                         </div>
                                         <div class="am-u-sm-9 am-u-md-6 am-u-lg-3 am-u-end">
                                             <!-- 会员价格列表-->
                                             <?php foreach ($gradeList as $item): ?>
+                                                <?php if($item['weight'] < 80):?>
                                                 <div class="am-input-group am-margin-bottom-sm">
                                                     <span class="am-input-group-label am-input-group-label__left">
                                                         价格
@@ -130,6 +133,7 @@
                                                     <span class="am-input-group-label am-input-group-label__right">元</span>
 
                                                 </div>
+                                                <?php endif;?>
                                             <?php endforeach; ?>
 
                                             <div class="help-block">
@@ -471,7 +475,7 @@
                                             data-am-selected="{searchBox: 1, btnSize: 'sm',  placeholder:'请选择运费模板'}">
                                         <option value="">请选择返利模板</option>
                                             <option value="0" selected>不返利</option>
-                                            <option value="1">168太空素食返利模板</option>
+                                            <option value="1">摩卡路返利模板</option>
                                     </select>
                                 </div>
                             </div>
@@ -480,12 +484,11 @@
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">是否体验装 </label>
                                 <div class="am-u-sm-9 am-u-end">
                                     <label class="am-radio-inline">
-                                        <input type="radio" name="goods[is_experience]" value="1" data-am-ucheck
-                                               checked>
+                                        <input type="radio" name="goods[is_experience]" value="1" data-am-ucheck>
                                         是
                                     </label>
                                     <label class="am-radio-inline">
-                                        <input type="radio" name="goods[is_experience]" value="0" data-am-ucheck>
+                                        <input checked type="radio" name="goods[is_experience]" value="0" data-am-ucheck>
                                         否
                                     </label>
                                 </div>

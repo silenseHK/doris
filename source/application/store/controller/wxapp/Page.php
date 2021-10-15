@@ -4,10 +4,16 @@ namespace app\store\controller\wxapp;
 
 use app\store\controller\Controller;
 use app\store\model\Category as CategoryModel;
+use app\store\model\Dietitian;
+use app\store\model\Entry;
+use app\store\model\Impression;
+use app\store\model\QualitySpec;
+use app\store\model\QualitySpecValue;
 use app\store\model\sharing\Category as SharingCategoryModel;
 use app\store\model\article\Category as ArticleCategoryModel;
 use app\store\model\WxappPage as WxappPageModel;
 use app\store\model\WxappCategory as WxappCategoryModel;
+use think\Exception;
 
 /**
  * 小程序页面管理
@@ -140,6 +146,190 @@ class Page extends Controller
     public function links()
     {
         return $this->fetch('links');
+    }
+
+    public function home()
+    {
+        $model = new QualitySpec();
+        $spec = $model->spec();
+        $impressionModel = new Impression();
+        $impression = $impressionModel->impressList();
+        $dietitianModel = new Dietitian();
+        $dietitian = $dietitianModel->dietitian();
+        $entryModel = new Entry();
+        $entry = $entryModel->entry();
+        return $this->fetch('',compact('spec','impression','dietitian','entry'));
+    }
+
+    public function homeQuality(){
+        try{
+            $model = new QualitySpecValue();
+            if(!$model->edit()){
+                throw new Exception($model->getError());
+            }
+            return $this->renderSuccess('操作成功');
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 添加印象
+     * @return array|bool
+     */
+    public function addImpression(){
+        try{
+            $model = new Impression();
+            if(!$res = $model->addImpression()){
+                throw new Exception($model->getError());
+            }
+            return $this->renderSuccess('操作成功','',$res);
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 删除印象
+     * @return array|bool
+     */
+    public function delImpression(){
+        try{
+            $model = new Impression();
+            if(!$res = $model->delImpression()){
+                throw new Exception($model->getError());
+            }
+            return $this->renderSuccess('操作成功','',$res);
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 编辑排序
+     * @return array|bool
+     */
+    public function editSort(){
+        try{
+            $model = new Impression();
+            if(!$res = $model->editSort()){
+                throw new Exception($model->getError());
+            }
+            return $this->renderSuccess('操作成功','',$res);
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**增加营养师
+     * @return array|bool
+     */
+    public function addDietitian(){
+        try{
+            $model = new Dietitian();
+            if(!$res = $model->addDietitian()){
+                throw new Exception($model->getError());
+            }
+            return $this->renderSuccess('操作成功','',$res);
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 编辑排序
+     * @return array|bool
+     */
+    public function editDietitianSort(){
+        try{
+            $model = new Dietitian();
+            if(!$res = $model->editDietitianSort()){
+                throw new Exception($model->getError());
+            }
+            return $this->renderSuccess('操作成功','',$res);
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 编辑营养师
+     * @return array|bool
+     */
+    public function editDietitian(){
+        try{
+            $model = new Dietitian();
+            if(!$res = $model->editDietitian()){
+                throw new Exception($model->getError());
+            }
+            return $this->renderSuccess('操作成功','',$res);
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 删除营养师
+     * @return array|bool
+     */
+    public function delDietitian(){
+        try{
+            $model = new Dietitian();
+            if(!$res = $model->delDietitian()){
+                throw new Exception($model->getError());
+            }
+            return $this->renderSuccess('操作成功','',$res);
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 添加词条
+     * @return array|bool
+     */
+    public function addEntry(){
+        try{
+            $model = new Entry();
+            if(!$res = $model->addEntry()){
+                throw new Exception($model->getError());
+            }
+            return $this->renderSuccess('操作成功','',$res);
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 改变词条排序
+     * @return array|bool
+     */
+    public function editEntrySort(){
+        try{
+            $model = new Entry();
+            if(!$res = $model->editSort()){
+                throw new Exception($model->getError());
+            }
+            return $this->renderSuccess('操作成功','',$res);
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 删除词条
+     * @return array|bool
+     */
+    public function delEntry(){
+        try{
+            $model = new Entry();
+            if(!$res = $model->del()){
+                throw new Exception($model->getError());
+            }
+            return $this->renderSuccess('操作成功','',$res);
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
     }
 
 }

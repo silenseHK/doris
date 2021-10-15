@@ -18,6 +18,8 @@
                                 <th>当前库存</th>
                                 <th>历史库存</th>
                                 <th>历史出库</th>
+                                <th>历史迁移库存</th>
+                                <th>剩余迁移库存</th>
                                 <th>操作</th>
                             </tr>
                             </thead>
@@ -44,6 +46,12 @@
                                     </td>
                                     <td class="am-text-middle">
                                         <p class=""><?= $item['history_sale'] ?></p>
+                                    </td>
+                                    <td class="am-text-middle">
+                                        <p class=""><?= $item['transfer_stock_history'] ?></p>
+                                    </td>
+                                    <td class="am-text-middle">
+                                        <p class=""><?= $item['transfer_stock'] ?></p>
                                     </td>
                                     <td class="am-text-middle">
                                         <a class="tpl-table-black-operation-default"

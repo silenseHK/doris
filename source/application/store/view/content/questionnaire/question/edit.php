@@ -1,4 +1,5 @@
 <link rel="stylesheet" href="assets/common/plugins/umeditor/themes/default/css/umeditor.css">
+<link rel="stylesheet" href="https://at.alicdn.com/t/font_1911230_bpq02v96xvv.css">
 
 <div class="row-content am-cf">
     <div class="row">
@@ -38,6 +39,22 @@
                             </div>
 
                             <div class="am-form-group">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label"> 图标 </label>
+                                <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">
+                                    <input type="text" class="tpl-form-input" name="icon" v-model="icon"
+                                           value="" placeholder="请输入图标类class" required>
+                                </div>
+                            </div>
+
+                            <div class="am-form-group" v-if="type == 30">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require"> 多选限制 </label>
+                                <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">
+                                    <input type="text" class="tpl-form-input" name="choose_limit" v-model="choose_limit"
+                                           value="" placeholder="请输入多选限制，0为不限制" required>
+                                </div>
+                            </div>
+
+                            <div class="am-form-group">
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">是否必填 </label>
                                 <div class="am-u-sm-9 am-u-end">
                                     <label class="am-radio-inline">
@@ -51,6 +68,28 @@
                                 </div>
                             </div>
 
+                            <div class="am-form-group" v-show="type == 30 || type == 20">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">结果分析 </label>
+                                <div class="am-u-sm-9 am-u-end">
+                                    <label class="am-radio-inline">
+                                        <input type="radio" name="is_analysis" value="1" data-am-ucheck v-model="is_analysis">
+                                        <span>是</span>
+                                    </label>
+                                    <label class="am-radio-inline">
+                                        <input type="radio" name="is_analysis" value="0" data-am-ucheck v-model="is_analysis">
+                                        <span>否</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="am-form-group">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label"> Tips </label>
+                                <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">
+                                    <input type="text" class="tpl-form-input" name="tips" v-model="tips"
+                                           value="" placeholder="不填写则不显示" required>
+                                </div>
+                            </div>
+
                             <div class="am-form-group" v-show="showOption">
                                 <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">选项 </label>
                                 <div class="am-u-sm-9 am-u-end">
@@ -58,6 +97,7 @@
                                         <span>{{item.mark}}</span>
                                         <span>{{item.label}}</span>
                                         <span>({{item.point}}分)</span>
+                                        <i class="iconfont" :class="item.icon"></i>
                                         <i @click="delOption($event, index)" class="am-icon-ban am-icon-fw"></i>
                                     </label>
                                     <button @click="alertAddModel" type="button" class="j-submit am-btn-success am-btn-sm"> 添加选项
@@ -97,10 +137,26 @@
                         </div>
 
                         <div class="am-form-group">
+                            <label class="am-u-sm-3 am-u-lg-2 am-form-label"> 图标 </label>
+                            <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">
+                                <input type="text" class="tpl-form-input" name="option_icon" v-model="option_icon"
+                                       value="" placeholder="请输入图标类class" required>
+                            </div>
+                        </div>
+
+                        <div class="am-form-group">
                             <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require"> 分数 </label>
                             <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">
                                 <input type="text" class="tpl-form-input" name="option_point" v-model="option_point"
                                        value="" placeholder="请输入分数" required>
+                            </div>
+                        </div>
+
+                        <div class="am-form-group" v-if="is_analysis == 1">
+                            <label class="am-u-sm-3 am-u-lg-2 am-form-label"> 结果分析 </label>
+                            <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">
+                                <input type="text" class="tpl-form-input" name="option_analysis" v-model="option_analysis"
+                                       value="" placeholder="请输入结果分析" required>
                             </div>
                         </div>
 
@@ -154,13 +210,19 @@
                 option_label: '',
                 option_point: 0,
                 option_is_input: 0,
+                option_icon: '',
+                option_analysis: '',
+                is_analysis: <?= $info['is_analysis'] ?>,
+                tips: "<?= $info['tips'] ?>",
                 type: <?= $info['type']['value'] ?>,
                 is_require: <?= $info['is_require'] ?>,
                 name: "<?= $info['name'] ?>",
                 label: "<?= $info['label'] ?>",
                 showOption: <?php if($info['type']['value'] == 20 || $info['type']['value'] == 30):?> true <?php else:?> false <?php endif ?>,
                 type_list: <?= json_encode($typeList) ?>,
-                question_id: <?= $info['question_id'] ?>
+                question_id: <?= $info['question_id'] ?>,
+                choose_limit: <?= $info['choose_limit'] ?>,
+                icon: "<?= $info['icon'] ?>"
             },
             methods: {
                 changeType: function(e){
@@ -170,6 +232,7 @@
                     }else{
                         this.showOption = false
                     }
+                    this.choose_limit = 0;
                 },
                 alertAddModel : function(){
                     this.showModel = true
@@ -182,10 +245,12 @@
                             mark: this.option_mark,
                             label: this.option_label,
                             is_input: this.option_is_input,
-                            point: this.option_point
+                            point: this.option_point,
+                            icon: this.option_icon,
+                            analysis: this.option_analysis
                         }
                         this.answer.push(option);
-                        this.option_mark = this.option_label = '';
+                        this.option_mark = this.option_label = this.option_analysis = this.option_icon = '';
                         this.option_is_input = this.option_point = 0;
                         this.showModel = false;
                     }
@@ -194,7 +259,7 @@
                     this.showModel = false;
                 },
                 submit: function(){
-                    let [name, label, is_require, type, question_id] = [this.name, this.label, this.is_require, this.type, this.question_id];
+                    let [name, label, is_require, type, question_id, icon, choose_limit, is_analysis, tips] = [this.name, this.label, this.is_require, this.type, this.question_id, this.icon, this.choose_limit, this.is_analysis, this.tips];
                     console.log(name, label, is_require, type)
                     if(!name || !label || !type){
                         layer.msg('请填写必填项', {label:1})
@@ -206,7 +271,7 @@
                     }
                     let answer = this.answer
                     let that = this;
-                    $.post("<?= url('content.questionnaire.question/edit') ?>", {name,label,is_require,type,answer,question_id}, function(res){
+                    $.post("<?= url('content.questionnaire.question/edit') ?>", {name,label,is_require,type,answer,question_id, icon,choose_limit,is_analysis,tips}, function(res){
                         if(res.code == 1){
                             layer.msg('操作成功', {label:1})
                         }else{

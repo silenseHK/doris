@@ -39,7 +39,7 @@ class Controller extends \think\Controller
      */
     private function getWxappId()
     {
-        if (!$wxapp_id = $this->request->param('wxapp_id')) {
+        if (!$wxapp_id = $this->request->param('wxapp_id','10001')) {
             throw new BaseException(['msg' => '缺少必要的参数：wxapp_id']);
         }
         return $wxapp_id;
@@ -76,6 +76,10 @@ class Controller extends \think\Controller
         }
         if (!$user = UserModel::getUser($token)) {
             $is_force && $this->throwError('没有找到用户信息', -1);
+            return false;
+        }
+        if($user['status'] != 1){
+            $this->throwError('您的账户已冻结', 0);
             return false;
         }
         return $user;

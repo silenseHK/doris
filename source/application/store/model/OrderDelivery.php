@@ -56,9 +56,10 @@ class OrderDelivery extends OrderDeliver
                     'goods' => function(Query $query){
                         $query->field(['goods_id', 'goods_name', 'sales_initial', 'sales_actual'])->with(['image.file']);
                     },
+                    'spec.image'
                 ]
             )
-            ->field(['od.deliver_id', 'od.order_no', 'od.user_id', 'od.goods_id', 'od.goods_num', 'od.address', 'od.receiver_user', 'od.receiver_mobile', 'od.express_id', 'od.express_no', 'od.freight_money', 'od.remark', 'od.create_time', 'od.deliver_type', 'od.deliver_status', 'od.pay_status', 'od.pay_time', 'u.nickName', 'u.avatarUrl', 'u.mobile', 'u.grade_Id', 'ug.name as grade_name'])
+            ->field(['od.deliver_id', 'od.order_no', 'od.user_id', 'od.goods_id', 'od.goods_sku_id', 'od.goods_num', 'od.address', 'od.receiver_user', 'od.receiver_mobile', 'od.express_id', 'od.express_no', 'od.freight_money', 'od.remark', 'od.create_time', 'od.deliver_type', 'od.deliver_status', 'od.pay_status', 'od.pay_time', 'u.nickName', 'u.avatarUrl', 'u.mobile', 'u.grade_Id', 'ug.name as grade_name'])
             ->order('create_time','desc')
             ->paginate(10,false,['query' => \request()->request()]);
         return $list;
@@ -159,7 +160,7 @@ class OrderDelivery extends OrderDeliver
      */
     public function cancelOrder($deliver_id){
         $model = self::get(compact('deliver_id'));
-        if($model['deliver_status']['value'] != 10){
+        if($model['deliver_status']['value'] != 10 && $model['deliver_type'] == 10){
             throw new Exception('订单不支持此操作');
         }
         if($model['pay_status']['value'] != 20){
@@ -201,7 +202,8 @@ class OrderDelivery extends OrderDeliver
                 'goods' => function(Query $query){
                     $query->with(['image.file', 'specs']);
                 },
-                'express'
+                'express',
+                'spec.image'
             ]
         );
     }
@@ -494,6 +496,22 @@ class OrderDelivery extends OrderDeliver
         if(!$list->isEmpty())$total_freight = $this->where($where)->sum('freight_money');
         $page = $list->render();
         return compact('page','list','total_freight');
+    }
+
+    /**
+     * 修改订单物流
+     * @param $data
+     * @return bool
+     */
+    public function updateExpress($data){
+        if(!isset($data['express_id']) || !$data['express_id'] || !isset($data['express_no']) || !$data['express_no']){
+            $this->error = '参数缺失';
+            return false;
+        }
+        return $this->save([
+                'express_id' => $data['express_id'],
+                'express_no' => $data['express_no']
+            ]) !== false;
     }
 
 }

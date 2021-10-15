@@ -204,7 +204,7 @@ html, body {
     transition: border .2s linear, color .2s linear, width .2s linear, background-color .2s linear;
     -webkit-font-smoothing: subpixel-antialiased;
     color: #fff;
-    background-color: #ff5060;
+    background-color: #ff6239;
     /*border-color: #ff5060;*/
     border: 1px solid transparent;
     cursor: pointer;

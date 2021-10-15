@@ -4,6 +4,9 @@
 namespace app\common\model;
 
 
+use app\common\model\User;
+use think\Exception;
+
 class GoodsExperience extends BaseModel
 {
 
@@ -47,6 +50,26 @@ class GoodsExperience extends BaseModel
      */
     public function orderData(){
         return $this->belongsTo('app\common\model\Order','order_id','order_id');
+    }
+
+    /**
+     * 获取器 -- 下级人数
+     * @param $user_id
+     * @return int|string
+     * @throws Exception
+     */
+    public function getMemberNumAttr($user_id){
+        return User::where(['relation'=>['LIKE', "%-{$user_id}-%"]])->count('user_id');
+    }
+
+    /**
+     * 获取器 -- 直邀用户数
+     * @param $user_id
+     * @return int|string
+     * @throws Exception
+     */
+    public function getRedirectMemberNumAttr($user_id){
+        return User::where(['invitation_user_id'=>$user_id])->count('user_id');
     }
 
 }

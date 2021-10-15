@@ -207,8 +207,15 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                                         <?php endif; ?>
                                                     <?php endif; ?>
                                                     <?php if (checkPrivilege(['order/detail', 'order/delivery'])): ?>
-                                                        <?php if ($order['pay_status']['value'] == 20
-                                                            && $order['deliver_status']['value'] == 10
+                                                        <?php if ($order['pay_status']['value'] == 20 &&(
+                                                            (
+                                                            $order['deliver_status']['value'] == 10
+//                                                            && $order['is_exam_delivery'] == 0
+                                                            )
+                                                            || ($order['deliver_status']['value'] == 20
+//                                                            && $order['is_exam_delivery'] == 0
+                                                            && $order['deliver_type']['value'] == 20)
+                                                            )
                                                         ): ?>
                                                             <a style="cursor: pointer" javascript:void(0); class="tpl-table-black-operation"
                                                                onclick="cancelOrder(<?= $order['deliver_id'] ?>)"

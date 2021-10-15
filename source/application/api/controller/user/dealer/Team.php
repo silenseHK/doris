@@ -122,4 +122,19 @@ class Team extends Controller
         }
     }
 
+    /**
+     * 普通用户直推团队列表
+     * @return array
+     * @throws \app\common\exception\BaseException
+     * @throws \think\exception\DbException
+     */
+    public function normalTeamList(){
+        $user = $this->getUser();
+        try{
+            return $this->renderSuccess($user->getNormalTeamList());
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
 }

@@ -2,6 +2,10 @@
 
 namespace app\api\controller;
 
+use app\api\model\Dietitian;
+use app\api\model\Entry;
+use app\api\model\Impression;
+use app\api\model\QualitySpec;
 use app\api\model\WxappPage;
 
 /**
@@ -66,9 +70,85 @@ class Page extends Controller
         $page = [
             'experience_rank' => [
                 'url' => request()->domain() . "/web_view/experience_rank/index.html"
-            ]
+            ],
+            'new_questionnaire' => [
+                'url' => request()->domain() . "/web_view/new_questionnaire/index.html",
+                'title' => '问券调查',
+                'questionnaire_no' => '202007290001'
+            ],
         ];
         return $this->renderSuccess($page);
+    }
+
+    /**
+     * 首页数据
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function indexData(){
+        ##印象
+        $impressionModel = new Impression();
+        $impression_data = $impressionModel->impression();
+        $impression = [
+            'name' => '印象',
+            'type' => 'impression',
+            'style' => [
+                'btnColor' => '#ffffff',
+                'btnShape' => 'round'
+            ],
+            'params' => [
+                'interval' => '2800'
+            ],
+            'data' => $impression_data
+        ];
+        ##优质
+        $qualityModel = new QualitySpec();
+        $quality_data = $qualityModel->quality();
+        $high_quality = [
+            'name' => '优质',
+            'type' => 'bestValue',
+            'style' => [
+                'btnColor' => '#ffffff',
+                'btnShape' => 'round'
+            ],
+            'params' => [
+                'interval' => '2800'
+            ],
+            'data' => $quality_data
+        ];
+        ##营养师
+        $dietitianModel = new Dietitian();
+        $dietitian_data = $dietitianModel->dietitian();
+        $dietitian = [
+            'name' => '营养师',
+            'type' => 'dietitian',
+            'style' => [
+                'btnColor' => '#ffffff',
+                'btnShape' => 'round'
+            ],
+            'params' => [
+                'interval' => '2800'
+            ],
+            'data' => $dietitian_data
+        ];
+        ##词条
+        $entryModel = new Entry();
+        $entry_data = $entryModel->entry();
+        $entry = [
+            'name' => '词条',
+            'type' => 'entry',
+            'style' => [
+                'btnColor' => '#ffffff',
+                'btnShape' => 'round'
+            ],
+            'params' => [
+                'interval' => '2800'
+            ],
+            'data' => $entry_data
+        ];
+        return $this->renderSuccess(compact('impression','high_quality','dietitian','entry'));
     }
 
 }

@@ -13,7 +13,7 @@
 
                             <div class="am-u-sm-12 am-u-md-3">
                                 <div class="am-form-group">
-                                    <?php if (checkPrivilege('goods/add')): ?>
+                                    <?php if (checkPrivilege('content.questionnaire/add')): ?>
                                         <div class="am-btn-group am-btn-group-xs">
                                             <a class="am-btn am-btn-default am-btn-success"
                                                href="<?= url('content.questionnaire/add') ?>">

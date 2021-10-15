@@ -171,7 +171,12 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
                                             <td class="am-text-middle" rowspan="<?= $goodsCount ?>">
                                                 <span class="am-badge am-badge-secondary">
                                                     <?= $order['pay_type']['text'] ?>
+                                                </span><br />
+                                                <?php if($order['transaction_id']):?>
+                                                <span class="am-badge am-badge-secondary">
+                                                    <?= $order['transaction_id'] ?>
                                                 </span>
+                                                <?php endif?>
                                             </td>
 
                                         <?php endif; ?>

@@ -3,7 +3,6 @@
 namespace app\store\model\user;
 
 use app\common\model\user\BalanceLog as BalanceLogModel;
-use app\store\model\Order;
 use app\store\model\User;
 use think\db\Query;
 
@@ -115,7 +114,7 @@ class BalanceLog extends BalanceLogModel
                                 'supplyGrade',
                                 'userGrade',
                                 'goods' => function(Query $query){
-                                    $query->with(['sku.image']);
+                                    $query->with(['spec.image']);
                                 }
                             ]
                         );
@@ -123,6 +122,7 @@ class BalanceLog extends BalanceLogModel
                 ]
             )
             ->order('create_time','desc')
+            ->order('log_id','desc')
             ->paginate(10,false,[
                 'type' => 'Bootstrap',
                 'var_page' => 'page',

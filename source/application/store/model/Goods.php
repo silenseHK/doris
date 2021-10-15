@@ -5,6 +5,7 @@ namespace app\store\model;
 use app\common\model\Goods as GoodsModel;
 use app\common\model\GoodsStockLog;
 use think\Db;
+use think\db\Query;
 use think\Exception;
 
 /**
@@ -354,6 +355,48 @@ class Goods extends GoodsModel
     public static function refund($goods){
         self::where(['goods_id'=>$goods['goods_id']])->setInc('stock', $goods['total_num']);
         GoodsSku::where(['goods_sku_id'=>$goods['goods_sku_id']])->setInc('stock_num',$goods['total_num']);
+    }
+
+    /**
+     * 代理商品列表
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getAgentGoodsSkuList(){
+        $list = $this
+            ->where(['sale_type' => 1, 'is_delete'=>0])
+            ->with(
+                [
+                    'sku' => function(Query $query){
+                        $query->field(['goods_sku_id', 'goods_id', 'spec_sku_id']);
+                    }
+                ]
+            )
+            ->field(['goods_id', 'goods_name', 'sales_initial', 'sales_actual'])
+            ->select();
+
+        $data = [];
+        foreach($list as $item){
+            $it = [];
+            $it['value'] = $item['goods_id'];
+            $it['label'] = $item['goods_name'];
+            $it['children'] = [];
+            foreach($item['sku'] as $v){
+                if(!$v['sku_list']){
+                    $sku = '单规格';
+                }else{
+                    $sku = $v['sku_list'][0]['spec_name'] . ':' . $v['sku_list'][0]['spec_value'];
+                }
+                $it['children'][] = [
+                    'value' => $v['goods_sku_id'],
+                    'label' => $sku
+                ];
+            }
+            $data[] = $it;
+        }
+        return $data;
     }
 
 }

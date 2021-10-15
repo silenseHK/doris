@@ -13,4 +13,8 @@ class QuestionnaireQuestion extends Pivot
 
     protected $autoWriteTimestamp = false;
 
+    public function questions(){
+        return $this->hasMany('app\common\model\Question','question_id','question_id');
+    }
+
 }

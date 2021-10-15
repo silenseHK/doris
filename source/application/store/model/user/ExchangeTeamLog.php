@@ -10,7 +10,7 @@ class ExchangeTeamLog extends ExchangeLogModel
     public function exchangeLog(){
         $param = request()->param();
         $this->setWhere($param);
-        return $this->alias('log')->join('user', 'user.user_id = log.user_id')->paginate(10,false, ['query' => \request()->request()]);
+        return $this->alias('log')->join('user', 'user.user_id = log.user_id')->with(['newInvitation', 'oldInvitation'])->order('log.create_time','desc')->paginate(10,false, ['query' => \request()->request()]);
     }
 
     public function setWhere($params){

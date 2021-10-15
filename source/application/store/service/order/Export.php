@@ -84,12 +84,11 @@ class Export
                 '买家' => $this->filterValue($order['user']['nickName']),
                 '买家用户id' => $this->filterValue($order['user']['user_id']),
                 '买家留言' => $this->filterValue($order['remark']),
-                '配送方式' => $this->filterValue($order['deliver_type']['text']),
                 '收货人姓名' => $this->filterValue($order['receiver_user']),
                 '联系电话' => $this->filterValue($order['receiver_mobile']),
                 '收货人地址' => $this->filterValue($order['address']),
                 '物流公司' => $this->filterValue($order['express']['express_name']),
-                '物流单号' => $this->filterValue($order['express_no']),
+                '物流单号' => $this->filterValue($order['express_no'])
             ];
         }
         // 导出csv文件

@@ -4,6 +4,7 @@
 namespace app\task\behavior\user;
 
 
+use app\common\model\PlatformIncomeLog;
 use app\common\model\UserGoodsStock;
 use app\task\model\user\OrderDeliver;
 use think\Cache;
@@ -21,11 +22,12 @@ class CompleteDeliverOrder
      * @throws \think\exception\DbException
      */
     public function run($wxapp_id){
+        $wxapp_id = $wxapp_id?:10001;
         $cacheKey = "__task_space__[user/CompleteDeliverOrder]__{$wxapp_id}";
         if (!Cache::has($cacheKey)) {
+            Cache::set($cacheKey, time(), 60 * 30);
             // 设置用户的会员等级
             $this->completeDeliverOrder();
-            Cache::set($cacheKey, time(), 60 * 10);
         }
     }
 
@@ -51,6 +53,15 @@ class CompleteDeliverOrder
                 ##减少冻结库存
                 $res = UserGoodsStock::disFreezeStockByUserGoodsId($v['user_id'],$v['goods_sku_id'],$v['goods_num']);
                 if($res === false)throw new Exception('任务执行失败');
+                if($v['freight_money'] > 0){
+                    PlatformIncomeLog::addLog([
+                        'money' => $v['freight_money'],
+                        'order_no' => $v['order_no'],
+                        'type' => 20,
+                        'direction' => 10,
+                        'order_type' => 20
+                    ]);
+                }
             }
             ##修改订单状态为已完成
             $res = $model->save(['deliver_status'=>40, 'complete_time'=>time(), 'complete_type'=>10], ['deliver_id'=>['in', $deliver_ids]]);

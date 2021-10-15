@@ -6,6 +6,8 @@ use app\common\enum\user\balanceLog\Scene;
 use app\common\enum\user\grade\GradeSize;
 use app\common\enum\user\grade\GradeType;
 use app\common\enum\user\grade\RebateConfig;
+use app\common\model\user\Achievement;
+use app\common\model\user\AchievementDetail;
 use app\common\model\user\BalanceLog;
 use app\common\model\user\ExchangeTeamLog;
 use app\common\model\user\Grade;
@@ -15,6 +17,7 @@ use think\Db;
 use think\db\Query;
 use think\Exception;
 use think\Hook;
+use traits\model\SoftDelete;
 
 /**
  * 用户模型类
@@ -23,7 +26,12 @@ use think\Hook;
  */
 class User extends BaseModel
 {
+
     protected $name = 'user';
+
+    use SoftDelete;
+
+    protected $deleteTime = 'delete_time';
 
     // 性别
     private $gender = ['未知', '男', '女'];
@@ -207,6 +215,37 @@ class User extends BaseModel
     }
 
     /**
+     * 不累计升级 获取当前商品*数量所对应的等级
+     * @param $goodsId
+     * @param $num
+     * @return float|mixed|string|null
+     * @throws Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function getBuyGoodsGrade($goodsId, $num){
+        #获取商品信息
+        $goodsInfo = Goods::getGoodsAgentInfo($goodsId);
+        if($goodsInfo['sale_type'] != 1)throw new Exception('商品销售类型非层级代理');
+        ##计算获取的积分
+        $addIntegral = 0;
+        if($goodsInfo['is_add_integral'] == 1){
+            $addIntegral = $goodsInfo['integral_weight'] * $num;
+        }
+        $grade_info = Grade::where(['upgrade_integral'=>['ELT', $addIntegral], 'status'=>1])->order('weight','desc')->field(['grade_id', 'weight'])->find();
+        return $grade_info;
+    }
+
+    public static function getBuyGoodsGrade2($goodsId, $num){
+        #获取商品信息
+        $goodsInfo = Goods::getGoodsAgentInfo($goodsId);
+        if($goodsInfo['sale_type'] != 1)throw new Exception('商品销售类型非层级代理');
+        $grade_info = Grade::where(['upgrade_integral'=>['ELT', $num], 'status'=>1])->order('weight','desc')->field(['grade_id', 'weight'])->find();
+        return $grade_info;
+    }
+
+    /**
      * 获取购买商品价格
      * @param $userId
      * @param $goodsId
@@ -223,6 +262,18 @@ class User extends BaseModel
         $gradeInfo = Grade::getRecentGrade($userInfo['final_integral'], ['weight'=>$userInfo['grade']['weight'], 'grade_id'=>$userInfo['grade_id']]);
         ##获取商品购买价格
         return GoodsGrade::getGoodsPrice($gradeInfo['grade_id'], $goodsId);
+    }
+
+    public static function getAgentGoodsPrice2($grade, $goodsId, $num){
+        $grade_info = User::getBuyGoodsGrade2($goodsId, $num);
+        if($grade['weight'] >= $grade_info['weight']){
+            $grade_id = $grade['grade_id'];
+        }else{
+            $grade_id = $grade_info['grade_id'];
+        }
+        ##获得商品单价
+        $price = GoodsGrade::getGoodsPrice($grade_id, $goodsId);
+        return $price;
     }
 
     /**
@@ -298,7 +349,7 @@ class User extends BaseModel
         $relation = explode('-', $relation);
         ##获取供应人id
         $relation_ids = implode(',', $relation);
-        $user_id = self::where(['user_id'=>['IN', $relation], 'grade_id'=>['IN', $applyGradeIds], 'is_delete'=>0])->orderRaw("field(user_id," . $relation_ids . ")")->value('user_id');
+        $user_id = self::where(['user_id'=>['IN', $relation], 'grade_id'=>['IN', $applyGradeIds], 'is_delete'=>0, 'status'=>1])->orderRaw("field(user_id," . $relation_ids . ")")->value('user_id');
         return $user_id ? : 0;
     }
 
@@ -357,7 +408,7 @@ class User extends BaseModel
 
         $goodsList = $model['goods'];
         $data = $stock = $decStock = $goodsName = [];
-        $balance = 0;
+        $balance = $income = 0;
         foreach($goodsList as $goods){
             if($goods['sale_type'] == 1){ ##层级代理商品
                 $goods_sku_id = $goods['goods_sku_id'];
@@ -391,12 +442,15 @@ class User extends BaseModel
                     }
                     $decStock[$goods_sku_id]['stock'] += $goods['total_num'];
                     $balance += $goods['total_pay_price'];
+                }else{
+                    $income += $goods['total_pay_price'];
                 }
             }
             $goodsName[$goods['goods_id']] = $goods['goods_name'];
         }
         ##货款扣除运费
         if($balance)$balance = $balance - $model['express_price'];
+        if($income)$income = $income - $model['express_price'];
         ##增加购买人库存
         if(!empty($stock)){
             foreach($stock as $key => $sto){
@@ -429,9 +483,9 @@ class User extends BaseModel
                 ];
                 ##减少库存
                 if($model['delivery_type']['value'] == 30){ ##补充库存订单直接减库存
-                    UserGoodsStock::editStock($model['supply_user_id'], $val['goods_id'], $key, $val['stock'], 'dec');
+                    UserGoodsStock::editStock($model['supply_user_id'], $val['goods_id'], $key, $val['stock'], $model['order_no'], 'dec');
                 }else{  ##非补充库存订单 减库存+增加冻结库存
-                    UserGoodsStock::freezeStockByUserGoodsId($model['supply_user_id'],$val['goods_id'], $key, $val['stock'], 1);
+                    UserGoodsStock::freezeStockByUserGoodsId($model['supply_user_id'], $val['goods_id'], $key, $val['stock'], $model['order_no'],1);
                 }
                 ##消息通知
                 $cur_stock = UserGoodsStock::getStock($model['supply_user_id'], $key);
@@ -444,6 +498,26 @@ class User extends BaseModel
                 self::addBalanceByOrder($model['supply_user_id'], $model['order_id'], $balance, $model['order_no']);
                 $noticeMessage->balanceChangeMsg(['order_no'=>$model['order_no'], 'money'=>$balance, 'user_id'=>$model['supply_user_id']],10);
             }
+        }else{
+            if($model['delivery_type']['value'] == 30) { ##补充库存订单直接增加平台收入记录
+                PlatformIncomeLog::addLog([
+                    'money' => $income,
+                    'order_no' => $model['order_no'],
+                    'type' => 10,
+                    'direction' => 10,
+                    'order_type' => 10
+                ]);
+            }
+        }
+
+        if($model['delivery_type']['value'] == 30 && $model['express_price'] > 0) { ##补充库存订单直接增加平台收入记录
+            PlatformIncomeLog::addLog([
+                'money' => $model['express_price'],
+                'order_no' => $model['order_no'],
+                'type' => 20,
+                'direction' => 10,
+                'order_type' => 10
+            ]);
         }
 
         ##返利 (补货的情况下)
@@ -470,7 +544,15 @@ class User extends BaseModel
                 ##出货人返利
                 if($model['supply_user_id'] > 0){
                     self::reduceBalanceByOrder($model['supply_user_id'], $model['order_id'], $model['rebate_money'], $model['order_no']);
-                    $noticeMessage->balanceChangeMsg(['order_no'=>$model['order_no'], 'money'=>$model['rebate_money'], 'user_id'=>$model['supply_user_id']],20);
+                    $noticeMessage->balanceChangeMsg(['order_no'=>$model['order_no'], 'money'=>$model['rebate_money'], 'user_id'=>$model['supply_user_id']],30);
+                }else{ ##增加平台支出记录
+                    PlatformIncomeLog::addLog([
+                        'money' => $model['rebate_money'],
+                        'order_no' => $model['order_no'],
+                        'type' => 30,
+                        'direction' => 20,
+                        'order_type' => 10
+                    ]);
                 }
             }
         }
@@ -829,7 +911,24 @@ class User extends BaseModel
      * @throws Exception
      */
     public static function checkExistMobile($mobile){
-        $check = self::where(['mobile'=>$mobile])->count('user_id');
+        $check = self::where(function($query) use ($mobile){
+            $query->where(function($query3) use ($mobile){
+                $query3->where(
+                    [
+                        'mobile'=>$mobile,
+                        'is_transfer'=>0
+                    ]
+                );
+            })->whereOr(function($query2) use ($mobile){
+                $query2->where(
+                    [
+                        'mobile'=>$mobile,
+                        'is_transfer'=>1,
+                        'open_id' => ['NEQ', '']
+                    ]
+                );
+            });
+        })->count('user_id');
         return $check > 0 ? true : false;
     }
 
@@ -853,7 +952,7 @@ class User extends BaseModel
         $orderFilter = implode(',', $filter);
         ##VIP grade_id
         $grade_id = Grade::getGradeId(GradeSize::VIP);
-        $rebateUser = self::where(['user_id'=>['IN', $filter], 'grade_id'=>$grade_id, 'is_delete'=>0])->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->find();
+        $rebateUser = self::where(['user_id'=>['IN', $filter], 'grade_id'=>$grade_id, 'is_delete'=>0, 'status'=>1])->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->find();
         if(!$rebateUser)return [];
         return $rebateUser;
     }
@@ -883,7 +982,7 @@ class User extends BaseModel
         }else{
             $grade_id = Grade::getGradeId(GradeSize::VIP);
         }
-        $rebateUser = self::where(['user_id'=>['IN', $filter], 'grade_id'=>$grade_id, 'is_delete'=>0])->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->find();
+        $rebateUser = self::where(['user_id'=>['IN', $filter], 'grade_id'=>$grade_id, 'is_delete'=>0, 'status'=>1])->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->find();
         if(!$rebateUser)return [];
         return $rebateUser;
     }
@@ -920,7 +1019,8 @@ class User extends BaseModel
         $where = [
             'user_id' => ['IN', $filter],
             'grade_id' => $grade_id,
-            'is_delete' => 0
+            'is_delete' => 0,
+            'status'=>1
         ];
 
         if($type == 'strategy'){
@@ -965,7 +1065,8 @@ class User extends BaseModel
         $where = [
             'user_id' => ['IN', $relation],
             'grade_id' => ['IN', [$grade_id_1, $grade_id_2]],
-            'is_delete' => 0
+            'is_delete' => 0,
+            'status'=>1
         ];
         $orderFilter = implode(',', $relation);
         $rebateUser = self::where($where)->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->with(
@@ -1092,6 +1193,337 @@ class User extends BaseModel
         return $rebate_info;
     }
 
+    public static function getCaseRebate($userId, $goodsId, $num, $supplyUserId, $is_rebate=1, $is_integral=1){
+        $rtn = [];
+        if(!$is_rebate)return $rtn;
+        ## 10游客 20推广大使 30推广合伙人 40联合创始人
+
+        ##获取用户等级
+        $userInfo = self::where(['user_id'=>$userId])->field(['user_id', 'grade_id', 'relation'])->with(['grade'=>function(Query $query){$query->field(['grade_id', 'weight']);}])->find();
+
+        if($is_integral){ ##升级
+            ##获取购买商品对应的等级
+            $grade_info = self::getBuyGoodsGrade2($goodsId, $num);
+        }else{ ##不升级
+            $grade_info = [
+                'weight' => $userInfo['grade']['weight'],
+                'grade_id' => $userInfo['grade_id']
+            ];
+        }
+        ##生成获取返利
+        if($userInfo['grade']['weight'] < $grade_info['weight']){ ##首次升级
+            ##计算商品价格
+            $price = GoodsGrade::getGoodsPrice($grade_info['grade_id'], $goodsId);
+            $total_price = $price * $num;
+
+            if($grade_info['weight'] == 20){ ##推广大使
+                ##查找直推的推广大使
+                $rebateUser = self::ambassadorRebate($userInfo['relation'], $supplyUserId, $grade_info['grade_id']);
+                if(!$rebateUser)return [];
+                $money = 800;
+                return [
+                    [
+                        'user_id' => $rebateUser['user_id'],
+                        'grade_id' => $rebateUser['grade_id'],
+                        'money' => $money,
+                        'remark' => '推广大使同级推荐返利',
+                        'num' => $num
+                    ]
+                ];
+            }elseif($grade_info['weight'] == 30){ ##推广合伙人
+                ##平级
+                $rebateUserPartnerEquality = self::partnerEquality($userInfo['relation'], $supplyUserId, $grade_info['grade_id']);
+                $limit_user_id = $supplyUserId;
+                if(!empty($rebateUserPartnerEquality)){ ##有同级合伙人
+                    $limit_user_id = $rebateUserPartnerEquality[0]['user_id'];
+                    ##平级直推
+                    $equality_money1 = $total_price * 0.12;
+                }
+                ##低推高
+                $ambassador_grade_id = Grade::getGradeId(20);
+                $rebateUserPartnerLowToHigh = self::firstPartnerLowToHigh($userInfo['relation'], $limit_user_id, $ambassador_grade_id);
+                if($rebateUserPartnerLowToHigh){
+                    $moneyPartnerLowToHigh = $total_price * 0.1;
+                    $rtn[] = [
+                        'user_id' => $rebateUserPartnerLowToHigh['user_id'],
+                        'grade_id' => $rebateUserPartnerLowToHigh['grade_id'],
+                        'money' => $moneyPartnerLowToHigh,
+                        'remark' => '推广大使推荐推广合伙人返利[首次]',
+                        'num' => $num
+                    ];
+                }
+               
+                if(isset($equality_money1) && $equality_money1 > 0){
+                    if(isset($moneyPartnerLowToHigh) && $moneyPartnerLowToHigh > 0){ ##扣除低推高
+                        $equality_money1 -= $moneyPartnerLowToHigh;
+                    }else{
+                        if(count($rebateUserPartnerEquality) > 1){
+                            $equality_money2 = $total_price * 0.05;
+                            if($equality_money2 > 0){ ##扣除间接推荐
+                                // $equality_money1 -= $equality_money2;
+                                if($equality_money2 > 0){
+                                    $rtn[] = [
+                                        'user_id' => $rebateUserPartnerEquality[1]['user_id'],
+                                        'grade_id' => $rebateUserPartnerEquality[1]['grade_id'],
+                                        'money' => $equality_money2,
+                                        'remark' => '推广合伙人间接推荐推广合伙人返利[首次]',
+                                        'num' => $num
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                    if($equality_money1 > 0){
+                        $rtn[] = [
+                            'user_id' => $rebateUserPartnerEquality[0]['user_id'],
+                            'grade_id' => $rebateUserPartnerEquality[0]['grade_id'],
+                            'money' => $equality_money1,
+                            'remark' => '推广合伙人直接推荐推广合伙人返利[首次]',
+                            'num' => $num
+                        ];
+                    }
+                }
+                return $rtn;
+            }elseif($grade_info['weight'] == 40){ ##联合创始人
+                ##平级
+                $rebateUserFunderEquality = self::funderEquality($userInfo['relation'], $supplyUserId, $grade_info['grade_id']);
+                $limit_user_id = $supplyUserId;
+                if(!empty($rebateUserFunderEquality)){ ##有同级创始人
+                    $limit_user_id = $rebateUserFunderEquality[0]['user_id'];
+                    $equality_money1 = $total_price * 0.12;
+                }
+                ##低推高
+                $rebateUserFunderLowToHigh = self::firstFunderLowToHigh($userInfo['relation'], $limit_user_id);
+                if($rebateUserFunderLowToHigh){
+                    $moneyFunderLowToHigh = $total_price * 0.1;
+                    $rtn[] = [
+                        'user_id' => $rebateUserFunderLowToHigh['user_id'],
+                        'grade_id' => $rebateUserFunderLowToHigh['grade_id'],
+                        'money' => $moneyFunderLowToHigh,
+                        'remark' => '推广大使/推广合伙人推荐联合创始人返利[首次]',
+                        'num' => $num
+                    ];
+                }
+                if(isset($equality_money1) && $equality_money1 > 0){
+                    if(isset($moneyFunderLowToHigh) && $moneyFunderLowToHigh > 0){##扣除低推高
+                        $equality_money1 -= $moneyFunderLowToHigh;
+                    }else{
+                        if(count($rebateUserFunderEquality) > 1){
+                            $equality_money2 = $total_price * 0.05;
+                            if($equality_money2 > 0){ ##扣除间接推荐
+                                // $equality_money1 -= $equality_money2;
+                                if($equality_money2 > 0){
+                                    $rtn[] = [
+                                        'user_id' => $rebateUserFunderEquality[1]['user_id'],
+                                        'grade_id' => $rebateUserFunderEquality[1]['grade_id'],
+                                        'money' => $equality_money2,
+                                        'remark' => '联合创始人间接推荐联合创始人返利[首次]',
+                                        'num' => $num
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                    if($equality_money1 > 0){
+                        $rtn[] = [
+                            'user_id' => $rebateUserFunderEquality[0]['user_id'],
+                            'grade_id' => $rebateUserFunderEquality[0]['grade_id'],
+                            'money' => $equality_money1,
+                            'remark' => '联合创始人直接推荐联合创始人返利[首次]',
+                            'num' => $num
+                        ];
+                    }
+                }
+                return $rtn;
+            }
+        }else{ ##二次进货
+            ##计算商品价格
+            $price = GoodsGrade::getGoodsPrice($userInfo['grade_id'], $goodsId);
+            $total_price = $price * $num;
+
+            if($userInfo['grade']['weight'] == 10){ ##游客
+                return $rtn;
+            }elseif($userInfo['grade']['weight'] == 20){ ##推广大使
+                return $rtn;
+            }elseif($userInfo['grade']['weight'] == 30){ ##推广合伙人
+                ##平级
+                $rebateUserPartnerEquality = self::partnerEquality($userInfo['relation'], $supplyUserId, $userInfo['grade_id']);
+                $limit_user_id = $supplyUserId;
+                if(!empty($rebateUserPartnerEquality)){ ##有同级合伙人
+                    $limit_user_id = $rebateUserPartnerEquality[0]['user_id'];
+                    $equality_money1 = $total_price * 0.12;
+                }
+
+                ##低推高
+                $ambassador_grade_id = Grade::getGradeId(20);
+                $rebateUserPartnerLowToHigh = self::firstPartnerLowToHigh($userInfo['relation'], $limit_user_id, $ambassador_grade_id);
+                if($rebateUserPartnerLowToHigh){
+                    $moneyPartnerLowToHigh = $total_price * 0.02;
+                    $rtn[] = [
+                        'user_id' => $rebateUserPartnerLowToHigh['user_id'],
+                        'grade_id' => $rebateUserPartnerLowToHigh['grade_id'],
+                        'money' => $moneyPartnerLowToHigh,
+                        'remark' => '推广大使推荐推广合伙人返利[补货]',
+                        'num' => $num
+                    ];
+                }
+                if(isset($equality_money1) && $equality_money1 > 0){
+                    if(isset($moneyPartnerLowToHigh) && $moneyPartnerLowToHigh > 0){ ##扣除低推高
+                        $equality_money1 -= $moneyPartnerLowToHigh;
+                    }else{
+                        if(count($rebateUserPartnerEquality) > 1){
+                            $equality_money2 = $total_price * 0.05;
+                            if($equality_money2 > 0){ ##扣除间接推荐
+                                $rtn[] = [
+                                    'user_id' => $rebateUserPartnerEquality[1]['user_id'],
+                                    'grade_id' => $rebateUserPartnerEquality[1]['grade_id'],
+                                    'money' => $equality_money2,
+                                    'remark' => '推广合伙人间接推荐推广合伙人返利[补货]',
+                                    'num' => $num
+                                ];
+                                // $equality_money1 -= $equality_money2;
+                            }
+                        }
+                    }
+                    if($equality_money1 > 0){
+                        $rtn[] = [
+                            'user_id' => $rebateUserPartnerEquality[0]['user_id'],
+                            'grade_id' => $rebateUserPartnerEquality[0]['grade_id'],
+                            'money' => $equality_money1,
+                            'remark' => '推广合伙人直接推荐推广合伙人返利[补货]',
+                            'num' => $num
+                        ];
+                    }
+                }
+                return $rtn;
+            }elseif($userInfo['grade']['weight'] == 40){ ##联合创始人
+                ##平级
+                $rebateUserFunderEquality = self::funderEquality($userInfo['relation'], $supplyUserId, $userInfo['grade_id']);
+                $limit_user_id = $supplyUserId;
+                if(!empty($rebateUserFunderEquality)){ ##有同级创始人
+                    $limit_user_id = $rebateUserFunderEquality[0]['user_id'];
+                    $equality_money1 = $total_price * 0.12;
+                }
+
+                ##低推高
+                $rebateUserFunderLowToHigh = self::firstFunderLowToHigh($userInfo['relation'], $limit_user_id);
+                if($rebateUserFunderLowToHigh){
+                    $moneyFunderLowToHigh = $total_price * 0.02;
+                    $rtn[] = [
+                        'user_id' => $rebateUserFunderLowToHigh['user_id'],
+                        'grade_id' => $rebateUserFunderLowToHigh['grade_id'],
+                        'money' => $moneyFunderLowToHigh,
+                        'remark' => '推广大使/推广合伙人推荐联合创始人返利',
+                        'num' => $num
+                    ];
+                }
+                if(isset($equality_money1) && $equality_money1 > 0){
+                    if(isset($moneyFunderLowToHigh) && $moneyFunderLowToHigh > 0){
+                        $equality_money1 -= $moneyFunderLowToHigh;
+                    }else{
+                        if(count($rebateUserFunderEquality) > 1){
+                            $equality_money2 = 0.05 * $total_price;
+                            if($equality_money2 > 0){
+                                $rtn[] = [
+                                    'user_id' => $rebateUserFunderEquality[1]['user_id'],
+                                    'grade_id' => $rebateUserFunderEquality[1]['grade_id'],
+                                    'money' => $equality_money2,
+                                    'remark' => '联合创始人间接推荐联合创始人返利[补货]',
+                                    'num' => $num
+                                ];
+                                // $equality_money1 -= $equality_money2;
+                            }
+                        }
+                    }
+                    if($equality_money1 > 0){
+                        $rtn[] = [
+                            'user_id' => $rebateUserFunderEquality[0]['user_id'],
+                            'grade_id' => $rebateUserFunderEquality[0]['grade_id'],
+                            'money' => $equality_money1,
+                            'remark' => '联合创始人直接推荐联合创始人返利[补货]',
+                            'num' => $num
+                        ];
+                    }
+                }
+                return $rtn;
+            }
+        }
+
+        return $rtn;
+    }
+
+    public static function ambassadorRebate($relation, $supply_user_id, $grade_id){
+        $relation = trim($relation,'-');
+        if(!$relation)return 0;
+        $relation = explode('-', $relation);
+        if(!$relation[0])return 0;
+        ##获取
+        $filter = self::initFilter($relation, $supply_user_id);
+        if(!$filter)return 0;
+        $orderFilter = implode(',', $filter);
+        $rebateUser = self::where(['user_id'=>['IN', $filter], 'grade_id'=>$grade_id, 'is_delete'=>0, 'status'=>1])->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->find();
+        if(!$rebateUser)return [];
+        return $rebateUser->toArray();
+    }
+
+    public static function firstPartnerLowToHigh($relation, $supply_user_id, $grade_id){
+        $relation = trim($relation,'-');
+        if(!$relation)return 0;
+        $relation = explode('-', $relation);
+        if(!$relation[0])return 0;
+        ##获取
+        $filter = self::initFilter($relation, $supply_user_id);
+        if(!$filter)return 0;
+        $orderFilter = implode(',', $filter);
+        $rebateUser = self::where(['user_id'=>['IN', $filter], 'grade_id'=>$grade_id, 'is_delete'=>0, 'status'=>1])->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->find();
+        if(!$rebateUser)return [];
+        return $rebateUser;
+    }
+
+    public static function partnerEquality($relation, $supply_user_id, $grade_id){
+        $relation = trim($relation,'-');
+        if(!$relation)return 0;
+        $relation = explode('-', $relation);
+        if(!$relation[0])return 0;
+        ##获取
+        $filter = self::initFilter($relation, $supply_user_id);
+        if(!$filter)return 0;
+        $orderFilter = implode(',', $filter);
+        $rebateUser = self::where(['user_id'=>['IN', $filter], 'grade_id'=>$grade_id, 'is_delete'=>0, 'status'=>1])->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->limit(2)->select();
+        if(!$rebateUser)return [];
+        return $rebateUser->toArray();
+    }
+
+    public static function firstFunderLowToHigh($relation, $supply_user_id){
+        $relation = trim($relation,'-');
+        if(!$relation)return 0;
+        $relation = explode('-', $relation);
+        if(!$relation[0])return 0;
+        ##获取
+        $filter = self::initFilter($relation, $supply_user_id);
+        if(!$filter)return 0;
+        $orderFilter = implode(',', $filter);
+        $grade_id1 = Grade::getGradeId(20);
+        $grade_id2 = Grade::getGradeId(30);
+        $rebateUser = self::where(['user_id'=>['IN', $filter], 'grade_id'=>['in', [$grade_id1, $grade_id2]], 'is_delete'=>0, 'status'=>1])->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->find();
+        if(!$rebateUser)return [];
+        return $rebateUser;
+    }
+
+    public static function funderEquality($relation, $supply_user_id, $grade_id){
+        $relation = trim($relation,'-');
+        if(!$relation)return 0;
+        $relation = explode('-', $relation);
+        if(!$relation[0])return 0;
+        ##获取
+        $filter = self::initFilter($relation, $supply_user_id);
+        if(!$filter)return 0;
+        $orderFilter = implode(',', $filter);
+        $rebateUser = self::where(['user_id'=>['IN', $filter], 'grade_id'=> $grade_id, 'is_delete'=>0, 'status'=>1])->orderRaw("field(user_id," . $orderFilter . ")")->field(['user_id', 'grade_id'])->limit(2)->select();
+        if(!$rebateUser)return [];
+        return $rebateUser->toArray();
+    }
+
     /**
      * 获取用户信息
      * @param $user_id
@@ -1101,7 +1533,8 @@ class User extends BaseModel
      * @throws \think\exception\DbException
      */
     public static function getUserInfo($user_id){
-        return self::where(['user_id'=>$user_id])->with(['grade'=>function(Query $query){$query->field(['grade_id', 'name']);}])->field(['user_id', 'mobile', 'nickName', 'grade_id'])->find()->toArray();
+        $info = self::where(['user_id'=>$user_id])->with(['grade'=>function(Query $query){$query->field(['grade_id', 'name']);}])->field(['user_id', 'mobile', 'nickName', 'grade_id'])->find();
+        return $info? $info->toArray(): [];
     }
 
     /**
@@ -1253,6 +1686,39 @@ class User extends BaseModel
      */
     public static function getUserGrade2($user_id){
         return self::where(['user_id'=>$user_id])->value('grade_id');
+    }
+
+    public static function addAchievement($order_id){
+        try{
+            $order = Order::get(['order_id'=>$order_id]);
+            if($order['is_achievement'] > 10){
+                $achievement = $order['order_price'];
+                $is_add = $order['is_achievement'] == 20 ? 20 : 10;
+                ##增加业绩明细
+                $detail_data = [
+                    'user_id' => $order['user_id'],
+                    'order_id' => $order_id,
+                    'achievement' => $achievement,
+                    'direction' => 10,
+                    'remark' => '代理补货增加业绩',
+                    'is_add' => $is_add
+                ];
+                $detailModel = new AchievementDetail();
+                $res = $detailModel->isUpdate(false)->save($detail_data);
+                $id = $detailModel->getLastInsID();
+                ##增加用户业绩
+                $achievementModel = new Achievement();
+                if($is_add == 10)
+                    $res2 = $achievementModel->addAchievement($order['user_id'], $achievement);
+                ##增加同级同团队的业绩
+                $res3 = $achievementModel->addTeamAchievement($order['user_id'], $order['supply_user_id'], $achievement, $id);
+            }
+            return true;
+        }catch(Exception $e){
+            log_write($e->getMessage(),'achievement-err');
+            return false;
+        }
+
     }
 
 }

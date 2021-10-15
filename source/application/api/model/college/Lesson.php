@@ -83,8 +83,9 @@ class Lesson extends LessonModel
                     }
                 ]
             )
-            ->order('sort','asc')
+            ->order(['sort'=>'asc', 'lesson_id'=>'asc'])
             ->field(['lesson_id', 'title', 'cover', 'cate_id', 'lesson_type', 'lesson_size', 'create_time', 'watch_num'])
+//            ->fetchSql(true)
             ->paginate($size,false,['query'=>\request()->request()]);
         return compact('list');
     }

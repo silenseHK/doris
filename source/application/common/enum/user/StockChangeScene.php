@@ -23,6 +23,12 @@ class StockChangeScene extends EnumBasics
     ## 退款
     const REFUND = 50;
 
+    ## 老代理迁移
+    const TRANSFER = 60;
+
+    ## 用户间转库存
+    const EXCHANGE = 70;
+
     public static function data(){
         return [
             self::SALE => [
@@ -45,6 +51,14 @@ class StockChangeScene extends EnumBasics
                 'value' => self::REFUND,
                 'text' => '用户退款'
             ],
+            self::TRANSFER => [
+                'value' => self::TRANSFER,
+                'text' => '老代理迁移'
+            ],
+            self::EXCHANGE => [
+                'value' => self::EXCHANGE,
+                'text' => '用户间转库存'
+            ]
         ];
     }
 

@@ -3,12 +3,15 @@
 
 namespace app\api\model\user;
 
+use app\api\model\Question;
 use app\api\model\Questionnaire;
 use app\api\model\User;
 use app\api\validate\user\questionnaireValidate;
 use app\common\enum\user\grade\GradeSize;
 use app\common\model\FoodGroup;
+use app\common\model\FoodGroupImage;
 use app\common\model\user\Fill as FillModel;
+use app\store\model\QuestionnaireQuestion;
 use app\store\model\store\DieticianTeam;
 use think\Db;
 use think\db\Query;
@@ -29,8 +32,19 @@ class Fill extends FillModel
         $list = $this->alias('q')
             ->join('user u','q.user_id = u.user_id','LEFT')
             ->group('q.user_id')
-            ->paginate(15,false,['query'=>\request()->request()]);
-        return array_merge(compact('list'),$params);
+            ->with(['groupUser'])
+            ->order('q.create_time','desc')
+            ->field(['u.nickName', 'u.user_id', 'u.avatarUrl', 'q.group_user_id', 'q.fill_id', 'q.create_time'])
+            ->paginate(15,false,['type' => 'Bootstrap',
+                'var_page' => 'page',
+                'path' => 'javascript:getUserFillList([PAGE]);']);
+        foreach($list as $key => $val){
+            $list[$key]['count'] = $this->where(['questionnaire_id'=>$params['questionnaire_id'], 'user_id'=>$val['user_id']])->count();
+        }
+        $total = $list->total();
+        $page = $list->render();
+        $list = $list->toArray()['data'];
+        return compact('list','page','total');
     }
 
     public function getFillList(){
@@ -41,10 +55,48 @@ class Fill extends FillModel
             'end_time' => input('end_time','','str_filter'),
         ];
         $this->setFillListWhere($params);
-        $list = $this->alias('q')
-            ->join('user u','q.user_id = u.user_id','LEFT')
-            ->paginate(15,false,['query'=>\request()->request()]);
-        return array_merge(compact('list'),$params);
+        $list = $this
+            ->with(
+                [
+                    'inviteUser' => function(Query $query){
+                        $query->field(['user_id', 'nickName']);
+                    },
+                    'foodGroup' => function(Query $query){
+                        $query->field(['id', 'version'])->with(['images'=>function(Query $query){
+                            $query->field(['storage', 'file_name', 'file_id', 'file_url']);
+                        }]);
+                    },
+                ]
+            )
+            ->order('create_time','desc')
+            ->field(['fill_id', 'bmi', 'point', 'advice', 'food_group_id', 'invite_user_id', 'create_time'])
+            ->select();
+        $total = count($list);
+        if($total > 0){
+            $list = $list->toArray();
+            $foodGroup = new FoodGroup();
+            foreach($list as &$item){
+                if($item['food_group']['version'] == 2){
+//                    $src_list = array_column($item['food_group']['images'], 'file_path');
+//                    $item['src_list'] = $src_list;
+                    $src_list = FoodGroupImage::getImages($item['food_group_id']);
+                    if($src_list->isEmpty()){
+                        $item['src_list'] = [];
+                        $item['images'] = [];
+                    }else{
+                        $src_list = $src_list->toArray();
+                        foreach($src_list as $items){
+                            $item['src_list'][] = $items['images']['file_path'];
+                        }
+                    }
+                }else{
+                    $image = $foodGroup->getUserImg($item['bmi'],1);
+                    $item['src_list'] = [$image];
+                    $item['images'] = ['file_path' => $image];
+                }
+            }
+        }
+        return compact('list','total');
     }
 
     /**
@@ -54,10 +106,10 @@ class Fill extends FillModel
     public function setFillListWhere($params){
         $where = [
             'questionnaire_id' => $params['questionnaire_id'],
-            'q.user_id' => $params['user_id'],
+            'user_id' => $params['user_id'],
         ];
         if($params['start_time'] && $params['end_time']){
-            $where['q.create_time'] = ['BETWEEN', [strtotime($params['start_time']), strtotime($params['end_time'])]];
+            $where['create_time'] = ['BETWEEN', [strtotime($params['start_time']), strtotime($params['end_time'])]];
         }
         $this->where($where);
     }
@@ -83,6 +135,24 @@ class Fill extends FillModel
         $fill_id = input('fill_id',0,'intval');
         ##答卷详情
         $data = self::get(['fill_id'=>$fill_id], ['userAnswer.question.option']);
+        if($data){
+            $data = $data->toArray();
+            $answer = array_column($data['user_answer'], null, 'question_id');
+            foreach($data['user_answer'] as &$item){
+                $show_limit = QuestionnaireQuestion::getShowLimit($item['questionnaire_id'], $item['question_id']);
+                $show_limit = $show_limit?json_decode($show_limit,true):[];
+                if($show_limit){
+                    $is_show = 0;
+                    foreach($answer[$show_limit['question_id']]['answer_mark'] as $mark){
+                        if(in_array($mark, $show_limit['option']))$is_show = 1;
+                    }
+                }else{
+                    $is_show = 1;
+                }
+                $item['is_show'] = $is_show;
+            }
+        }
+
         return compact('data');
     }
 
@@ -204,6 +274,155 @@ class Fill extends FillModel
         $questionnaire = Questionnaire::get(['questionnaire_no'=>$no]);
         $list = $this->where(['user_id'=>$user['user_id'], 'questionnaire_id'=>$questionnaire['questionnaire_id']])->field(['fill_id', 'create_time', 'point', 'bmi' ,'bmi as bmi_img'])->page($page, $size)->order('create_time','desc')->select();
         return $list;
+    }
+
+    /**
+     * 我的报告
+     * @param $user
+     * @param $no
+     * @return array
+     * @throws Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function myReportList($user, $no){
+        $page = input('get.page',1,'intval');
+        $size = input('get.size',6,'intval');
+        $type = input('get.type',10,'intval');
+        $questionnaire = Questionnaire::get(['questionnaire_no'=>$no]);
+        if(!$questionnaire)throw new Exception('问卷信息不存在');
+        $where = [
+            'questionnaire_id'=>$questionnaire['questionnaire_id']
+        ];
+        if($type == 10){
+            $where['user_id'] = $user['user_id'];
+        }else{
+            $where['invite_user_id'] = $user['user_id'];
+        }
+        $list = $this->where($where)->field(['fill_id', 'create_time'])->page($page, $size)->order('create_time','desc')->select();
+        $list = $this->formatReport($list);
+        return compact('list');
+    }
+
+    /**
+     * 格式化报告
+     * @param $list
+     * @return mixed
+     * @throws Exception
+     * @throws \think\exception\DbException
+     */
+    public function formatReport($list){
+        ##类名new_name
+        $new_name_id = Question::where(['name'=>'new_name'])->value('question_id');
+        $sex_id = Question::where(['name'=>'sex'])->order('create_time','desc')->value('question_id');
+        $health_goals = Question::get(['name'=>'health_goals'], ['option'])->toArray();
+        $options = array_column($health_goals['option'], null, 'mark');
+        $health_goals_id = $health_goals['question_id'];
+        foreach($list as $key => $item){
+            ##填写的用户名
+            $name = FillAnswer::where(['fill_id'=>$item['fill_id'], 'question_id'=>$new_name_id])->value('answer');
+            $name = stripslashes($name);
+            ##性别
+            $sex = FillAnswer::where(['fill_id'=>$item['fill_id'], 'question_id'=>$sex_id])->value('answer_mark');
+            $sex = trim($sex,'-');
+            ##选择的改善目标
+            $user_health_goals = FillAnswer::where(['fill_id'=>$item['fill_id'], 'question_id'=>$health_goals_id])->value('answer_mark');
+            $user_health_goals = explode('-',trim($user_health_goals,'-'));
+            $goals = [];
+            foreach($user_health_goals as $goal){
+                $goals[] = $options[$goal];
+            }
+            $list[$key]['goals'] = $goals;
+            $list[$key]['username'] = $name;
+            $list[$key]['sex'] = $sex;
+            $list[$key]['create_time_int'] = strtotime($item['create_time']);
+            $list[$key]['bg_img'] = [
+                'A' => 'http://qiniu.dekichina.com/no-sex.png',
+                'B' => 'http://qiniu.dekichina.com/no-sex.png'
+            ];
+        }
+        return $list;
+    }
+
+    /**
+     * 报告详情
+     * @return array
+     * @throws Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function reportDetail(){
+        $fill_id = input('get.fill_id',0,'intval');
+        $info = $this
+            ->where(['fill_id'=>$fill_id])
+            ->field(['fill_id', 'create_time', 'food_group_id', 'bmi', 'pain_point_analysis'])
+            ->with(
+                [
+                    'foodGroup' => function(Query $query){
+                        $query
+                            ->field(['id'])
+                            ->with(
+                                [
+                                    'images'
+                                ]
+                            );
+                    }
+                ]
+            )
+            ->find();
+        if(!$info)throw new Exception('报告信息不存在');
+        $info = $this->formatReport([$info->toArray()])[0];
+        return compact('info');
+    }
+
+    /**
+     * 营养建议
+     * @return array
+     * @throws Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function healthAdvice(){
+        $fill_id = input('get.fill_id',0,'intval');
+        $info = $this->where(compact('fill_id'))->field(['fill_id', 'bmi', 'advice'])->find();
+        if(!$info)throw new Exception('报告信息不存在');
+        return compact('info');
+    }
+
+    /**
+     * 删除报告
+     * @param $user
+     * @return bool
+     * @throws Exception
+     */
+    public function delReport($user){
+        ##参数
+        $fill_id = input('post.fill_id',0,'intval');
+        if(!$fill_id)throw new Exception('参数缺失');
+        ##操作
+        $res = $this->update(['delete_time'=>time()], ['user_id'=>$user['user_id'], 'fill_id'=>$fill_id]);
+        if($res === false)throw new Exception('操作失败');
+        return true;
+    }
+
+    /**
+     * 获取配餐图
+     * @param $user
+     * @return array|bool|float|int|mixed|object|\stdClass
+     * @throws Exception
+     * @throws \think\exception\DbException
+     */
+    public function getFoodGroup($user){
+        ##参数
+        $fill_id = input('get.fill_id',0,'intval');
+        if(!$fill_id)throw new Exception('参数缺失');
+        ##操作
+        $data = self::get(['fill_id'=>$fill_id, 'user_id'=>$user['user_id']], ['foodGroup.images']);
+        if(!$data)throw new Exception('报告不存在');
+        return $data['food_group'];
     }
 
 }

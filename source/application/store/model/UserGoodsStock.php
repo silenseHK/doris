@@ -5,6 +5,7 @@ namespace app\store\model;
 
 use app\common\enum\user\StockChangeScene;
 use app\common\model\UserGoodsStock as UserGoodsStockModel;
+use app\store\model\user\ExchangeStockLog;
 use think\Db;
 use think\db\Query;
 use think\Exception;
@@ -199,7 +200,7 @@ class UserGoodsStock extends UserGoodsStockModel
             if($res === false)throw new Exception('库存返还失败');
 
             ##减少冻结库存并恢复库存
-            $res = self::disFreezeStockByUserGoodsId($user_id, $goods_sku_id, $num, 2);
+            $res = self::disFreezeStockByUserGoodsId($user_id, $goods_sku_id, $num, 2, $order['order_no']);
             if($res === false)throw new Exception('库存返还失败1');
 
             Db::commit();
@@ -237,7 +238,7 @@ class UserGoodsStock extends UserGoodsStockModel
     public static function refundStock($user_id, $goods_id, $goods_sku_id, $num, $flag, $order_no){
         $stock_info = self::where(['user_id'=>$user_id, 'goods_sku_id'=>$goods_sku_id])->find();
         ##flag [待发货|待收货 => 2  已完成 => 3]
-        self::disFreezeStockByUserGoodsId($user_id, $goods_sku_id, $num, $flag);
+        self::disFreezeStockByUserGoodsId($user_id, $goods_sku_id, $num, $flag, $order_no);
         $log_data = [
             'user_id' => $user_id,
             'goods_id' => $goods_id,
@@ -279,6 +280,145 @@ class UserGoodsStock extends UserGoodsStockModel
             'order_no' => $order_no
         ];
         UserGoodsStockLog::insertData($log_data);
+    }
+
+    /**
+     * 代理间转移库存
+     * @return bool
+     * @throws Exception
+     * @throws \think\exception\DbException
+     */
+    public function exchangeStock(){
+        ##参数
+        $user_id = input('post.user_id',0,'intval');
+        $receive_user_id = input('post.receive_user_id',0,'intval');
+        $goods_sku_id = input('post.goods_sku_id',0,'intval');
+        $stock = input('post.stock',0,'intval');
+        $remark = input('post.remark','','str_filter');
+        if(!$user_id || !$receive_user_id || !$goods_sku_id || !$stock)throw new Exception('参数缺失');
+        ##验证库存
+        $stock_info = self::get(['user_id'=>$user_id, 'goods_sku_id'=>$goods_sku_id]);
+        if(!$stock_info)throw new Exception('用户库存不足');
+        if($stock_info['stock'] < $stock)throw new Exception('用户库存不足');
+        ##验证接收库存用户
+        $receive_user_info = db('user')->where(['user_id'=>$user_id])->find();
+        if(!$receive_user_info)throw new Exception('接收库存用户不存在');
+        if($receive_user_info['status'] != 1)throw new Exception('接收库存用户已被冻结');
+
+        $goods_id = $stock_info['goods_id'];
+        Db::startTrans();
+        try{
+            $transfer_stock = 0;
+            if($stock_info['transfer_stock'] > 0){
+                $transfer_stock = $stock_info['transfer_stock'] >= $stock? $stock : $stock_info['transfer_stock'];
+            }
+            ##减少用户库存
+            $res = self::decStock($stock_info['id'], $stock, $stock_info['transfer_stock'], $user_id, $goods_id, $goods_sku_id,'');
+            if($res === false)throw new Exception('操作失败');
+            $receive_stock_info = self::get(['user_id'=>$receive_user_id, 'goods_sku_id'=>$goods_sku_id]);
+            ##增加接收用户库存
+            $res = self::incStock2($receive_user_id, $goods_id, $goods_sku_id, $stock, $transfer_stock);
+            if($res === false)throw new Exception('操作失败.');
+            ##增加库存变化记录
+            $stock_log_data[] = [
+                'user_id' => $user_id,
+                'goods_id' => $goods_id,
+                'goods_sku_id' => $goods_sku_id,
+                'balance_stock' => $stock_info['stock'],
+                'change_num' => $stock,
+                'change_type' => 70,
+                'change_direction' => 20,
+                'opposite_user_id' => $receive_user_id,
+                'remark' => $remark,
+            ];
+            $stock_log_data[] = [
+                'user_id' => $receive_user_id,
+                'goods_id' => $goods_id,
+                'goods_sku_id' => $goods_sku_id,
+                'balance_stock' => $receive_stock_info?$receive_stock_info['stock']:0,
+                'change_num' => $stock,
+                'change_type' => 70,
+                'change_direction' => 10,
+                'opposite_user_id' => $user_id,
+                'remark' => $remark,
+            ];
+            $stockLogModel = new UserGoodsStockLog();
+            $res= $stockLogModel->saveAll($stock_log_data);
+            if($res === false)throw new Exception('操作失败..');
+            ##增加转移记录
+            $exchange_log_data = compact('user_id','receive_user_id','goods_id','goods_sku_id','stock','remark','transfer_stock');
+            $res = (new ExchangeStockLog())->isUpdate(false)->save($exchange_log_data);
+            if($res === false)throw new Exception('操作失败...');
+
+            Db::commit();
+            return true;
+        }catch(Exception $e){
+            Db::rollback();
+            $this->error = $e->getMessage();
+            return false;
+        }
+    }
+
+    /**
+     * 销售数据
+     * @param $user_id
+     * @param $goods_sku_id
+     * @return array|bool|false|int[]|\PDOStatement|string|\think\Model
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public static function getSaleAndStock($user_id, $goods_sku_id){
+        $data = self::where(compact('user_id','goods_sku_id'))->field(['history_sale', 'stock'])->find();
+        if(!$data){
+            return ['history_sale'=>0, 'stock'=>0];
+        }
+        return $data->toArray();
+    }
+
+    /**
+     * 老代理迁移数据
+     * @return array
+     * @throws Exception
+     */
+    public static function transferData(){
+        $model = new self;
+        ##迁移总量
+        $transfer_total = $model->where(['goods_sku_id'=>$model->main_goods_sku_id])->sum('transfer_stock_history');
+        $exchange_stock = ExchangeStockLog::where(['goods_sku_id'=>$model->main_goods_sku_id])->sum('transfer_stock');
+        $transfer_total -= $exchange_stock;
+        ##已消耗总量
+        $rest_transfer_stock = $model->where(['goods_sku_id'=>$model->main_goods_sku_id])->sum('transfer_stock');
+        $used_transfer_stock = $transfer_total - $rest_transfer_stock;
+        ##迁移用户数
+        $transfer_user_num = \app\common\model\User::where(['is_transfer'=>1])->count();
+        ##已转化用户数
+        $active_transfer_user_num = \app\common\model\User::where(['is_transfer'=>1, 'open_id'=>['<>', '']])->count();
+        return compact('transfer_total','used_transfer_stock','transfer_user_num','active_transfer_user_num');
+    }
+
+    /**
+     * 库存变动明细
+     * @return array
+     * @throws \think\exception\DbException
+     */
+    public function userTransferStockLog(){
+        ##参数
+        $user_id = input('post.user_id',0,'intval');
+        $size = input('post.size',15,'intval');
+//        $transfer_data = $this->where(['user_id'=>$user_id, 'goods_sku_id'=>$this->main_goods_sku_id])->field('transfer_stock_history','transfer_stock')->find();
+//        $transfer_total = $transfer_data? $transfer_data['transfer_stock_history'] : 0;
+//        $transfer_rest = $transfer_data? $transfer_data['transfer_stock'] : 0;
+//        $transfer_used = $transfer_total - $transfer_rest;
+        $logModel = new UserGoodsStockLog();
+        $list = $logModel
+            ->where(['user_id'=>$user_id, 'goods_sku_id'=>$this->main_goods_sku_id])
+            ->order('create_time','asc')
+            ->field(['id', 'balance_stock', 'change_num', 'change_type', 'change_direction', 'create_time', 'remark'])
+            ->paginate($size,false);
+        $total = $list->total();
+        $list = $list->isEmpty() ? [] : $list->toArray()['data'];
+        return compact('total','list');
     }
 
 }

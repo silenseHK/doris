@@ -22,11 +22,13 @@ use app\store\model\user\PointsLog as PointsLogModel;
 use app\common\enum\user\balanceLog\Scene as SceneEnum;
 use app\common\enum\user\grade\log\ChangeType as ChangeTypeEnum;
 use app\common\library\helper;
+use app\store\service\user\Export;
 use app\store\validate\UserValid;
 use think\Db;
 use think\db\Query;
 use think\Exception;
 use think\Hook;
+use app\common\service\Excel;
 
 /**
  * 用户模型
@@ -55,6 +57,17 @@ class User extends UserModel
                 ->where('create_time', '<', $startTime + 86400);
         }
         return $this->where('is_delete', '=', '0')->count();
+    }
+
+    /**
+     * 获取团队人数
+     * @param $user_id
+     * @return int|string
+     * @throws Exception
+     */
+    public function getTeamMemberNum($user_id){
+        $like = "%-{$user_id}-%";
+        return self::where(['relation'=>['LIKE', $like], 'is_delete'=>0])->count('user_id');
     }
 
     /**
@@ -94,7 +107,7 @@ class User extends UserModel
         // 获取用户列表
         return $this->with(['grade'])
             ->where('is_delete', '=', '0')
-            ->order(['create_time' => 'desc'])
+            ->order(['user_id' => 'desc'])
             ->paginate(15, false, [
                 'query' => \request()->request()
             ]);
@@ -117,6 +130,22 @@ class User extends UserModel
     public function setDelete()
     {
         return $this->save(['is_delete' => 1]);
+    }
+
+    /**
+     * 冻结用户
+     * @return false|int
+     */
+    public function setFrozen(){
+        return $this->save(['status' => 2]);
+    }
+
+    /**
+     * 解冻用户
+     * @return false|int
+     */
+    public function setDisFrozen(){
+        return $this->save(['status' => 1]);
     }
 
     /**
@@ -143,6 +172,24 @@ class User extends UserModel
             try{
                 $res = $this->rechargeToGrade($data['grade']);
                 if($res !== true)throw new Exception($this->getError());
+                return true;
+            }catch(Exception $e){
+                $this->error = $e->getMessage();
+                return false;
+            }
+        } elseif($source == 3){ ## 迁移代理充值库存
+            try{
+                $res = $this->rechargeTransfer($data['transfer']);
+                if($res !== true)throw new Exception($this->getError());
+                return $res;
+            }catch(Exception $e){
+                $this->error = $e->getMessage();
+                return false;
+            }
+        } elseif($source == 4){ ## DIY充值库存
+            try{
+                $res = $this->rechargeToDiy($data['diy']);
+                if($res !== true)throw new Exception($res);
                 return true;
             }catch(Exception $e){
                 $this->error = $e->getMessage();
@@ -267,18 +314,158 @@ class User extends UserModel
         ##数据
         $user = User::get(['user_id'=>$user_id],['grade']);
         $goods = GoodsSku::get(['goods_sku_id'=>$goods_sku_id], ['goods.image']);
-        $check = UserGoodsStock::checkStock($user, $goods['goods_id'], $goods_sku_id, $num);
+        $check = UserGoodsStock::checkStock2($user, $goods['goods_id'], $goods_sku_id, $num);
         if(!$check['isStockEnough']){
             throw new Exception('库存不足');
         }
         ##判断是否是补货订单
         $weight = Grade::getWeightByGradeId($check['grade_id']);
-        if($weight < GradeSize::VIP)throw new Exception('这里仅支持补货,消费订单请在小程序下单');
+        if($weight < 20){
+            throw new Exception('这里仅支持补货,消费订单请在小程序下单');
+        }
         $order_data['user_grade_id'] = $check['grade_id'];
+        $order_data['is_achievement'] = $check['is_achievement'];
         $order_data['supply_user_id'] = $check['supplyUserId'];
         $order_data['supply_user_grade_id'] = $check['supply_user_grade_id'];
         $supply_user_id = $check['supplyUserId'];
-        $rebateUser = self::getRebateUser($user_id, $goods['goods_id'], $num, $supply_user_id, $goods['goods']['rebate_type']);
+//        $rebateUser = self::getRebateUser2($user_id, $supply_user_id);
+        $rebateUser = \app\common\model\User::getcaseRebate($user_id, $goods['goods_id'], $num, $supply_user_id);
+        if(!empty($rebateUser)){
+            $rebateMoney = self::sumRebate($rebateUser);
+            $rebateUsers = self::combineRebateUser($rebateUser);
+        }
+        $order_data['rebate_user_id'] = isset($rebateUsers) ? $rebateUsers : "";
+        $order_data['rebate_money'] = isset($rebateMoney)? $rebateMoney : 0;
+        $order_data['rebate_info'] = !empty($rebateUser)? json_encode($rebateUser) : "";
+        $order_data['sale_type'] = $goods['goods']['sale_type']; ##商品类型
+        $order_data['free_freight_num'] = $goods['goods']['free_freight_num']; ##免配送费商品基数
+        $order_data['goods_num'] = $num; ##商品数量
+
+        ##获取商品价格
+        $price = GoodsGrade::getGoodsPrice($check['grade_id'], $goods['goods_id']);
+        $total_price = $price * $num;
+
+        ##订单信息
+        $order_no = \app\common\service\Order::createOrderNo();
+        $order_data = array_merge($order_data, [
+            'user_id' => $user_id,
+            'order_no' => $order_no,
+            'out_trade_no' => $order_no,
+            'total_price' => $total_price,
+            'order_price' => $total_price,
+            'coupon_id' => 0,
+            'coupon_money' => 0,
+            'points_money' => 0,
+            'points_num' => 0,
+            'pay_price' => $total_price,
+            'delivery_type' => 30,
+            'pay_type' => 30,
+            'buyer_remark' => $remark,
+            'order_source' => 10,
+            'order_source_id' => 0,
+            'points_bonus' => 0,
+            'wxapp_id' => self::$wxapp_id,
+        ]);
+        $goods_2 = Goods::detail($goods['goods_id'])->toArray();
+        $goods_attr = Goods::getGoodsSku($goods_2,$goods['spec_sku_id']);
+        ##订单商品信息
+        $order_goods_data = [
+            'user_id' => $user_id,
+            'wxapp_id' => self::$wxapp_id,
+            'goods_id' => $goods['goods_id'],
+            'goods_name' => $goods['goods']['goods_name'],
+            'image_id' => $goods['goods']['image'][0]['image_id'],
+            'deduct_stock_type' => $goods['goods']['deduct_stock_type'],
+            'spec_type' => $goods['goods']['spec_type'],
+            'spec_sku_id' => $goods['spec_sku_id'],
+            'goods_sku_id' => $goods['goods_sku_id'],
+            'goods_attr' =>  $goods_attr ? $goods_attr['goods_attr'] : '' ,
+            'content' => $goods['goods']['content'],
+            'goods_no' => $goods['goods_no'],
+            'goods_price' => $price,
+            'line_price' => $goods['line_price'],
+            'goods_weight' => $goods['goods_weight'],
+            'is_user_grade' => 0,
+            'grade_ratio' => 0,
+            'grade_goods_price' => $price,
+            'grade_total_money' => $total_price,
+            'coupon_money' => 0,
+            'points_money' => 0.00,
+            'points_num' => 0,
+            'points_bonus' => 0,
+            'total_num' => $num,
+            'total_price' => $total_price,
+            'total_pay_price' => $total_price,
+            'is_ind_dealer' => $goods['goods']['is_ind_dealer'],
+            'dealer_money_type' => $goods['goods']['dealer_money_type'],
+            'first_money' => $goods['goods']['first_money'],
+            'second_money' => $goods['goods']['second_money'],
+            'third_money' => $goods['goods']['third_money'],
+            'is_add_integral' => $goods['goods']['is_add_integral'],
+            'integral_weight' => $goods['goods']['integral_weight'],
+            'sale_type' => $goods['goods']['sale_type']
+        ];
+        ##创建订单
+        Db::startTrans();
+        try{
+            $orderModel = new Order();
+            $res = $orderModel->isUpdate(false)->allowField(true)->save($order_data);
+            if($res === false)throw new Exception('订单创建失败');
+            $order_id = $orderModel->getLastInsID();
+            $order_goods_data['order_id'] = $order_id;
+            $res = (new OrderGoods())->isUpdate(false)->allowField(true)->save($order_goods_data);
+            if($res === false)throw new Exception('订单创建失败.');
+            Db::commit();
+        }catch(Exception $e){
+            Db::rollback();
+            return $e->getMessage();
+        }
+        ##支付成功操作
+        $PaySuccess = new PaySuccess($order_no);
+        // 发起余额支付
+        $status = $PaySuccess->onPaySuccess(PayTypeEnum::ADMIN);
+        if (!$status) {
+            throw new Exception($PaySuccess->getError());
+        }
+        return true;
+    }
+
+    /**
+     * 自定义补充库存
+     * @param $data
+     * @return bool|string
+     * @throws Exception
+     * @throws \think\exception\DbException
+     */
+    private function rechargeToDiy($data){
+        $goods_sku_id = intval($data['goods_sku_id']);
+        $num = intval($data['value']);
+        $user_id = input('post.user_id',0,'intval');
+        $remark = str_filter($data['remark']);
+        $is_rebate = intval($data['is_rebate']);
+        $is_achievement = intval($data['is_achievement']);
+        $is_force_platform = intval($data['is_force_platform']);
+        $is_integral = intval($data['is_integral']);
+        if($num <= 0)throw new Exception('充值数量错误');
+        ##数据
+        $user = User::get(['user_id'=>$user_id],['grade']);
+        $goods = GoodsSku::get(['goods_sku_id'=>$goods_sku_id], ['goods.image']);
+        $check = UserGoodsStock::checkStock2($user, $goods['goods_id'], $goods_sku_id, $num, $is_force_platform, $is_achievement, $is_integral);
+        if(!$check['isStockEnough']){
+            throw new Exception('库存不足');
+        }
+        ##判断是否是补货订单
+        $weight = Grade::getWeightByGradeId($check['grade_id']);
+        if($weight < 20){
+            throw new Exception('这里仅支持补货,消费订单请在小程序下单');
+        }
+        $order_data['user_grade_id'] = $check['grade_id'];
+        $order_data['is_achievement'] = $check['is_achievement'];
+        $order_data['supply_user_id'] = $check['supplyUserId'];
+        $order_data['supply_user_grade_id'] = $check['supply_user_grade_id'];
+        $supply_user_id = $check['supplyUserId'];
+//        $rebateUser = self::getRebateUser2($user_id, $supply_user_id);
+        $rebateUser = \app\common\model\User::getcaseRebate($user_id, $goods['goods_id'], $num, $supply_user_id, $is_rebate, $is_integral);
         if(!empty($rebateUser)){
             $rebateMoney = self::sumRebate($rebateUser);
             $rebateUsers = self::combineRebateUser($rebateUser);
@@ -395,9 +582,9 @@ class User extends UserModel
         $remark = str_filter($data['remark']);
         if($num <= 0)throw new Exception('充值数量错误');
         ##数据
-        ##判断是否是补货订单
+
         $weight = Grade::getWeightByGradeId($grade_id);
-        if($weight < GradeSize::VIP)throw new Exception('这里仅支持补货,消费订单请在小程序下单');
+        if($weight < 20)throw new Exception('这里仅支持补货,消费订单请在小程序下单');
         Db::startTrans();
         try{
             ##升级用户等级
@@ -406,15 +593,16 @@ class User extends UserModel
             ##订单
             $user = User::get(['user_id'=>$user_id],['grade']);
             $goods = GoodsSku::get(['goods_sku_id'=>$goods_sku_id], ['goods.image']);
-            $check = UserGoodsStock::checkStock($user, $goods['goods_id'], $goods_sku_id, $num);
+            $check = UserGoodsStock::checkStock2($user, $goods['goods_id'], $goods_sku_id, $num);
             if(!$check['isStockEnough']){
                 throw new Exception('库存不足');
             }
             $order_data['user_grade_id'] = $grade_id;
+            $order_data['is_achievement'] = 20;
             $order_data['supply_user_id'] = $check['supplyUserId'];
             $order_data['supply_user_grade_id'] = $check['supply_user_grade_id'];
             $supply_user_id = $check['supplyUserId'];
-            $rebateUser = self::getRebateUser($user_id, $goods['goods_id'], $num, $supply_user_id, $goods['goods']['rebate_type']);
+            $rebateUser = self::getcaseRebate($user_id, $goods['goods_id'], $num, $supply_user_id);
             if(!empty($rebateUser)){
                 $rebateMoney = self::sumRebate($rebateUser);
                 $rebateUsers = self::combineRebateUser($rebateUser);
@@ -510,6 +698,26 @@ class User extends UserModel
             throw new Exception($PaySuccess->getError());
         }
         return true;
+
+    }
+
+    public function rechargeTransfer($data){
+        Db::startTrans();
+        try{
+            $user_id = input('post.user_id',0,'intval');
+            $goods_sku_id = intval($data['goods_sku_id']);
+            $num = intval($data['value']);
+            $goods_id = intval($data['goods_id']);
+            $remark = str_filter($data['remark']);
+            $res = UserGoodsStock::incTransferAgentStock($user_id, $goods_id, $goods_sku_id, $num, $remark);
+            if(is_string($res))throw new Exception($res);
+            Db::commit();
+            return true;
+        }catch(Exception $e){
+            Db::rollback();
+            $this->error = $e->getMessage();
+            return false;
+        }
 
     }
 
@@ -754,7 +962,7 @@ class User extends UserModel
 
     /**
      * 团队列表
-     * @return array
+     * @return \think\Paginator
      * @throws \think\exception\DbException
      */
     public function teamLists(){
@@ -784,10 +992,7 @@ class User extends UserModel
             ->field(['user_id', 'nickName', 'mobile', 'avatarUrl', 'grade_id', 'invitation_user_id', 'create_time'])
             ->paginate(15,false,['query'=>\request()->request()]);
 
-        ##等级列表
-        $grade_list = Grade::getUsableList();
-
-        return array_merge(compact('list','grade_list'), $params);
+        return $list;
     }
 
     /**
@@ -947,6 +1152,218 @@ class User extends UserModel
      */
     public function getMemberNumAttr($user_id){
         return self::where(['relation'=>['LIKE', "%-{$user_id}-%"]])->count('user_id');
+    }
+
+    /**
+     * 获取器 -- 直邀用户数
+     * @param $user_id
+     * @return int|string
+     * @throws Exception
+     */
+    public function getRedirectMemberNumAttr($user_id){
+        return self::where(['invitation_user_id'=>$user_id])->count('user_id');
+    }
+
+    /**
+     * 获取代理总数
+     * @return int|string
+     * @throws Exception
+     */
+    public function getAgentTotal(){
+        ##获取代理等级
+        $grade_ids = Grade::getAgentGradeIds();
+        $num = $this->where(['grade_id'=>['IN', $grade_ids]])->count();
+        return $num;
+    }
+
+    /**
+     * 获取指定等级的代理数
+     * @param $weight
+     * @return int|string
+     * @throws Exception
+     */
+    public function getAgentDetail($weight){
+        ##获取等级
+        $grade_id = Grade::getGradeId($weight);
+        $num = $this->where(['grade_id'=>$grade_id])->count();
+        return $num;
+    }
+
+    /**
+     * 批量迁移库存
+     * @param $file
+     * @return bool
+     */
+    public function fileTransferStock($file){
+        try{
+            $goods_sku_id = input('post.transfer_stock.goods_sku_id',0,'intval');
+            $remark = input('post.transfer_stock.remark','','str_filter');
+            if(!$goods_sku_id)throw new Exception('参数缺失');
+            $file = $file->getRealPath();
+            $excel = new Excel();
+            $data = $excel->importExcel($file);
+            if(!$data)throw new Exception($excel->getError());
+            $arr = [];
+            foreach($data as $k => $v){
+                if($k < 1)continue;
+                $arr[] = [
+                    'openid' => $v[0],
+                    'stock' => $v[1]
+                ];
+            }
+            if(!$arr)throw new Exception('迁移数据不能为空');
+            ##批量迁移库存
+            $res = UserGoodsStock::fileTransferStock($arr, $goods_sku_id, $remark);
+            if($res !== true)throw new Exception($res);
+            return true;
+        }catch(Exception $e){
+            $this->error = $e->getMessage();
+            return false;
+        }
+    }
+
+    /**
+     * 冻结团队
+     * @return bool
+     */
+    public function freezeTeam(){
+        Db::startTrans();
+        try{
+            $user_id = input('post.id',0,'intval');
+            $time = time();
+            ##冻结团队长
+            $res = $this->where(compact('user_id'))->setField('delete_time', $time);
+            if($res === false)throw new Exception('操作失败');
+            ##冻结团队
+            $res = $this->where(['relation'=>['LIKE', "%-{$user_id}-%"]])->setField('delete_time', $time);
+            if($res === false)throw new Exception('操作失败.');
+            Db::commit();
+            return true;
+        }catch(Exception $e){
+            $this->error = $e->getMessage();
+            return false;
+        }
+    }
+
+    /**
+     * 搜索用户
+     * @return array|bool|false|\PDOStatement|string|\think\Model
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function searchAgent(){
+        #参数
+        $user_id = input('post.user_id',0,'intval');
+        $info = $this->where(['user_id'=>$user_id, 'is_delete'=>0])->field(['user_id', 'nickName', 'avatarUrl'])->find();
+        if(!$info){
+            $this->error = '用户不存在';
+            return false;
+        }
+        return $info;
+    }
+
+    /**
+     * 老代理迁移数据
+     * @return array
+     * @throws \think\exception\DbException
+     */
+    public function transferUserList(){
+        ##参数
+        $size = input('post.size',15,'intval');
+        $this->setTransferUserListAttr();
+        ##数据
+        $list = $this
+            ->field(['user_id', 'nickName', 'avatarUrl', 'grade_id', 'user_id as transfer_stock_data'])
+            ->with([
+                'grade' => function(Query $query){
+                    $query->field(['grade_id', 'name']);
+                }
+            ])
+            ->paginate($size,false,['type' => 'Bootstrap',
+                'var_page' => 'page',
+                'path' => 'javascript:getTransferUserList([PAGE]);']);
+        $page = $list->render();
+        $total = $list->total();
+        $list = empty($list)? [] : $list->toArray()['data'];
+        return compact('total','list','page');
+    }
+
+    protected function setTransferUserListAttr(){
+        $grade_id = input('grade_id',0,'intval');
+        $user_id = input('user_id',0,'intval');
+        $is_active = input('is_active',0,'intval');
+        ##查询条件
+        $where = [
+            'is_transfer' => 1,
+        ];
+        if($user_id > 0){
+            $where['user_id'] = $user_id;
+        }
+        if($grade_id > 0){
+            $where['grade_id'] = $grade_id;
+        }
+        if($is_active == 1){
+            $where['open_id'] = '';
+        }
+        if($is_active == 2){
+            $where['open_id'] = ['<>', ''];
+        }
+        $this->where($where);
+    }
+
+    /**
+     * 用户迁移信息
+     * @param $value
+     * @return array|int[]
+     * @throws Exception
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getTransferStockDataAttr($value){
+        $data = UserGoodsStock::where(['user_id'=>$value, 'goods_sku_id'=>$this->main_goods_sku_id])->field(['stock', 'transfer_stock_history', 'transfer_stock'])->find();
+        $data = $data? $data->toArray() : [
+            'stock' => 0,
+            'transfer_stock_history' => 0,
+            'transfer_stock' => 0
+        ];
+        return $data;
+    }
+
+    /**
+     * 导出迁移老代理明细
+     * @return bool|void
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function exportTransferData(){
+        $this->setTransferUserListAttr();
+        $total = $this->count();
+        if($total <= 0){
+            $this->error = '无符合条件的数据';
+            return false;
+        }
+        $data = [];
+        $per = 5000;
+        $loop = ceil($total / $per);
+        for($i=0; $i<$loop; $i++){
+            $this->setTransferUserListAttr();
+            $list = $this
+                ->field(['user_id', 'nickName', 'avatarUrl', 'grade_id', 'user_id as transfer_stock_data'])
+                ->with([
+                    'grade' => function(Query $query){
+                        $query->field(['grade_id', 'name']);
+                    }
+                ])
+                ->limit($i*$per,$per)
+                ->select();
+            $list = $list->toArray();
+            $data[] = $list;
+        }
+        $export = new Export();
+        return $export->transferData($data, $per);
     }
 
 }

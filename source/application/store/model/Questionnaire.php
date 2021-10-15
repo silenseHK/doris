@@ -38,25 +38,14 @@ class Questionnaire extends QuestionnaireModel
             ##增加调查表
             $res = $this->isUpdate(false)->allowField(true)->save($data);
             if($res === false)throw new Exception('操作失败');
-            ##增加关联问题
+
             $questionnaire_id = $this->getLastInsID();
-            $question_data = [];
-            $sort = 1;
-            foreach($data['question_ids'] as $item){
-                $question_data[] = [
-                    'questionnaire_id' => $questionnaire_id,
-                    'question_id' => $item,
-                    'sort' => $sort
-                ];
-                ++$sort;
-            }
-            $model = new QuestionnaireQuestionModel();
-            $res = $model->isUpdate(false)->saveAll($question_data);
-            if($res === false)throw new Exception('操作失败.');
+            $this->handleQuestionnaire($questionnaire_id, $data);
 
             Db::commit();
             return true;
         }catch(Exception $e){
+            Db::rollback();
             return $e->getMessage();
         }
     }
@@ -71,7 +60,7 @@ class Questionnaire extends QuestionnaireModel
         if(!$validate->scene('questionnaire_edit')->rule($rule)->check(input()))throw new Exception($validate->getError());
         ##参数
         $data = $this->filterData();
-
+//        print_r(input());die;
         Db::startTrans();
         try{
             ##增加调查表
@@ -81,19 +70,10 @@ class Questionnaire extends QuestionnaireModel
             ###删除以前的关联
             $model = new QuestionnaireQuestionModel();
             $model->deleteLink($questionnaire_id);
-            $question_data = [];
-            $sort = 1;
-            foreach($data['question_ids'] as $item){
-                $question_data[] = [
-                    'questionnaire_id' => $questionnaire_id,
-                    'question_id' => $item,
-                    'sort' => $sort
-                ];
-                ++$sort;
-            }
+            $cateModel = new QuestionnaireCate();
+            $cateModel->deleteLink($questionnaire_id);
 
-            $res = $model->isUpdate(false)->saveAll($question_data);
-            if($res === false)throw new Exception('操作失败.');
+            $this->handleQuestionnaire($questionnaire_id, $data);
 
             Db::commit();
             return true;
@@ -102,11 +82,52 @@ class Questionnaire extends QuestionnaireModel
         }
     }
 
+    public function handleQuestionnaire($questionnaire_id, $data){
+        $cate_data = [];
+        $question_data = [];
+        $sort = 1;
+        ##组织数据
+        foreach($data['questions'] as $item){
+
+            $cate_data[] = [
+                'questionnaire_id' => $questionnaire_id,
+                'question_cate_id' => $item['cate_id'],
+                'sort' => $sort
+            ];
+            ++$sort;
+            $sort_ = 1;
+            foreach($item['questions'] as $it){
+                $show_limit = isset($it['show_limit'])? $it['show_limit'] : '';
+                if($show_limit){
+                    $show_limit = str_replace('&quot;','"',$show_limit);
+                    if(is_array($show_limit) && !empty($show_limit))$show_limit = json_encode($show_limit);
+                }
+                $question_data[] = [
+                    'questionnaire_id' => $questionnaire_id,
+                    'question_id' => $it['question_id'],
+                    'sort' => $sort_,
+                    'question_cate_id' => $item['cate_id'],
+                    'show_limit' => $show_limit
+                ];
+                ++$sort_;
+            }
+        }
+        ##增加分类关联
+        $cateModel = new QuestionnaireCate();
+        $res = $cateModel->isUpdate(false)->saveAll($cate_data);
+        if($res === false)throw new Exception('操作失败');
+
+        ##增加问题关联
+        $model = new QuestionnaireQuestionModel();
+        $res = $model->isUpdate(false)->saveAll($question_data);
+        if($res === false)throw new Exception('操作失败.');
+    }
+
     public function filterData(){
         return [
             'title' => input('post.title','','str_filter'),
             'status' => input('post.status','','intval'),
-            'question_ids' => input('post.question_ids/a',''),
+            'questions' => input('post.questions/a',''),
             'questionnaire_no' => input('post.questionnaire_no','','str_filter')
         ];
     }
@@ -116,8 +137,23 @@ class Questionnaire extends QuestionnaireModel
         $validate = new QuestionValid();
         if(!$validate->scene('questionnaire_info')->check(input()))throw new Exception($validate->getError());
         $questionnaire_id = input('questionnaire_id',0,'intval');
-        $info = self::get(['questionnaire_id'=>$questionnaire_id], ['questions.option']);
-        return compact('info');
+        $info = self::get(['questionnaire_id'=>$questionnaire_id], ['questions.option','cate'])->toArray();
+        $cate_list = $info['cate'];
+        $question_list = $info['questions'];
+        $questionModel = new Question();
+        ##获取问题数据
+        foreach($cate_list as &$cate){
+            $cate['questions'] = [];
+            foreach($question_list as $question){
+                if($question['pivot']['question_cate_id'] == $cate['pivot']['question_cate_id']){
+                    $question['show_limit'] = $question['pivot']['show_limit'];
+                    $question['show_limit_txt'] = $questionModel->getShowLimitTxt($question['pivot']['show_limit']);
+                    $question['type'] = $question['type']['value'];
+                    $cate['questions'][] = $question;
+                }
+            }
+        }
+        return compact('info','cate_list');
     }
 
     public function del(){

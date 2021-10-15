@@ -21,9 +21,11 @@ class Access extends AccessModel
      */
     public function getJsTree($role_id = null)
     {
+        $store_user_id = session('yoshop_store.user')['store_user_id'];
+        $is_super = User::where(['store_user_id'=>$store_user_id])->value('is_super');
         $accessIds = is_null($role_id) ? [] : RoleAccess::getAccessIds($role_id);
         $jsTree = [];
-        foreach ($this->getAll() as $item) {
+        foreach ($this->getAll($is_super) as $item) {
             $jsTree[] = [
                 'id' => $item['access_id'],
                 'parent' => $item['parent_id'] > 0 ? $item['parent_id'] : '#',
@@ -46,7 +48,7 @@ class Access extends AccessModel
      */
     private function hasChildren($access_id)
     {
-        foreach (self::getAll() as $item) {
+        foreach (self::getAll(1) as $item) {
             if ($item['parent_id'] == $access_id)
                 return true;
         }

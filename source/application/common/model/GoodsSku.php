@@ -64,4 +64,22 @@ class GoodsSku extends BaseModel
             ->toArray();
     }
 
+    /**
+     * 扣除库存
+     * @param $goods_sku
+     * @param $stock
+     * @return bool|string
+     * @throws \think\Exception
+     * @throws \think\exception\DbException
+     */
+    public static function decStock($goods_sku, $stock){
+        if($goods_sku['stock_num'] < $stock)return '库存不足';
+        ##减少库存
+        $res = self::where(['goods_sku_id'=>$goods_sku['goods_sku_id']])->setDec('stock_num', $stock);
+        if($res === false)return '商品规格库存扣除失败';
+        $res = Goods::where(['goods_id'=>$goods_sku['goods_id']])->setDec('stock', $stock);
+        if($res === false)return '商品库存扣除失败';
+        return true;
+    }
+
 }

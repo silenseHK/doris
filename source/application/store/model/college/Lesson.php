@@ -312,6 +312,9 @@ class Lesson extends LessonModel
             $value = ($data[$field] + 1) % 2;
         }
         $res = $this->where(['lesson_id'=>$lesson_id])->setField($field, $value);
+        if($field == 'status'){
+            CollegeClass::where(['lesson_id'=>$lesson_id])->setField('status', $value);
+        }
         if($res === false)throw new Exception('操作失败');
         return $value;
     }

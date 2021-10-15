@@ -37,7 +37,7 @@ class Check extends Validate
      * @return bool|string
      */
     protected function mobile($value){
-        if(preg_match("/^1[345789]\d{9}$/", $value)){
+        if(preg_match("/^1[3456789]\d{9}$/", $value)){
             return true;
         }else{
             return "手机号格式错误";

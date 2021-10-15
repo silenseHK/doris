@@ -31,12 +31,25 @@ class User extends Controller
     public function index($nickName = '', $gender = null, $grade = null, $start_time = '', $end_time = '', $user_id = null, $mobile = '')
     {
         $model = new UserModel;
-        $list = $model->getList($nickName, $gender, $grade, $start_time, $end_time, $user_id, $mobile);
+//        $list = $model->getList($nickName, $gender, $grade, $start_time, $end_time, $user_id, $mobile);
         // 会员等级列表
         $gradeList = GradeModel::getUsableList();
         ## 多级代理商品
         $goodsList = GoodsModel::getAgentGoodsList();
-        return $this->fetch('index', compact('list', 'gradeList', 'goodsList'));
+        return $this->fetch('index2', compact('gradeList', 'goodsList'));
+    }
+
+    public function getUserList(){
+        $nickName = input('post.nickname','','search_filter');
+        $mobile = input('post.mobile','','search_filter');
+        $gender = input('post.gender',-1,'intval');
+        $grade = input('post.grade_id',0,'intval');
+        $user_id = input('post.user_id',0,'intval');
+        $start_time = input('post.start_time','','str_filter');
+        $end_time = input('post.end_time','','str_filter');
+        $model = new UserModel;
+        $list = $model->getList($nickName, $gender, $grade, $start_time, $end_time, $user_id, $mobile);
+        return $this->renderSuccess('','',$list);
     }
 
     /**
@@ -53,6 +66,36 @@ class User extends Controller
             return $this->renderSuccess('删除成功');
         }
         return $this->renderError($model->getError() ?: '删除失败');
+    }
+
+    /**
+     * 冻结用户
+     * @param $user_id
+     * @return array|bool
+     * @throws \think\exception\DbException
+     */
+    public function frozenUser($user_id){
+        // 用户详情
+        $model = UserModel::detail($user_id);
+        if ($model->setFrozen()) {
+            return $this->renderSuccess('冻结成功');
+        }
+        return $this->renderError($model->getError() ?: '冻结失败');
+    }
+
+    /**
+     * 解冻用户
+     * @param $user_id
+     * @return array|bool
+     * @throws \think\exception\DbException
+     */
+    public function disFrozenUser($user_id){
+        // 用户详情
+        $model = UserModel::detail($user_id);
+        if ($model->setDisFrozen()) {
+            return $this->renderSuccess('解冻成功');
+        }
+        return $this->renderError($model->getError() ?: '解冻失败');
     }
 
     /**
@@ -101,6 +144,25 @@ class User extends Controller
             if(is_string($stock))throw new Exception($stock);
 
             return $this->renderSuccess('','',$stock);
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 批量迁移库存
+     * @return array|bool
+     */
+    public function fileTransferStock(){
+        try{
+            ##验证文件
+            $file = request()->file('transfer_stock_file');
+            if (!$file) {
+                throw new Exception('缺少导入文件');
+            }
+            $model = new UserModel();
+            if(!$model->fileTransferStock($file))throw new Exception($model->getError());
+            return $this->renderSuccess();
         }catch(Exception $e){
             return $this->renderError($e->getMessage());
         }

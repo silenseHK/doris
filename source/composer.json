@@ -31,7 +31,8 @@
     "qcloud/cos-sdk-v5": "^1.2",
     "kosinix/grafika": "dev-master",
     "myclabs/php-enum": "^1.6",
-    "lvht/geohash": "^1.1"
+    "lvht/geohash": "^1.1",
+    "topthink/think-captcha": "1.*"
   },
   "autoload": {
     "psr-4": {

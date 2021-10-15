@@ -64,7 +64,7 @@ class AgentInstantGrade
 
     public function run($options){
         $this->userId = $options['user_id'];
-        $this->updateAgentGrade();
+//        $this->updateAgentGrade();
         return true;
     }
 

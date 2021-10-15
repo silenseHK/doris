@@ -31,7 +31,7 @@ class Question extends QuestionModel
             $data['answer'] = str_filter($item['answer']);
         }
         if(in_array($question_info['type']['value'], [20,30])){ ##选择题
-            if(!isset($item['answer_mark']) || !$item['answer_mark'])throw new Exception('请完善调查表');
+            if(!isset($item['answer_mark']))throw new Exception('请完善调查表');
             $answer_mark = $item['answer_mark'];
             if($question_info['type']['value'] == 20){ ##单选
                 if(count($answer_mark) > 1)throw new Exception('答案格式错误');

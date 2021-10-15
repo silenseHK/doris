@@ -145,7 +145,7 @@ $detail = isset($detail) ? $detail : null;
                                         <?= $detail['receipt_status']['value'] == 20 ? 'am-badge-success' : '' ?>">
                                                 <?= $detail['receipt_status']['text'] ?></span>
                                     </p>
-                                    <?php if ($detail['order_status']['value'] == 20 || $detail['order_status']['value'] == 21): ?>
+                                    <?php if ($detail['order_status']['value'] == 20 || $detail['order_status']['value'] == 21 || $detail['order_status']['value'] == 40): ?>
                                         <p>订单状态：
                                             <span class="am-badge am-badge-warning"><?= $detail['order_status']['text'] ?></span>
                                         </p>
@@ -388,7 +388,7 @@ $detail = isset($detail) ? $detail : null;
                     <?php if (
                         $detail['pay_status']['value'] == 20    // 支付状态：已支付
                         && $detail['delivery_type']['value'] == DeliveryTypeEnum::EXPRESS
-                        && !in_array($detail['order_status']['value'], [20, 21])   // 订单状态：未取消
+                        && !in_array($detail['order_status']['value'], [20, 21, 40])   // 订单状态：未取消
                     ): ?>
                         <div class="widget-head am-cf">
                             <div class="widget-title am-fl">发货信息</div>
@@ -441,6 +441,7 @@ $detail = isset($detail) ? $detail : null;
                                         <th>物流单号</th>
                                         <th>发货状态</th>
                                         <th>发货时间</th>
+                                        <th>操作</th>
                                     </tr>
                                     <tr>
                                         <td><?= $detail['express']['express_name'] ?></td>
@@ -452,6 +453,11 @@ $detail = isset($detail) ? $detail : null;
                                         </td>
                                         <td>
                                             <?= date('Y-m-d H:i:s', $detail['delivery_time']) ?>
+                                        </td>
+                                        <td>
+                                            <a class="tpl-table-black-operation-green edit-express"
+                                               href="javascript:;">
+                                                修改物流</a>
                                         </td>
                                     </tr>
                                     </tbody>
@@ -577,6 +583,39 @@ $detail = isset($detail) ? $detail : null;
     </div>
 </script>
 
+<!-- 修改物流 -->
+<script id="tpl-update-express" type="text/template">
+    <div class="am-padding-top-sm">
+        <form class="form-update-express am-form tpl-form-line-form" method="post"
+              action="<?= url('order/updateExpress', ['order_id' => $detail['order_id']]) ?>">
+            <div class="am-form-group">
+                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">物流公司 </label>
+                <div class="am-u-sm-9 am-u-end am-padding-top-xs">
+                    <select name="express[express_id]"
+                            data-am-selected="{btnSize: 'sm', maxHeight: 240}" required>
+                        <option value=""></option>
+                        <?php if (isset($expressList)): foreach ($expressList as $expres): ?>
+                            <option value="<?= $expres['express_id'] ?>">
+                                <?= $expres['express_name'] ?></option>
+                        <?php endforeach; endif; ?>
+                    </select>
+                    <div class="help-block am-margin-top-xs">
+                        <small>可在 <a href="<?= url('setting.express/index') ?>" target="_blank">物流公司列表</a>
+                            中设置
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="am-form-group">
+                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">物流单号 </label>
+                <div class="am-u-sm-9 am-u-end">
+                    <input type="text" class="tpl-form-input" name="express[express_no]" required>
+                </div>
+            </div>
+        </form>
+    </div>
+</script>
+
 <script>
     $(function () {
 
@@ -601,6 +640,25 @@ $detail = isset($detail) ? $detail : null;
                 }
             });
         });
+
+        $('.edit-express').click(function(){
+            var data = $(this).data();
+            $.showModal({
+                title: '订单价格物流'
+                , content: template('tpl-update-express', data)
+                , yes: function () {
+                    // 表单提交
+                    $('.form-update-express').ajaxSubmit({
+                        type: "post",
+                        dataType: "json",
+                        success: function (result) {
+                            result.code === 1 ? $.show_success(result.msg, result.url)
+                                : $.show_error(result.msg);
+                        }
+                    });
+                }
+            });
+        })
 
         /**
          * 表单验证提交

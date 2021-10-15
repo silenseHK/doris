@@ -8,16 +8,16 @@
                     <div class="widget-title">商城统计</div>
                 </div>
                 <div class="widget-body am-cf">
-                    <div class="am-u-sm-12 am-u-md-6 am-u-lg-3">
-                        <div class="widget-card card__blue am-cf">
-                            <div class="card-header">商品总量</div>
-                            <div class="card-body">
-                                <div class="card-value"><?= $data['widget-card']['goods_total'] ?></div>
-                                <div class="card-description">当前商品总数量</div>
-                                <span class="card-icon iconfont icon-goods"></span>
-                            </div>
-                        </div>
-                    </div>
+                    <!--<div class="am-u-sm-12 am-u-md-6 am-u-lg-3">-->
+                    <!--    <div class="widget-card card__blue am-cf">-->
+                    <!--        <div class="card-header">商品总量</div>-->
+                    <!--        <div class="card-body">-->
+                    <!--            <div class="card-value"><?= $data['widget-card']['goods_total'] ?></div>-->
+                    <!--            <div class="card-description">当前商品总数量</div>-->
+                    <!--            <span class="card-icon iconfont icon-goods"></span>-->
+                    <!--        </div>-->
+                    <!--    </div>-->
+                    <!--</div>-->
 
                     <div class="am-u-sm-12 am-u-md-6 am-u-lg-3">
                         <div class="widget-card card__red am-cf">
@@ -40,29 +40,76 @@
                             </div>
                         </div>
                     </div>
-
+                    
                     <div class="am-u-sm-12 am-u-md-6 am-u-lg-3">
-                        <div class="widget-card card__primary am-cf">
-                            <div class="card-header">评价总量</div>
+                        <div class="widget-card card__blue am-cf" >
+                            <div class="card-header">小程序销售流水</div>
                             <div class="card-body">
-                                <div class="card-value"><?= $data['widget-card']['comment_total'] ?></div>
-                                <div class="card-description">订单评价总数量</div>
+                                <div class="card-value"><?= $data['widget-card']['sale_money_total'] ?></div>
+                                <div class="card-description">包含[待发货、待收货、已完成订单]</div>
                                 <span class="card-icon iconfont icon-haoping2"></span>
                             </div>
                         </div>
                     </div>
+					
+					<div class="am-u-sm-12 am-u-md-6 am-u-lg-3">
+                        <div class="widget-card card__red am-cf" >
+                            <div class="card-header">公司总销售额</div>
+                            <div class="card-body">
+                                <div class="card-value"><?= $data['widget-card']['company_sale_money_total'] ?></div>
+                                <div class="card-description">包含[待发货、待收货、已完成订单]</div>
+                                <span class="card-icon iconfont icon-goods"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!--<div class="am-u-sm-12 am-u-md-6 am-u-lg-3">-->
+                    <!--    <div class="widget-card card__primary am-cf">-->
+                    <!--        <div class="card-header">评价总量</div>-->
+                    <!--        <div class="card-body">-->
+                    <!--            <div class="card-value"><?= $data['widget-card']['comment_total'] ?></div>-->
+                    <!--            <div class="card-description">订单评价总数量</div>-->
+                    <!--            <span class="card-icon iconfont icon-haoping2"></span>-->
+                    <!--        </div>-->
+                    <!--    </div>-->
+                    <!--</div>-->
 
+                </div>
+
+            </div>
+        </div>
+    </div>
+	
+	<!-- 代理统计 -->
+    <div class="row">
+        <div class="am-u-sm-12 am-u-md-12 am-u-lg-12 am-margin-bottom">
+            <div class="widget am-cf">
+            	<div class="widget-head">
+                    <div class="widget-title">代理统计</div>
+                </div>
+                <div class="widget-body am-cf">
+                    <?php foreach( $data['widget-card']['agent_detail'] as $key => $item ): ?>
+                    <div class="am-u-sm-12 am-u-md-6 am-u-lg-3">
+                        <div class="widget-card am-cf agent-number dis-flex flex-y-center">
+                        	<div class="outline-left"><img src="assets/store/img/statistics/survey/03.png" alt=""></div>
+                        	<div class="outline-right">
+                        		<div class="agent-title"><?= $item['name'] ?></div>
+	                            <div class="card-body">
+	                                <div class="agent-value"><?= $item['num'] ?></div>
+	                            </div>
+                        	</div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
         </div>
     </div>
-
     <!-- 实时概况 -->
     <div class="row">
         <div class="am-u-sm-12 am-u-md-12 am-u-lg-12 am-margin-bottom">
             <div class="widget am-cf">
                 <div class="widget-head">
-                    <div class="widget-title">实时概况</div>
+                    <div class="widget-title">今日概况</div>
                 </div>
                 <div class="widget-body am-cf">
                     <div class="am-u-sm-6 am-u-md-6 am-u-lg-3">
@@ -72,7 +119,7 @@
                                      alt="">
                             </div>
                             <div class="outline-right dis-flex flex-dir-column flex-x-between">
-                                <div style="color: rgb(102, 102, 102); font-size: 1.3rem;">销售额(元)</div>
+                                <div style="color: rgb(102, 102, 102); font-size: 1.3rem;">销售流水(元)</div>
                                 <div style="color: rgb(51, 51, 51); font-size: 2.4rem;"><?= $data['widget-outline']['order_total_price']['tday'] ?></div>
                                 <div style="color: rgb(153, 153, 153); font-size: 1.2rem;">
                                     昨日：<?= $data['widget-outline']['order_total_price']['ytd'] ?></div>
@@ -119,7 +166,7 @@
         <div class="am-u-sm-12 am-u-md-12 am-u-lg-12 am-margin-bottom">
             <div class="widget am-cf">
                 <div class="widget-head">
-                    <div class="widget-title">近七日交易走势</div>
+                    <div class="widget-title">近七日交易流水走势</div>
                 </div>
                 <div class="widget-body am-cf">
                     <div id="echarts-trade" class="widget-echarts"></div>

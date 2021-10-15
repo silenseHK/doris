@@ -25,4 +25,8 @@ class Questionnaire extends BaseModel
         return $this->belongsToMany('app\common\model\Question','app\common\model\QuestionnaireQuestion','question_id','questionnaire_id')->order('sort','asc');
     }
 
+    public function cate(){
+        return $this->belongsToMany('app\common\model\QuestionCate','app\common\model\QuestionnaireCate','question_cate_id','questionnaire_id')->order('sort','asc');
+    }
+
 }

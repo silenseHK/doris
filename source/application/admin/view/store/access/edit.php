@@ -44,6 +44,34 @@
                                 </div>
                             </div>
                             <div class="am-form-group">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">是否写入操作日志 </label>
+                                <div class="am-u-sm-9 am-u-end">
+                                    <label class="am-radio-inline">
+                                        <input type="radio" name="access[is_write_log]" value="1" data-am-ucheck
+                                               <?= $model['is_write_log'] == 1? "checked" : "" ?>>
+                                        写入
+                                    </label>
+                                    <label class="am-radio-inline">
+                                        <input type="radio" name="access[is_write_log]" value="2" data-am-ucheck <?= $model['is_write_log'] == 2? "checked" : "" ?>>
+                                        不写入
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="am-form-group">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">是否向管理员展示 </label>
+                                <div class="am-u-sm-9 am-u-end">
+                                    <label class="am-radio-inline">
+                                        <input type="radio" name="access[is_normal_show]" value="1" data-am-ucheck
+                                            <?= $model['is_normal_show'] == 1? "checked" : "" ?>>
+                                        展示
+                                    </label>
+                                    <label class="am-radio-inline">
+                                        <input type="radio" name="access[is_normal_show]" value="2" data-am-ucheck <?= $model['is_normal_show'] == 2? "checked" : "" ?>>
+                                        不展示
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="am-form-group">
                                 <div class="am-u-sm-9 am-u-sm-push-3 am-margin-top-lg">
                                     <button type="submit" class="j-submit am-btn am-btn-secondary">提交
                                     </button>

@@ -174,4 +174,12 @@ class Grade extends GradeModel
         return self::where(['is_delete'=>0, 'status'=>1])->field(['grade_id', 'name'])->order('weight','asc')->select();
     }
 
+    /**
+     * 获取代理等级ids
+     * @return array|bool|string
+     */
+    public static function getAgentGradeIds(){
+        return self::where(['is_delete'=>0, 'status'=>1, 'grade_type'=>['IN', [20, 30]]])->column('grade_id');
+    }
+
 }

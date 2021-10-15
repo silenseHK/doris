@@ -33,7 +33,9 @@
                                 <th>权限名称</th>
                                 <th>权限url</th>
                                 <th>排序</th>
-                                <th>添加时间</th>
+                                <th>写入日志</th>
+                                <th>普通管理员显示</th>
+<!--                                <th>添加时间</th>-->
                                 <th>操作</th>
                             </tr>
                             </thead>
@@ -44,7 +46,9 @@
                                     <td class="am-text-middle"><?= $item['name_h1'] ?></td>
                                     <td class="am-text-middle"><?= $item['url'] ?></td>
                                     <td class="am-text-middle"><?= $item['sort'] ?></td>
-                                    <td class="am-text-middle"><?= $item['create_time'] ?></td>
+                                    <td class="am-text-middle"><?= $item['is_write_log'] == 1? "是" : "否" ?></td>
+                                    <td class="am-text-middle"><?= $item['is_normal_show'] == 1? "显示" : "隐藏" ?></td>
+<!--                                    <td class="am-text-middle">--><?//= $item['create_time'] ?><!--</td>-->
                                     <td class="am-text-middle">
                                         <div class="tpl-table-black-operation">
                                             <a href="<?= url('store.access/edit', ['access_id' => $item['access_id']]) ?>">

@@ -2,6 +2,8 @@
 
 namespace app\api\service\order;
 
+use app\api\model\user\GradeLog;
+use app\common\model\User;
 use think\Exception;
 use think\Hook;
 use app\api\service\Basics;
@@ -40,7 +42,7 @@ class PaySuccess extends Basics
         // 实例化订单模型
         $this->model = OrderModel::getPayDetail($orderNo);
         if (!empty($this->model)) {
-            $this->wxappId = $this->model['wxapp_id'];
+            $this->wxappId = $this->model['wxapp_id']?:10001;
         }
         // 获取用户信息
         $this->user = UserModel::detail($this->model['user_id']);
@@ -100,7 +102,7 @@ class PaySuccess extends Basics
             }
         }
         $this->model->transaction(function () use ($payType, $payData, $is_integral) {
-            // 更新商品库存、销量
+            // 更新商品库存、销量[平台出货]
             (new GoodsModel)->updateStockSales($this->model);
             // 整理订单信息
             $order = ['pay_type' => $payType, 'pay_status' => 20, 'pay_time' => time()];
@@ -124,6 +126,23 @@ class PaySuccess extends Basics
 
             ## 补充用户库存 && 减少供应用户库存 && 增加供应用户余额
             $this->user->addGoodsStock($this->model, $integralLogId);
+
+            ##更新用户等级[补充库存订单]
+            if($this->model['delivery_type']['value'] == 30){
+                if($this->model['user_grade_id'] > $this->user['grade_id']){
+                    User::where(['user_id'=>$this->user['user_id']])->setField('grade_id',$this->model['user_grade_id']);
+                    GradeLog::create([
+                        'user_id' => $this->user['user_id'],
+                        'old_grade_id' => $this->user['grade_id'],
+                        'new_grade_id' => $this->model['user_grade_id'],
+                        'change_type' => 20,
+                        'change_direction' => 10
+                    ]);
+                }
+            }
+
+            ##增加用户以及同团队的同等级的业绩
+            if($this->model['is_achievement'] > 10) User::addAchievement($this->model['order_id']);
 
             // 购买指定商品成为分销商
 //            $this->becomeDealerUser($this->model['goods']);

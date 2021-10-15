@@ -10,6 +10,14 @@
                 </div>
                 <div class="widget-body am-fr">
                     <div class="am-scrollable-horizontal am-u-sm-12" id="my-table">
+                        <el-header>
+                            <el-switch
+                                    @change="getRankList(1)"
+                                    v-model="rankType"
+                                    active-text="T排行"
+                                    inactive-text="F排行">
+                            </el-switch>
+                        </el-header>
                         <el-row :gutter="20">
                             <el-col :span="12">
                                 <el-container >
@@ -23,16 +31,16 @@
                                                         width="180">
                                                     <template slot-scope="scope">
                                                         <el-tag
-                                                                v-if="(scope.$index + (cur_page-1) * 15 + 1) <= 3"
-                                                                :type="items[(scope.$index + (cur_page-1) * 15 + 1) -1].type"
+                                                                v-if="(scope.$index + (cur_page-1) * 20 + 1) <= 3"
+                                                                :type="items[(scope.$index + (cur_page-1) * 20 + 1) -1].type"
                                                                 effect="dark">
-                                                            {{ scope.$index + (cur_page-1) * 15 + 1 }}
+                                                            {{ scope.$index + (cur_page-1) * 20 + 1 }}
                                                         </el-tag>
                                                         <el-tag
-                                                                v-if="(scope.$index + (cur_page-1) * 15 + 1) > 3"
+                                                                v-if="(scope.$index + (cur_page-1) * 20 + 1) > 3"
                                                                 type="info"
                                                                 effect="dark">
-                                                            {{ scope.$index + (cur_page-1) * 15 + 1 }}
+                                                            {{ scope.$index + (cur_page-1) * 20 + 1 }}
                                                         </el-tag>
 
                                                     </template>
@@ -54,12 +62,17 @@
                                                 <el-table-column
                                                         prop="num"
                                                         label="推荐下单数"
-                                                        width="180">
+                                                        width="150">
                                                 </el-table-column>
                                                 <el-table-column
                                                         prop="member_num"
                                                         label="团队人数"
-                                                        width="180">
+                                                        width="150">
+                                                </el-table-column>
+                                                <el-table-column
+                                                        prop="redirect_member_num"
+                                                        label="直推人数"
+                                                        width="150">
                                                 </el-table-column>
                                             </el-table>
                                         </template>
@@ -86,16 +99,10 @@
                                                         width="180">
                                                     <template slot-scope="scope">
                                                         <el-tag
-                                                                v-if="(scope.$index + (cur_page-1) * 15 + 1) <= 3"
-                                                                :type="items[(scope.$index + (cur_page-1) * 15 + 1) -1].type"
-                                                                effect="dark">
-                                                            {{ scope.$index + (cur_page-1) * 15 + 1 }}
-                                                        </el-tag>
-                                                        <el-tag
-                                                                v-if="(scope.$index + (cur_page-1) * 15 + 1) > 3"
+                                                                v-if="(list1.length + scope.$index + (cur_page-1) * 20 + 1) > 3"
                                                                 type="info"
                                                                 effect="dark">
-                                                            {{ scope.$index + (cur_page-1) * 15 + 1 }}
+                                                            {{ list1.length + scope.$index + (cur_page-1) * 20 + 1 }}
                                                         </el-tag>
 
                                                     </template>
@@ -109,7 +116,7 @@
                                                         label="头像">
                                                     <template slot-scope="scope">
                                                         <el-image
-                                                                style="width: 100px; height: 100px"
+                                                                style="width: 60px; height: 60px"
                                                                 :src="scope.row.first_user.avatarUrl"
                                                                 fit="fill"></el-image>
                                                     </template>
@@ -117,12 +124,17 @@
                                                 <el-table-column
                                                         prop="num"
                                                         label="推荐下单数"
-                                                        width="180">
+                                                        width="150">
                                                 </el-table-column>
                                                 <el-table-column
                                                         prop="member_num"
                                                         label="团队人数"
-                                                        width="180">
+                                                        width="150">
+                                                </el-table-column>
+                                                <el-table-column
+                                                        prop="redirect_member_num"
+                                                        label="直推人数"
+                                                        width="150">
                                                 </el-table-column>
                                             </el-table>
                                         </template>
@@ -161,6 +173,7 @@
                 list1:[],
                 list2:[],
                 total: 0,
+                rankType: true,
                 items: [
                     { type: 'success', label: '标签二' },
                     { type: 'danger', label: '标签四' },
@@ -194,7 +207,8 @@
                         spinner: 'el-icon-loading',
                         background: 'rgba(0, 0, 0, 0.7)'
                     });
-                    $.post("<?= url('market.experience/getRankList') ?>", {page}, function(res){
+                    let rankType = this.rankType;
+                    $.post("<?= url('market.experience/getRankList') ?>", {page, rankType}, function(res){
                         loading.close();
                         let list = res.data.list;
                         that.list1 =[]; that.list2 = [];
@@ -236,6 +250,7 @@
 
     });
     function getRankList(page){
+        App.cur_page = page;
         App.getRankList(page);
     }
 </script>

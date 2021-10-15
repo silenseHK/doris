@@ -2,7 +2,9 @@
 
 namespace app\store\model;
 
+use app\api\service\Export;
 use app\common\model\OrderGoods as OrderGoodsModel;
+use think\Exception;
 
 /**
  * 订单商品模型
@@ -243,6 +245,59 @@ class OrderGoods extends OrderGoodsModel
             $item['image'] = UploadFile::getImage($item['image_id']);
         }
         return $list;
+    }
+
+    public function exportUserSaleData(){
+        ##参数
+        $start_time = input('start_time','','str_filter');
+        $end_time = input('end_time','','str_filter');
+        $goods_sku_id = input('goods_sku_id',104,'intval');
+
+        $where = [
+            'og.goods_sku_id'=>$goods_sku_id,
+            'o.pay_status' => 20,
+            'o.order_status' => ['IN', [10, 30]]
+        ];
+        if($start_time && $end_time){
+            $where['og.create_time'] = ['BETWEEN', [$start_time, $end_time]];
+        }
+        $list = $this->alias('og')
+            ->join('order o','og.order_id = o.order_id','LEFT')
+            ->where($where)
+            ->field(['o.total_price', 'o.user_id', 'og.total_num'])
+            ->select();
+//        print_r($list->toArray());
+        $data = [];
+        foreach($list as $item){
+            if(isset($data[$item['user_id']])){
+                $data[$item['user_id']]['total_price'] += $item['total_price'];
+                $data[$item['user_id']]['total_num'] += $item['total_num'];
+            }else{
+                $data[$item['user_id']] = [];
+                $data[$item['user_id']]['total_num'] = $item['total_num'];
+                $data[$item['user_id']]['total_price'] = $item['total_price'];
+            }
+        }
+        ##用户数据
+        $userModel = new User();
+        foreach($data as $user_id => &$val){
+            $val['userInfo'] = $userModel->where(['user_id'=>$user_id])->field(['user_id', 'nickName', 'mobile', 'province', 'city', 'grade_id', 'balance', 'invitation_user_id', 'create_time'])->with('grade')->find()->toArray();
+            ##出货量
+            if($val['userInfo']['grade_id'] >= 4){
+                $val['sale_num'] = UserGoodsStock::getSaleAndStock($user_id, $goods_sku_id);
+            }else{
+                $val['sale_num'] = ['history_sale'=>0, 'stock'=>0];
+            }
+            ##团队人数
+            $val['member_num'] = $userModel->getTeamMemberNum($user_id);
+            ##直推人数
+            $val['redirect_member_num'] = $userModel->where(['invitation_user_id'=>$user_id])->count('user_id');
+        }
+        if(!$data)throw new Exception('暂无数据');
+//        print_r($data);die;
+        ##导出数据
+        $export = new Export();
+        $export->exportUserSaleData($data);
     }
 
 }

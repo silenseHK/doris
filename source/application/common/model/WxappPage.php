@@ -93,6 +93,27 @@ class WxappPage extends BaseModel
                     ]
                 ]
             ],
+            'indexBackgroundPic' => [
+                'name' => '首页背景图',
+                'type' => 'indexBackgroundPic',
+                'style' => [
+                    'paddingTop' => 0,
+                    'paddingLeft' => 0,
+                    'background' => '#ffffff'
+                ],
+                'data' => [
+                    [
+                        'imgUrl' => self::$base_url . 'assets/store/img/diy/banner/01.png',
+                        'imgName' => 'image-1.jpg',
+                        'linkUrl' => ''
+                    ],
+                    [
+                        'imgUrl' => self::$base_url . 'assets/store/img/diy/banner/01.png',
+                        'imgName' => 'banner-2.jpg',
+                        'linkUrl' => ''
+                    ]
+                ]
+            ],
             'modelPic' => [
                 'name' => '弹窗广告',
                 'type' => 'modelPic',
@@ -586,7 +607,52 @@ class WxappPage extends BaseModel
                     'bottom' => '10',
                     'opacity' => '100'
                 ]
-            ]
+            ],
+            'rank' => [
+                'name' => '宠粉福利节',
+                'type' => 'rank',
+                'params' => [
+                    'type' => 'chat',     // '客服类型' => chat在线聊天，phone拨打电话
+                    'image' => self::$base_url . 'assets/store/img/diy/service.png',
+                    'phone_num' => ''
+                ],
+                'style' => [
+                    'right' => '1',
+                    'bottom' => '10',
+                    'opacity' => '100'
+                ]
+            ],
+            'bestValue' => [
+                'name' => '优质',
+                'type' => 'bestValue',
+                'data' => []
+            ],
+             'impression' => [
+                'name' => '168印象',
+                'type' => 'impression',
+                'style' => [
+                    'paddingTop' => '0',
+                    'paddingLeft' => '0',
+                    'background' => '#ffffff',
+                    'btnColor' => '#E6C3A0'
+                ],
+                'params' => [
+                    'interval' => '2800'
+                ]
+            ],
+             'dietitian' => [
+                'name' => '营养师',
+                'type' => 'dietitian',
+                'style' => [
+                    'paddingTop' => '0',
+                    'paddingLeft' => '0',
+                    'background' => '#ffffff',
+                    'btnColor' => '#ffffff'
+                ],
+                'params' => [
+                    'interval' => '2800'
+                ]
+            ],
         ];
     }
 

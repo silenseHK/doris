@@ -27,11 +27,12 @@ class CompleteOrder
      * @throws \think\exception\DbException
      */
     public function run($wxapp_id){
+        $wxapp_id = $wxapp_id?:10001;
         $cacheKey = "__task_space__[user/completeOrder]__{$wxapp_id}";
         if (!Cache::has($cacheKey)) {
+            Cache::set($cacheKey, time(), 60 * 30);
             // 设置用户的会员等级
             $this->completeOrder();
-            Cache::set($cacheKey, time(), 60 * 10);
         }
     }
 

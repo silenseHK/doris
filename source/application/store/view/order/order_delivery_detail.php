@@ -234,6 +234,7 @@ $detail = isset($detail) ? $detail : null;
                                         <th>发货状态</th>
                                         <th>备注</th>
                                         <th>发货时间</th>
+                                        <th>操作</th>
                                     </tr>
                                     <tr>
                                         <td><?= $detail['express']['express_name'] ?></td>
@@ -246,6 +247,11 @@ $detail = isset($detail) ? $detail : null;
                                         <td><?= $detail['express_remark'] ?></td>
                                         <td>
                                             <?= date('Y-m-d H:i:s', $detail['deliver_time']) ?>
+                                        </td>
+                                        <td>
+                                            <a class="tpl-table-black-operation-green edit-express"
+                                               href="javascript:;">
+                                                修改物流</a>
                                         </td>
                                     </tr>
                                     </tbody>
@@ -311,6 +317,39 @@ $detail = isset($detail) ? $detail : null;
     </div>
 </div>
 
+<!-- 修改物流 -->
+<script id="tpl-update-express" type="text/template">
+    <div class="am-padding-top-sm">
+        <form class="form-update-express am-form tpl-form-line-form" method="post"
+              action="<?= url('order/updateDeliveryExpress', ['order_id' => $detail['deliver_id']]) ?>">
+            <div class="am-form-group">
+                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">物流公司 </label>
+                <div class="am-u-sm-9 am-u-end am-padding-top-xs">
+                    <select name="express[express_id]"
+                            data-am-selected="{btnSize: 'sm', maxHeight: 240}" required>
+                        <option value=""></option>
+                        <?php if (isset($expressList)): foreach ($expressList as $expres): ?>
+                            <option value="<?= $expres['express_id'] ?>">
+                                <?= $expres['express_name'] ?></option>
+                        <?php endforeach; endif; ?>
+                    </select>
+                    <div class="help-block am-margin-top-xs">
+                        <small>可在 <a href="<?= url('setting.express/index') ?>" target="_blank">物流公司列表</a>
+                            中设置
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="am-form-group">
+                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require">物流单号 </label>
+                <div class="am-u-sm-9 am-u-end">
+                    <input type="text" class="tpl-form-input" name="express[express_no]" required>
+                </div>
+            </div>
+        </form>
+    </div>
+</script>
+
 <script>
     $(function () {
 
@@ -319,6 +358,25 @@ $detail = isset($detail) ? $detail : null;
          * @type {*}
          */
         $('.my-form').superForm();
+
+        $('.edit-express').click(function(){
+            var data = $(this).data();
+            $.showModal({
+                title: '订单价格物流'
+                , content: template('tpl-update-express', data)
+                , yes: function () {
+                    // 表单提交
+                    $('.form-update-express').ajaxSubmit({
+                        type: "post",
+                        dataType: "json",
+                        success: function (result) {
+                            result.code === 1 ? $.show_success(result.msg, result.url)
+                                : $.show_error(result.msg);
+                        }
+                    });
+                }
+            });
+        })
 
     });
 </script>

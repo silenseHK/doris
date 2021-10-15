@@ -161,9 +161,9 @@ class Setting extends BaseModel
                     'default' => 'aliyun',
                     'engine' => [
                         'aliyun' => [
-                            'AccessKeyId' => 'LTAI4FmPMAnaLRxTnoZ5ftVb',
-                            'AccessKeySecret' => 'VJngYeoy3gn9ThIOoQfKraiKK2bwpz',
-                            'sign' => '终极码app应用',
+                            'AccessKeyId' => '',
+                            'AccessKeySecret' => '',
+                            'sign' => '',
                             'order_pay' => [
                                 'is_enable' => '0',
                                 'template_code' => '',
@@ -171,7 +171,7 @@ class Setting extends BaseModel
                             ],
                             'verify_code' => [
                                 'is_enable' => '1',
-                                'template_code' => 'SMS_187265804',
+                                'template_code' => 'SMS_205000372',
                                 'accept_phone' => ''
                             ]
                         ],

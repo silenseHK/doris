@@ -1,0 +1,193 @@
+<html>
+<head>
+<title>表单</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+	<!-- 引入Vue -->
+<!-- 引入样式文件 -->
+<!-- <link rel="stylesheet" type="text/css" href="weui.css"> -->
+<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vant@2.6/lib/index.css"/> -->
+<!-- 引入样式 -->
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+<!-- 引入组件库 -->
+<style>
+    #app{
+        margin: 20px;
+    }
+.el-form-item{
+    display: flex;
+    flex-direction: column;
+}
+.el-form-item__label{
+    width: 100%;
+    text-align: left;
+}
+.el-form-item__content{
+    width: 100%;
+}
+.checkbox-item{
+    width: 50%;
+    flex: 1;
+    float: left;
+}
+.el-checkbox{
+    margin: 0;
+    margin: 10px 0;
+}
+
+</style>
+</head>
+
+<body>
+<div id="app">
+<!-- 10 input 20 单选 30 多选 40textarea  -->
+<!-- 10 填写 -->
+<div class="el-form" v-for="(item,index) in list">
+    <div v-if="item.type.value==10" :class="[item.is_require==1?'el-form-item is-required':'el-form-item']">
+        <label class="el-form-item__label">{{item.label}}</label>
+        <div class="el-form-item__content">
+            <el-input v-model="form[item.name]" placeholder="请输入内容"></el-input>
+        </div>
+    </div>
+    <div v-else-if="item.type.value==20" :class="[item.is_require==1?'el-form-item is-required':'el-form-item']" style="display:flex;align-items:center;">
+        <label class="el-form-item__label">{{item.label}}</label>
+        <div class="el-form-item__content" style="align-items:flex-start;">
+            <el-radio-group v-model="form[item.name]">
+                <el-radio v-for="child in item.option" :label="child.mark">{{child.label}}</el-radio>
+            </el-radio-group>
+        </div>
+    </div>
+    <div v-else-if="item.type.value==30" :class="[item.is_require==1?'el-form-item is-required':'el-form-item']" style="display:flex;align-items:center;">
+        <label class="el-form-item__label">{{item.label}}</label>
+        <div class="el-form-item__content">
+            <el-checkbox-group v-model="form[item.name]">
+                <div class="checkbox-item" v-for="child in item.option">
+                    <el-checkbox :label="child.mark" @change="selectCheckbox(child)" slots="other">{{child.label}}</el-checkbox>
+                </div>
+            </el-checkbox-group>
+            <el-input class="extra-input" name="other" v-if="form['show'+item.question_id]"  v-model="form[item.question_id]" placeholder="请输入内容"></el-input>
+        </div>
+    </div>
+    <div v-if="item.type.value==40" :class="[item.is_require==1?'el-form-item is-required':'el-form-item']">
+        <label class="el-form-item__label">{{item.label}}</label>
+        <div class="el-form-item__content">
+            <el-input type="textarea" :rows="2" placeholder="请输入内容" v-model="form[item.name]"></el-input>
+        </div>
+    </div>
+</div>
+<!-- 20 单选 -->
+    <button type="button" @click="onSubmit" class="el-button el-button--primary">
+    <span>立即创建</span>
+    </button> 
+    <button type="button" class="el-button el-button--default">
+    <span>取消</span></button>
+</div>
+
+<!-- <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script> -->
+<!-- 引入 Vue 和 Vant 的 JS 文件 -->
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.min.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://cdn.bootcss.com/axios/0.19.2/axios.min.js"></script>
+
+<script type="text/javascript">
+ // Vue.prototype.$EleFormParams = {
+
+ //    // ...
+ //  },
+
+     new Vue({
+     	el: '#app',
+        data: {
+            form: {
+              // name: '',
+              // region: '',
+              // date1: '',
+              // date2: '',
+              // delivery: false,
+              // type: [],
+              // resource: '',
+              // desc: ''
+            },
+            params:{},
+            list:''
+        },
+        created(){
+        	this.getForm();
+        },
+        methods: {
+        	getForm:function(){
+        		let _this = this; //10 input 20 单选 30 多选 40textarea 
+        		axios.get('https://168.dekichina.com/index.php?s=/api/questionnaire/questionnaire&wxapp_id=10001&questionnaire_no=202004220002').then(function (response) {
+                    // vant.Toast.clear();
+                     resData = response.data.data.questions;
+                     var arrContact = {};
+                     for(let i in resData){
+                         var reVal = {};
+                         if(resData[i].type.value == 30){
+                            //  如果是多选类型变为数组
+                            arrContact[resData[i].name] = [];
+                            arrContact[resData[i].question_id] = '';
+                            arrContact['show'+resData[i].question_id] = false;
+                         }else if(resData[i].type.value == 20){
+                            arrContact[resData[i].name] = [];
+                         }else{
+                            arrContact[resData[i].name] = '';
+                         }
+                     }
+                     _this.form = arrContact;
+                     _this.list = resData;
+                     console.log(_this.form);
+                }).catch(function (error) {
+                    console.log(error.response);
+                });
+            },
+            selectCheckbox:function(e){
+                if(e.is_input==1){
+                    this.form['show'+e.question_id] = !this.form['show'+e.question_id];
+                }
+            },
+            onSubmit() {
+                let _this = this;
+                var arr = new Array();
+                const resList = _this.list;
+                     for(let i in resList){
+                        //  console.log(resData[i])
+                         var reVal = new Object();
+                         const inputName =  resList[i].name;
+
+                         for(k in _this.form){
+                             if(resData[i].name == k){
+                                 if(resData[i].type.value ===20){
+                                     console.log(_this.form[k]);
+                                    reVal['answer_mark'] = [_this.form[k]];
+                                    reVal['answer'] = '';
+                                 }else if(resData[i].type.value ===30){
+                                    reVal['answer_mark'] = _this.form[k];
+                                 }else{
+                                    reVal['answer_mark'] = '';
+                                    reVal['answer'] = _this.form[k];
+                                 }
+                                // reVal['answer_mark'] = '';
+                              
+                            }else{
+                                if(resData[i].question_id == k){
+                                    console.log(k);
+                                    reVal['answer'] = _this.form[k]; 
+                                }
+                            }
+                         }
+                        //  console.log(resList[i].type.value);
+  
+                        //  reVal['answer_mark'] = 
+                        reVal['question_id'] = resList[i].question_id;
+                     	arr.push(reVal);
+                     }
+                _this.params = arr;
+                console.log(_this.params);
+            }
+        }
+    })
+   
+
+</script>
+</body>
+</html>

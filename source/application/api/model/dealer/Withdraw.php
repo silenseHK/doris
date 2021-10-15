@@ -58,7 +58,7 @@ class Withdraw extends WithdrawModel
             'wxapp_id' => self::$wxapp_id,
         ]));
         // 冻结用户资金
-        return $dealer->freezeMoney($data['money']);
+        return $dealer->freezeMoney($data['total_money']);
     }
 
     /**
@@ -85,8 +85,20 @@ class Withdraw extends WithdrawModel
         if ($dealer['balance'] <= 0) {
             throw new BaseException(['msg' => '当前用户没有可提现佣金']);
         }
-        if ($data['money'] > $dealer['balance']) {
-            throw new BaseException(['msg' => '提现金额不能大于可提现佣金']);
+
+        ##提现手续费
+        $data['total_money'] = $data['money'];
+        $service_charge_money = 0;
+        $withdraw_setting = json_decode(Setting::where(['key'=>'withdraw'])->value('values'),true);
+        if($withdraw_setting['service_charge_status'] == 10){
+            $service_charge = $withdraw_setting['service_charge'];
+            $service_charge_money = round($service_charge * $data['money'] / 100,2);
+        }
+        $data['money'] -= $service_charge_money;
+        $data['service_charge_money'] = $service_charge_money;
+
+        if ($data['total_money'] > $dealer['balance']) {
+            throw new BaseException(['msg' => '可提现金额不足']);
         }
         if ($data['money'] < $settlement['min_money']) {
             throw new BaseException(['msg' => '最低提现金额为' . $settlement['min_money']]);

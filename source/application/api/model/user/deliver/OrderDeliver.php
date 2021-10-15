@@ -5,6 +5,7 @@ namespace app\api\model\user\deliver;
 
 use app\api\model\user\GoodsStock;
 use app\common\enum\OrderType as OrderTypeEnum;
+use app\common\library\helper;
 use app\common\model\store\shop\Order as ShopOrder;
 use app\common\model\user\OrderDeliver as OrderDeliverModel;
 use think\Db;
@@ -79,6 +80,29 @@ class OrderDeliver extends OrderDeliverModel
 
     public function getError(){
         return $this->error;
+    }
+
+    /**
+     * 批量获取订单列表
+     * @param $orderIds
+     * @param array $with 关联查询
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function getListByIds($orderIds, $with = [])
+    {
+        $data = $this->getListByInArray('order_id', $orderIds, $with);
+        return helper::arrayColumn2Key($data, 'order_id');
+    }
+
+    private function getListByInArray($field, $data, $with = [])
+    {
+        return $this->with($with)
+            ->where($field, 'in', $data)
+//            ->where('is_delete', '=', 0)
+            ->select();
     }
 
 }

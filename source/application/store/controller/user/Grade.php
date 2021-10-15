@@ -4,6 +4,8 @@ namespace app\store\controller\user;
 
 use app\store\controller\Controller;
 use app\store\model\user\Grade as GradeModel;
+use app\store\model\user\GradeLog;
+use think\Exception;
 
 /**
  * 会员等级
@@ -76,6 +78,27 @@ class Grade extends Controller
             return $this->renderError($model->getError() ?: '删除失败');
         }
         return $this->renderSuccess('删除成功');
+    }
+
+    /**
+     * 等级变动记录
+     * @return mixed
+     */
+    public function log(){
+        return $this->fetch();
+    }
+
+    /**
+     * 获取等级变动记录列表
+     * @return array|bool
+     */
+    public function getLogList(){
+        try{
+            $model = new GradeLog;
+            return $this->renderSuccess('','',$model->logList());
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
     }
 
 }

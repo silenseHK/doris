@@ -94,6 +94,7 @@
                                     <p>手机号</p>
                                 </th>
                                 <th>提现金额</th>
+                                <th>手续费</th>
                                 <th>提现方式</th>
                                 <th>提现信息</th>
                                 <th class="am-text-center">审核状态</th>
@@ -120,6 +121,9 @@
                                     </td>
                                     <td class="am-text-middle">
                                         <p><span><?= $item['money'] ?></span></p>
+                                    </td>
+                                    <td class="am-text-middle">
+                                        <p><span><?= $item['service_charge_money'] ?></span></p>
                                     </td>
                                     <td class="am-text-middle">
                                         <p><span><?= $item['pay_type']['text'] ?></span></p>

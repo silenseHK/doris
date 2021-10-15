@@ -20,6 +20,21 @@ class Question extends QuestionModel
         return compact('list','typeList','type');
     }
 
+    public function getQuestionList(){
+        $type = input('type',0,'intval');
+        $where = "1=1";
+        if($type > 0)$where .= " and type = {$type}";
+        $list = $this->where($where)->with(['option'])->paginate(10,false,['type' => 'Bootstrap',
+            'var_page' => 'page',
+            'path' => 'javascript:initQuestionList([PAGE]);']);
+
+        $page = $list->render();
+        $total = $list->total();
+        $list = $list->toArray()['data'];
+        $typeList = $this->getTypeList();
+        return compact('list','typeList','type','page','total');
+    }
+
     public function add(){
         ##验证
         $validate = new QuestionValid();
@@ -94,6 +109,10 @@ class Question extends QuestionModel
             'label' => input('post.label','','str_filter'),
             'type' => input('post.type','','intval'),
             'is_require' => input('post.is_require','','intval'),
+            'icon' => input('post.icon','','str_filter'),
+            'choose_limit' => input('post.choose_limit',0,'intval'),
+            'is_analysis' => input('post.is_analysis',0,'intval'),
+            'tips' => input('post.tips','','str_filter')
         ];
     }
 
@@ -116,6 +135,27 @@ class Question extends QuestionModel
         ##删除
         $res = Question::destroy($question_id);
         if($res === false)throw new Exception('操作失败');
+    }
+
+    /**
+     * 获取出现条件文本
+     * @param $show_limit
+     * @return string
+     * @throws \think\exception\DbException
+     */
+    public function getShowLimitTxt($show_limit){
+        $show_limit = json_decode($show_limit,true);
+        $show_limit_txt = '设置出现条件';
+        if($show_limit){
+            $question = self::get(['question_id'=>$show_limit['question_id']], ['option']);
+            $show_limit_txt = $question['label'] . ":";
+            foreach($question['option'] as $val){
+                if(in_array($val['mark'], $show_limit['option'])){
+                    $show_limit_txt .= $val['label'] . ",";
+                }
+            }
+        }
+        return trim($show_limit_txt,',');
     }
 
 }

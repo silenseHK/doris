@@ -16,6 +16,7 @@ use app\common\enum\DeliveryType as DeliveryTypeEnum;
 use app\common\enum\order\PayStatus as PayStatusEnum;
 use app\common\enum\OrderType as OrderTypeEnum;
 use app\common\library\helper;
+use app\common\model\PlatformIncomeLog;
 use app\common\model\user\OrderDeliver as OrderDeliverModel;
 use app\common\model\UserGoodsStock;
 use app\common\model\UserGoodsStockLog;
@@ -120,7 +121,7 @@ class OrderDeliver extends OrderDeliverModel
             $addressInfo = UserAddress::detail($this->user['user_id'], $addressId);
             if(!$addressInfo)throw new Exception('无效收货地址');
             ##计算运费
-            $freightInfo = $this->countFreight($goodsId, $goodsNum, $addressInfo['city_id']);
+            $freightInfo = $this->countFreight($goodsId, $goodsNum, $addressInfo['city_id'], $addressInfo['province_id']);
             if($freightInfo['status'] == 0)throw new Exception($freightInfo['msg']);
             $freight = $freightInfo['freight'];
             $data = array_merge($data, [
@@ -128,6 +129,7 @@ class OrderDeliver extends OrderDeliverModel
                 'freight_money' => $freight,
                 'receiver_mobile' => $addressInfo['phone'],
                 'receiver_user' => $addressInfo['name'],
+                'is_exam_delivery' => 0
             ]);
             if($freight == 0){
                 $data['pay_status'] = 20;
@@ -145,7 +147,8 @@ class OrderDeliver extends OrderDeliverModel
                 'deliver_status' => 20,
                 'deliver_time' => time(),
                 'receiver_mobile' => $receiver_mobile,
-                'receiver_user' => $receiver_user
+                'receiver_user' => $receiver_user,
+                'is_exam_delivery' => 1
             ]);
         }
 
@@ -176,9 +179,10 @@ class OrderDeliver extends OrderDeliverModel
      * @param $goodsId
      * @param $num
      * @param $cityId
+     * @param $provinceId
      * @return array
      */
-    public function countFreight($goodsId, $num, $cityId=0){
+    public function countFreight($goodsId, $num, $cityId=0, $provinceId=0){
         $specsId = GoodsSku::where(['goods_id'=>$goodsId])->order('goods_sku_id','asc')->value('goods_sku_id');
         $model = new OrderModel;
         $goodsList = $model->getOrderGoodsListByNow(
@@ -205,7 +209,7 @@ class OrderDeliver extends OrderDeliverModel
             $ExpressService->setExpressPrice();
         }
         $free_freight_num = $goodsList[0]['free_freight_num'];
-        if($free_freight_num > 0 && ($num % $free_freight_num == 0)){
+        if($free_freight_num > 0 && ($num % $free_freight_num == 0) && !in_array($provinceId, [2816, 3206, 3126, 3022, 3178])){
             return ['status'=>1,'freight'=>0];
         }
         // 订单总运费金额
@@ -231,7 +235,7 @@ class OrderDeliver extends OrderDeliverModel
         ##获取地址信息
         $addressInfo = UserAddress::detail($userId, $addressId);
         ##计算运费
-        $freightInfo = $this->countFreight($goodsId, $goodsNum, $addressInfo['city_id']);
+        $freightInfo = $this->countFreight($goodsId, $goodsNum, $addressInfo['city_id'], $addressInfo['province_id']);
         if($freightInfo['status'] == 0)throw new Exception($freightInfo['msg']);
         return $freightInfo['freight'];
     }
@@ -336,6 +340,15 @@ class OrderDeliver extends OrderDeliverModel
             if($res === false)throw new Exception('操作失败');
             ##减少冻结的库存
             if(GoodsStock::disFreezeStockByUserGoodsId($user['user_id'], $order['goods_sku_id'], $order['goods_num'],1) === false)throw new Exception('操作失败');
+            if($order['freight_money'] > 0){
+                PlatformIncomeLog::addLog([
+                    'money' => $order['freight_money'],
+                    'order_no' => $order['order_no'],
+                    'type' => 20,
+                    'direction' => 10,
+                    'order_type' => 20
+                ]);
+            }
             Db::commit();
             return true;
         }catch(Exception $e){
@@ -457,7 +470,7 @@ class OrderDeliver extends OrderDeliverModel
         ##订单数据
         $deliver_info = self::get(['deliver_id'=>$deliver_id], ['express']);
         if(!$deliver_info)throw new Exception('订单数据不存在');
-        if($deliver_info['pay_status']['value'] != 20 || $deliver_info['deliver_type']['value'] != 10 || $deliver_info['deliver_status']['value'] != 20)throw new Exception('订单不支持此操作');
+        if($deliver_info['pay_status']['value'] != 20 || $deliver_info['deliver_type']['value'] != 10)throw new Exception('订单不支持此操作');
 
         ##获取物流信息
         /* @var \app\api\model\Express $model */

@@ -6,6 +6,7 @@ use app\api\model\user\BalanceLog;
 use app\api\service\order\PaySuccess;
 use app\api\validate\order\Checkout;
 use app\api\validate\user\OrderValidate;
+use app\common\model\GoodsGrade;
 use app\common\model\Order as OrderModel;
 
 use app\api\model\User as UserModel;
@@ -21,6 +22,9 @@ use app\common\enum\OrderType as OrderTypeEnum;
 use app\common\enum\order\PayStatus as PayStatusEnum;
 use app\common\enum\order\PayType as PayTypeEnum;
 use app\common\enum\DeliveryType as DeliveryTypeEnum;
+
+use app\common\model\user\Grade;
+use app\common\model\UserGoodsStock;
 use app\common\service\wechat\wow\Order as WowService;
 use app\common\service\order\Complete as OrderCompleteService;
 use app\common\exception\BaseException;
@@ -63,7 +67,7 @@ class Order extends OrderModel
     public function onPay($payType = PayTypeEnum::WECHAT)
     {
         ##更新发货人
-        $this->updateSupplyUser();
+        $this->updateSupplyUser2();
         // 判断商品状态、库存
         if (!$this->checkGoodsStatusFromOrder($this)) {
             return false;
@@ -126,6 +130,124 @@ class Order extends OrderModel
         return true;
     }
 
+    public function updateSupplyUser2(){
+        $goodsList = $this['goods'];
+        $agentGoods = [];
+        foreach($goodsList as $goods){
+            if($goods['sale_type'] == 1){
+                if(!isset($agentGoods[$goods['goods_id']]))$agentGoods[$goods['goods_id']] = 0;
+                $agentGoods[$goods['goods_id']] += $goods['total_num'];
+            }
+        }
+
+        $user = User::get(['user_id'=> $this['user_id']], ['grade']);
+        $agentGoodsPrice = [];
+        $is_achievement = 10;
+        foreach($agentGoods as $goods_id => $num){
+            ##获取上级供应商
+            $grade_info = \app\common\model\User::getBuyGoodsGrade2($goods_id, $num);
+            if($user['grade']['weight'] >= $grade_info['weight']){
+                $grade_weight = $user['grade']['weight'];
+                $grade_id = $user['grade_id'];
+                if($grade_weight > 10){
+                    $is_achievement = 20;
+                }
+            }else{
+                $grade_weight =$grade_info['weight'];
+                $grade_id = $grade_info['grade_id'];
+                if($grade_weight > 10){
+                    $is_achievement = 30;
+                }
+            }
+            $agentGoodsPrice[$goods_id] = GoodsGrade::getGoodsPrice($grade_id, $goods_id);
+        }
+
+        if(!empty($agentGoods)){
+            ##获取最新的供货人
+            $applyGradeIds = Grade::getApplyGrade2($grade_weight);
+            if(empty($applyGradeIds)){
+                $supplyUserId = 0;
+            }else{
+                $relation = $user['relation'];
+                $relation = explode('-', $relation);
+                ##获取供应人id
+                $relation_ids = implode(',', $relation);
+                $relation_ids = trim($relation_ids,',');
+                $user_id = User::where(['user_id'=>['IN', $relation], 'grade_id'=>['IN', $applyGradeIds], 'is_delete'=>0, 'status'=>1])->orderRaw("field(user_id," . $relation_ids . ")")->value('user_id');
+                $supplyUserId = $user_id ? : 0;
+            }
+            $supply_user_grade_id = $supplyUserId?UserModel::getUserGrade($supplyUserId):0;
+
+            ##更新返利 + 发货人
+            $rebateUser = \app\common\model\User::getcaseRebate($this['user_id'], $goods_id, $agentGoods[$goods_id], $supplyUserId);
+            if(!empty($rebateUser)){
+                $rebateMoney = self::sumRebate($rebateUser);
+                $rebateUsers = self::combineRebateUser($rebateUser);
+            }
+            $updateData['rebate_user_id'] = isset($rebateUsers) ? $rebateUsers : "";
+            $updateData['rebate_money'] = isset($rebateMoney)? $rebateMoney : 0;
+            $updateData['rebate_info'] = !empty($rebateUser)? json_encode($rebateUser) : "";
+            $updateData['supply_user_id'] = $supplyUserId;
+            $updateData['supply_user_grade_id'] = $supply_user_grade_id;
+            $updateData['user_grade_id'] = $grade_id;
+//            $agentData= User::repayGetSupplyGoodsUser($this['user_id'], $agentGoods);
+            $this->where(['order_id'=>$this['order_id']])->update($updateData);
+        }
+
+        ##更新规格价格
+        if(!empty($agentGoodsPrice)){
+            foreach($goodsList as $k => $v){
+                if(isset($agentGoodsPrice[$v['goods_id']]) && $agentGoodsPrice[$v['goods_id']] != $v['goods_price']){
+                    ##更新价格[order_goods]
+                    OrderGoods::editPrice($v['order_goods_id'], $agentGoodsPrice[$v['goods_id']], $agentGoods[$v['goods_id']]);
+                    $this['goods'][$k]['total_price'] = $agentGoodsPrice[$v['goods_id']] * $agentGoods[$v['goods_id']];
+                }
+            }
+        }
+
+        if($is_achievement != $this['is_achievement']){
+            ##更新业绩增加类型
+            $this->where(['order_id' => $this['order_id']])->update(
+                [
+                    'is_achievement' => $is_achievement
+                ]
+            );
+        }
+
+        ##计算最新价格
+        $payPrice = 0;
+        foreach($this['goods'] as $v){
+            $payPrice += $v['total_price'];
+        }
+        $this['pay_price'] = $payPrice + $this['express_price'];
+        $this['out_trade_no'] = $this->orderNo();
+        $this->where(['order_id'=>$this['order_id']])->update(['out_trade_no'=>$this['out_trade_no'], 'pay_price'=>$this['pay_price'], 'total_price'=>$payPrice, 'order_price'=>$payPrice]);
+        return true;
+    }
+
+    /**
+     * 计算返利金额
+     * @param $rebateUser
+     * @return float|int
+     */
+    public static function sumRebate($rebateUser){
+        return array_sum(array_column($rebateUser, 'money'));
+    }
+
+    /**
+     * 生成获利人
+     * @param $rebateUser
+     * @return string
+     */
+    public static function combineRebateUser($rebateUser){
+        $users = array_column($rebateUser, 'user_id');
+        $rtn = "";
+        foreach($users as $v){
+            $rtn .= "[{$v}]";
+        }
+        return $rtn;
+    }
+
     /**
      * 构建支付请求的参数
      * @param $user
@@ -182,7 +304,7 @@ class Order extends OrderModel
         foreach ($goodsList as &$item) {
             // 商品单价
             if($item['sale_type'] == 1){##层级代理
-                $item['goods_price'] = UserModel::getAgentGoodsPrice($user['user_id'],$goodsId,$goodsNum);
+                $item['goods_price'] = UserModel::getAgentGoodsPrice2($user['grade'],$goodsId,$goodsNum);
             }else{
                 $item['goods_price'] = $item['goods_sku']['goods_price'];
             }
@@ -626,7 +748,7 @@ class Order extends OrderModel
         $this->setIncomeListWhere($params, $user);
 
         $list = $this
-            ->field(['order_id', 'order_no', 'user_id', 'supply_user_id', 'order_price', 'delivery_type', 'rebate_info', 'rebate_money', 'order_status', 'create_time'])
+            ->field(['order_id', 'order_no', 'user_id', 'supply_user_id', 'order_price', 'delivery_type', 'rebate_info', 'rebate_money', 'order_status', 'create_time', 'pay_status', 'delivery_status', 'receipt_status'])
             ->with(
                 [
                     'goods' => function(Query $query){
@@ -684,10 +806,13 @@ class Order extends OrderModel
             $where = [
                 'supply_user_id' => $user['user_id']
             ];
+            $where['order_status'] = 30;
         }else{ ##返利佣金
             $where = [
                 'rebate_user_id' => ['LIKE', "%[{$user['user_id']}]%"]
             ];
+            $where['pay_status'] = 20;
+            $where['order_status'] = ['IN', [10, 30]];
         }
         ## 订单号
         if($params['keywords']){
@@ -699,7 +824,6 @@ class Order extends OrderModel
             $end_time = strtotime($params['end_time'] . " 23:59:59");
             $where['create_time'] = ['BETWEEN', [$start_time, $end_time]];
         }
-        $where['order_status'] = 30;
 
         $this->where($where);
     }

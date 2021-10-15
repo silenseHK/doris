@@ -1,0 +1,151 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: 27989
+ * Date: 2021/10/15
+ * Time: 8:27
+ */
+
+namespace app\api\controller\business;
+
+
+use app\api\controller\Controller;
+use app\store\model\UploadFile;
+use app\common\library\storage\Driver as StorageDriver;
+use app\store\model\Setting as SettingModel;
+
+class Upload extends Controller
+{
+
+    private $config;
+
+    /**
+     * 构造方法
+     * @throws \app\common\exception\BaseException
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function _initialize()
+    {
+        parent::_initialize();
+        // 存储配置信息
+        $this->config = SettingModel::getItem('storage');
+    }
+
+    /**
+     * 图片上传接口
+     * @param int $group_id
+     * @return array
+     * @throws \think\Exception
+     */
+    public function image($group_id = -1)
+    {
+        // 实例化存储驱动
+        $StorageDriver = new StorageDriver($this->config);
+        // 设置上传文件的信息
+        $StorageDriver->setUploadFile('iFile');
+        // 上传图片
+        if (!$StorageDriver->upload()) {
+            return json(['code' => 0, 'msg' => '图片上传失败' . $StorageDriver->getError()]);
+        }
+
+        // 图片上传路径
+        $fileName = $StorageDriver->getFileName();
+        // 图片信息
+        $fileInfo = $StorageDriver->getFileInfo();
+        // 添加文件库记录
+        $uploadFile = $this->addUploadFile($group_id, $fileName, $fileInfo, 'image');
+        // 图片上传成功
+        return json(['code' => 1, 'msg' => '图片上传成功', 'data' => $uploadFile]);
+    }
+
+    /**
+     * 附件上传接口
+     * @param int $group_id
+     * @return array
+     * @throws \think\Exception
+     */
+    public function files($group_id = -1)
+    {
+        // 实例化存储驱动
+        $StorageDriver = new StorageDriver($this->config);
+        // 设置上传文件的信息
+        $StorageDriver->setUploadFile('iFile');
+        // 上传图片
+        if (!$StorageDriver->upload()) {
+            return json(['code' => 0, 'msg' => '文件上传失败' . $StorageDriver->getError()]);
+        }
+
+        // 图片上传路径
+        $fileName = $StorageDriver->getFileName();
+        // 图片信息
+        $fileInfo = $StorageDriver->getFileInfo();
+        //扩展名
+        $extA = explode('.',$fileName);
+        $ext = $extA[count($extA)-1];
+        // 添加文件库记录
+        $uploadFile = $this->addUploadFile($group_id, $fileName, $fileInfo, $ext);
+        // 图片上传成功
+        return json(['code' => 1, 'msg' => '文件上传成功', 'data' => $uploadFile]);
+    }
+
+    public function video($group_id = -1){
+        $this->config['default'] = 'qiniu';
+        // 实例化存储驱动
+        $StorageDriver = new StorageDriver($this->config);
+        // 设置上传文件的信息
+        $StorageDriver->setUploadFile('file');
+        // 上传图片
+        if (!$StorageDriver->upload()) {
+            return json(['code' => 0, 'msg' => '视频上传失败' . $StorageDriver->getError()]);
+        }
+
+        // 图片上传路径
+        $fileName = $StorageDriver->getFileName();
+        // 图片上传成功
+        return json(['code' => 1, 'msg' => '图片上传成功', 'data' => ['url'=>$this->videoPath($fileName)]]);
+    }
+
+    /**
+     * 添加文件库上传记录
+     * @param $group_id
+     * @param $fileName
+     * @param $fileInfo
+     * @param $fileType
+     * @return UploadFile
+     */
+    private function addUploadFile($group_id, $fileName, $fileInfo, $fileType)
+    {
+        // 存储引擎
+        $storage = $this->config['default'];
+        // 存储域名
+        $fileUrl = isset($this->config['engine'][$storage]['domain'])
+            ? $this->config['engine'][$storage]['domain'] : '';
+        // 添加文件库记录
+        $model = new UploadFile;
+        $model->add([
+            'group_id' => $group_id > 0 ? (int)$group_id : 0,
+            'storage' => $storage,
+            'file_url' => $fileUrl,
+            'file_name' => $fileName,
+            'file_size' => $fileInfo['size'],
+            'file_type' => $fileType,
+            'extension' => pathinfo($fileInfo['name'], PATHINFO_EXTENSION),
+        ]);
+        return $model;
+    }
+
+    /**
+     * 视频地址
+     * @param $fileName
+     * @return string
+     */
+    private function videoPath($fileName){
+        $storage = $this->config['default'];
+        $fileUrl = isset($this->config['engine'][$storage]['domain'])
+            ? $this->config['engine'][$storage]['domain'] . "/" : \app\common\model\UploadFile::$base_url . 'uploads/';
+        return $fileUrl . $fileName;
+    }
+
+}

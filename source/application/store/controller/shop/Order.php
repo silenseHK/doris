@@ -3,6 +3,7 @@
 namespace app\store\controller\shop;
 
 use app\store\controller\Controller;
+use app\store\model\OrderDelivery;
 use app\store\model\store\Shop as ShopModel;
 use app\store\model\store\shop\Order as OrderModel;
 
@@ -20,11 +21,12 @@ class Order extends Controller
      * @return mixed
      * @throws \think\exception\DbException
      */
-    public function index($shop_id = 0, $search = '')
+    public function index($shop_id = 0, $search = '', $order_type = 10)
     {
         // 核销记录列表
         $model = new OrderModel;
-        $list = $model->getList($shop_id, $search);
+        $list = $model->getList($shop_id, $search, $order_type);
+
         // 门店列表
         $shopList = (new ShopModel)->getList();
         return $this->fetch('index', compact('list', 'shopList'));

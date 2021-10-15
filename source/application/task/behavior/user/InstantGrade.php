@@ -31,6 +31,7 @@ class InstantGrade
      */
     public function run($options)
     {
+        return true;
         $this->userId = $options['user_id'];
         $this->integralLogId = $options['integral_log_id'];
 

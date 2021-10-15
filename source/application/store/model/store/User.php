@@ -66,7 +66,11 @@ class User extends StoreUserModel
      */
     public function getList()
     {
-        return $this->where('is_delete', '=', '0')
+        $store_user_id = session('yoshop_store.user')['store_user_id'];
+        $is_super = User::where(['store_user_id'=>$store_user_id])->value('is_super');
+        $where = ['is_delete'=>0];
+        if($is_super != 1)$where['is_super']=0;
+        return $this->where($where)
             ->order(['create_time' => 'desc'])
             ->paginate(15, false, [
                 'query' => \request()->request()

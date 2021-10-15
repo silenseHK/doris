@@ -93,7 +93,7 @@ class Goods extends GoodsModel
         ##操作商品价格[层级代理]
         if($detail['sale_type'] == 1){
             if($userInfo){
-                $price = User::getAgentGoodsPrice($userInfo['user_id'],$goodsId,1);
+                $price = User::getAgentGoodsPrice2($userInfo['grade'],$goodsId,1);
             }else{
                 $price = GoodsGrade::getLowestGradeGoodsPrice($goodsId);
             }

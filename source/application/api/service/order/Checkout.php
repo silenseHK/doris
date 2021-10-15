@@ -218,7 +218,7 @@ class Checkout
 
         ##处理包邮的情况
         if($this->orderData['free_freight_num'] > 0){
-            if($this->orderData['goods_num'] % $this->orderData['free_freight_num'] == 0){
+            if($this->orderData['goods_num'] % $this->orderData['free_freight_num'] == 0 && !in_array($this->orderData['address']['province_id'], [2816, 3206, 3126, 3022, 3178])){
                 $this->orderData['express_price'] = 0;
             }
         }
@@ -396,6 +396,7 @@ class Checkout
                 if(!isset($this->orderData['grade_id'])){ ##最终等级
                     $this->orderData['grade_id'] = $this->user['grade_id'];
                 }
+                $this->orderData['is_achievement'] = 10;  //不增加业绩
                 if($goods['is_experience'] == 1){ ##体验装
                     ##检查是否已经下单
                     $check_experience = OrderGoods::checkExperienceOrder($goods['goods_id'], $this->user['user_id']);
@@ -415,15 +416,18 @@ class Checkout
                     $this->orderData['rebate_info'] = !empty($rebateInfo)? json_encode($rebateInfo) : "";
                 }
             }else{ ##层级代理
-                $check = UserGoodsStock::checkStock($this->user, $goods['goods_id'], $goods['goods_sku']['goods_sku_id'], $goods['total_num']);
+//                $check = UserGoodsStock::checkStock($this->user, $goods['goods_id'], $goods['goods_sku']['goods_sku_id'], $goods['total_num']);
+                $check = UserGoodsStock::checkStock2($this->user, $goods['goods_id'], $goods['goods_sku']['goods_sku_id'], $goods['total_num']);
                 if(!$check['isStockEnough']){
                     $this->setError("很抱歉，商品 [{$goods['goods_name']}] 库存不足");
                 }
+                $this->orderData['is_achievement'] = $check['is_achievement'];
                 $this->orderData['grade_id'] = $check['grade_id'];
                 $this->orderData['supply_user_id'] = $check['supplyUserId'];
                 $this->orderData['supply_user_grade_id'] = $check['supply_user_grade_id'];
                 ##获取获得返利的用户和返利金额
-                $rebateUser = \app\common\model\User::getRebateUser($this->user['user_id'], $goods['goods_id'], $goods['total_num'], $this->orderData['supply_user_id'], $goods['rebate_type']);
+//                $rebateUser = \app\common\model\User::getRebateUser($this->user['user_id'], $goods['goods_id'], $goods['total_num'], $this->orderData['supply_user_id'], $goods['rebate_type']);
+                $rebateUser = \app\common\model\User::getcaseRebate($this->user['user_id'], $goods['goods_id'], $goods['total_num'], $this->orderData['supply_user_id']);
                 if(!empty($rebateUser)){
                     $rebateMoney = self::sumRebate($rebateUser);
                     $rebateUsers = self::combineRebateUser($rebateUser);
@@ -660,9 +664,9 @@ class Checkout
         } else {
             // 计算配送金额
             $ExpressService->setExpressPrice();
+            // 订单总运费金额
+            $this->orderData['express_price'] = helper::number2($ExpressService->getTotalFreight());
         }
-        // 订单总运费金额
-        $this->orderData['express_price'] = helper::number2($ExpressService->getTotalFreight());
         return true;
     }
 
@@ -835,10 +839,13 @@ class Checkout
             'rebate_user_id' => isset($order['rebate_user_id'])?$order['rebate_user_id']:'',
             'rebate_money' => isset($order['rebate_money'])?$order['rebate_money']:0,
             'rebate_info' => isset($order['rebate_info'])?$order['rebate_info']:"",
-            'user_grade_id' => $order['user_grade_id'],
-            'supply_user_grade_id' => isset($order['supply_user_id'])?$order['supply_user_grade_id']:0
+            'user_grade_id' => $order['grade_id'],
+            'supply_user_grade_id' => isset($order['supply_user_id'])?$order['supply_user_grade_id']:0,
+            'is_achievement' => $order['is_achievement']
         ];
+        $data['is_exam_delivery'] = 1;
         if ($order['delivery'] == DeliveryTypeEnum::EXPRESS) {
+            $data['is_exam_delivery'] = 0;
             $data['express_price'] = $order['express_price'];
         } elseif ($order['delivery'] == DeliveryTypeEnum::EXTRACT) {
             $data['extract_shop_id'] = $order['extract_shop']['shop_id'];
@@ -854,20 +861,21 @@ class Checkout
      * @return bool|false|int
      */
     public function addExperienceInfo($order){
+
+        $order_id = $this->model->getLastInsID();
+        $rebate_info = [];
         if($order['rebate_info']){
-            $order_id = $this->model->getLastInsID();
             $rebate_info = json_decode($order['rebate_info'],true);
-            $data = [
-                'user_id' => $this->user['user_id'],
-                'first_user_id' => isset($rebate_info[0]) ? $rebate_info[0]['user_id'] : 0,
-                'second_user_id' => isset($rebate_info[1]) ? $rebate_info[1]['user_id'] : 0,
-                'order_id' => $order_id,
-                'goods_id' => $order['goods_list'][0]['goods_id']
-            ];
-            $model = new GoodsExperience();
-            return $model->save($data);
         }
-        return true;
+        $data = [
+            'user_id' => $this->user['user_id'],
+            'first_user_id' => isset($rebate_info[0]) ? $rebate_info[0]['user_id'] : 0,
+            'second_user_id' => isset($rebate_info[1]) ? $rebate_info[1]['user_id'] : 0,
+            'order_id' => $order_id,
+            'goods_id' => $order['goods_list'][0]['goods_id']
+        ];
+        $model = new GoodsExperience();
+        return $model->save($data);
     }
 
     /**
@@ -882,17 +890,28 @@ class Checkout
         ##获取规格商品的价格
         $agentGoods = [];
         foreach($order['goods_list'] as $goods){
-            if($goods['is_add_integral'] == 1){
+            if($goods['sale_type'] == 1){ ##代理商品
                 $agentGoods[$goods['goods_id']] = $goods['total_num'];
             }
         }
         $agentGoodsPrice = [];
-        if(!empty($agentGoods)){
-            $agentData = User::repayGetSupplyGoodsUser($this->user['user_id'], $agentGoods);
-            if(!empty($agentData['goodsData'])){
-                $agentGoodsPrice = $agentData['goodsData'];
+        foreach($agentGoods as $goods_id => $num){
+            ##获取上级供应商
+            $grade_info = \app\common\model\User::getBuyGoodsGrade($goods_id, $num);
+            if($this->user['grade']['weight'] >= $grade_info['weight']){
+                $grade_id = $this->user['grade_id'];
+            }else{
+                $grade_id = $grade_info['grade_id'];
             }
+            $agentGoodsPrice[$goods_id] = GoodsGrade::getGoodsPrice($grade_id, $goods_id);
         }
+
+//        if(!empty($agentGoods)){
+//            $agentData = User::repayGetSupplyGoodsUser($this->user['user_id'], $agentGoods);
+//            if(!empty($agentData['goodsData'])){
+//                $agentGoodsPrice = $agentData['goodsData'];
+//            }
+//        }
 
         // 订单商品列表
         $goodsList = [];

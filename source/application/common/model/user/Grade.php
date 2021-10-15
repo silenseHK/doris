@@ -14,6 +14,7 @@ use app\common\model\BaseModel;
  */
 class Grade extends BaseModel
 {
+
     protected $name = 'user_grade';
 
     /**
@@ -183,6 +184,10 @@ class Grade extends BaseModel
         ##董事或者合伙人直接平台发货
         if($weight == GradeSize::DIRECTOR || $weight == GradeSize::PARTNER)return [];
         return self::where(['weight' => ['GT', $weight], 'is_delete'=>0, 'status'=>1, 'grade_type' => ['GT', GradeType::LOW]])->order('weight','asc')->column('grade_id');
+    }
+
+    public static function getApplyGrade2($weight){
+        return self::where(['weight' => ['GT', $weight], 'is_delete'=>0, 'status'=>1])->order('weight','asc')->column('grade_id');
     }
 
     /**

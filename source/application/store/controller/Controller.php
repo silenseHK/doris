@@ -2,6 +2,9 @@
 
 namespace app\store\controller;
 
+use app\store\model\admin\HandleLog;
+use app\store\model\store\Access;
+use think\Db;
 use think\Request;
 use think\Session;
 use app\store\service\Auth;
@@ -60,6 +63,8 @@ class Controller extends \think\Controller
         $this->checkLogin();
         // 验证当前页面权限
         $this->checkPrivilege();
+        //写入操作日志
+        $this->writeHandleLog();
         // 全局layout
         $this->layout();
     }
@@ -80,6 +85,14 @@ class Controller extends \think\Controller
             throw new BaseException(['msg' => '很抱歉，没有访问权限']);
         }
         return true;
+    }
+
+    private function writeHandleLog(){
+        $url = strtolower(request()->controller() . '/' . request()->action());
+        $access_id = Db::name('store_access')->where(['url'=>$url, 'is_write_log'=>1])->value('access_id');
+        if($access_id){
+            HandleLog::addLog($access_id);
+        }
     }
 
     /**

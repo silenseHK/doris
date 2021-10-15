@@ -69,7 +69,7 @@ class Access extends Controller
             return $this->fetch('edit', compact('model', 'accessList'));
         }
         // 更新记录
-        if ($model->edit($this->postData('access'))) {
+        if ($model->edit($access_id, $this->postData('access'))) {
             return $this->renderSuccess('更新成功', url('store.access/index'));
         }
         return $this->renderError($model->getError() ?: '更新失败');

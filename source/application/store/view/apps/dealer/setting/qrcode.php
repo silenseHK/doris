@@ -15,7 +15,7 @@
                     </div>
                     <div id="app" v-cloak class="poster-pannel am-cf am-padding-bottom-xl">
                         <div class="pannel__left am-fl">
-                            <div id="j-preview" ref="preview" class="poster-preview">
+                            <div id="j-preview" ref="preview" class="poster-preview" style="min-height:600px">
                                 <img id="preview-backdrop" class="backdrop" :src="backdrop.src" alt="">
                                 <div id="j-qrcode" ref="qrcode" class="drag pre-qrcode" v-bind:class="qrcode.style"
                                      v-bind:style="{ width: qrcode.width + 'px', height: qrcode.width + 'px', top: qrcode.top + 'px', left: qrcode.left + 'px' }">

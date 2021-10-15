@@ -21,18 +21,16 @@
                                                     class="j-image upload-file am-btn am-btn-secondary am-radius">
                                                 <i class="am-icon-cloud-upload"></i> 选择图片
                                             </button>
-                                            <div v-show="img_id > 0" class="uploader-list am-cf">
-                                                <div class="file-item">
-                                                    <a :href="img" title="点击查看大图" target="_blank">
-                                                        <img :src="img">
+                                            <div v-show="imgs.length > 0" class="uploader-list am-cf">
+                                                <draggable  v-model="imgs" @end="drag" :options="{delay:30,touchStartThreshold: 1,preventOnFilter: false,animation:300,chosenClass:'sortable-chosen',forceFallback:true,fallbackOnBody:false,scroll:true,scrollSensitivity:120,filter: '.undraggable'}">
+                                                <div class="file-item" v-for="(item, key) in imgs">
+                                                    <a :href="item.file_path" title="点击查看大图" target="_blank">
+                                                        <img :src="item.file_path" width="150px" height="auto">
                                                     </a>
-                                                    <input type="hidden" name="goods[images][]" value="4">
-                                                    <i @click="delImg" style="position:absolute;right:-10px;top:-10px;cursor: pointer" class="am-icon-close"></i>
+                                                    <i @click="delImg(key)" style="position:absolute;right:-10px;top:-10px;cursor: pointer" class="am-icon-close"></i>
                                                 </div>
+                                                </draggable>
                                             </div>
-                                        </div>
-                                        <div class="help-block">
-                                            <small>尺寸：宽750像素 高大于(等于)1200像素</small>
                                         </div>
                                     </div>
                                 </div>
@@ -55,6 +53,17 @@
                             </div>
 
                             <div class="am-form-group">
+                                <label class="am-u-sm-3 am-u-lg-2 am-form-label form-require"> 类型 </label>
+                                <div class="am-u-sm-9 am-u-md-6 am-u-lg-5 am-u-end">
+                                    <select name="type" v-model="type_">
+                                        <?php if (isset($typeList)): foreach ($typeList as $item): ?>
+                                            <option value="<?= $item['value'] ?>"><?= $item['title'] ?></option>
+                                        <?php endforeach; endif; ?>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="am-form-group">
                                 <div class="am-u-sm-9 am-u-sm-push-3 am-margin-top-lg">
                                     <button @click="submit" type="button" class="j-submit am-btn am-btn-secondary"> 提交
                                     </button>
@@ -71,6 +80,8 @@
 </div>
 {{include file="layouts/_template/file_library" /}}
 <script src="assets/common/js/vue.min.js"></script>
+<script src="assets/common/js/Sortable.min.js?v=<?= $version ?>"></script>
+<script src="assets/common/js/vuedraggable.min.js?v=<?= $version ?>"></script>
 <script>
     $(function () {
 
@@ -79,41 +90,49 @@
             data: {
                 max_bmi: 0,
                 min_bmi: 0,
-                img: '',
-                img_id: 0
+                imgs: [],
+                is_special: '0',
+                type_: ''
             },
             methods:{
-                delImg: function(){
-                    this.img = '';
-                    this.img_id = 0;
+                drag: function(e){
+                    console.log(e)
+                },
+                delImg: function(idx){
+                    this.imgs.splice(idx, 1);
                 },
                 submit: function(){
-                    let [max_bmi, min_bmi, img_id] = [parseFloat(this.max_bmi), parseFloat(this.min_bmi), parseFloat(this.img_id)]
-                    if(!max_bmi || min_bmi<0 || !img_id){
-                        layer.msg('请将填写全部选项')
+                    let [max_bmi, min_bmi, imgs, is_special, type_] = [parseFloat(this.max_bmi), parseFloat(this.min_bmi), this.imgs, parseInt(this.is_special), parseInt(this.type_)]
+                    if(!max_bmi || min_bmi<0){
+                        layer.msg('请填写全部选项')
                         return false;
                     }
                     if(max_bmi <= min_bmi){
                         layer.msg('bmi最大值必须大于bmi最小值')
                         return false;
                     }
-                    if(!img_id){
+                    if(imgs.length<=0){
                         layer.msg('请上传配餐图')
                         return false;
                     }
+                    if(!type_){
+                        layer.msg('请选择类型')
+                        return false;
+                    }
                     let that = this;
-                    $.post("<?= url('content.foodGroup/add') ?>",{max_bmi,min_bmi,img_id}, function(res){
+                    $.post("<?= url('content.foodGroup/add') ?>",{max_bmi,min_bmi,imgs,is_special,type_}, function(res){
                         if(res.code == 1){
-                            that.img_id = 0;
-                            that.img = '';
+                            that.imgs = [];
                             that.max_bmi = 0;
                             that.min_bmi = 0;
+                            that.type_ = '';
                             layer.msg('添加成功');
                         }else{
                             layer.msg(res.msg)
                         }
                     },'json')
-                }
+                },
+
             },
         })
 
@@ -127,8 +146,9 @@
         $('.j-image').selectImages({
             multiple: false,
             done: function (data) {
-                App.img_id = data[0]['file_id']
-                App.img = data[0]['file_path']
+                data.forEach((v, k)=>{
+                    App.imgs.push(v);
+                })
             }
         });
 

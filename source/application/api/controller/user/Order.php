@@ -197,4 +197,18 @@ class Order extends Controller
         }
     }
 
+    public function countSale(){
+        $model = new OrderModel;
+        $money = $model->alias('o')
+            ->join('order_goods og','o.order_id = og.order_id','LEFT')
+            ->where([
+                'o.pay_status' => 20,
+                'o.order_status' => ['IN', [10,30]],
+                'o.create_time' => ['BETWEEN', [1594742401, 1595948401]],
+                'og.goods_id' => 37
+            ])
+            ->sum('o.order_price');
+        return $money;
+    }
+
 }

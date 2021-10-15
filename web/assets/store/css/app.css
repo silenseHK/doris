@@ -1071,12 +1071,15 @@ ul.tpl-dropdown-content .tpl-dropdown-menu-messages-item .tpl-dropdown-menu-noti
     flex-basis: 50%; }
 .page-home .widget-echarts {
   height: 400px;
-  width: 100%; }
+  width: 100%; 
+}
 .page-home .widget-card {
-  min-height: 174px;
+  /*min-height: 174px;*/
   color: #ffffff;
-  padding: 12px 17px 12px 22px;
-  margin-bottom: 20px; }
+  padding: 12px 17px 22px 22px;
+  margin-bottom: 20px; 
+  border-radius: 10px;
+}
   .page-home .widget-card.card__blue {
     background: linear-gradient(-125deg, #57bdbf, #2f9de2); }
   .page-home .widget-card.card__red {
@@ -1114,7 +1117,21 @@ ul.tpl-dropdown-content .tpl-dropdown-menu-messages-item .tpl-dropdown-menu-noti
     font-size: 46px;
     line-height: 46px;
     margin-bottom: 8px; }
-
+.page-home .agent-number .outline-left{
+	margin-right: 20px;
+}
+.page-home .agent-number .outline-left img{
+	width: 58px;
+	height: 58px;
+}
+.page-home .agent-number .outline-right .agent-title{
+	color: #666666!important;
+    font-size: 1.3rem;
+}
+.page-home .agent-number .outline-right .agent-value{
+	color: #333333;
+    font-size: 2.4rem;
+}
 /* 帮助页面 */
 .page-help {
   font-size: 1.3rem; }

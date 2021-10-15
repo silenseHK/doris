@@ -94,6 +94,10 @@ class Dealer extends Controller
     {
         $dealer = $this->user;
         $dealer['money'] = $dealer['balance'];
+
+        ##提现手续费
+        $withdraw_setting = json_decode(Setting::where(['key'=>'withdraw'])->value('values'),true);
+
         return $this->renderSuccess([
             // 分销商用户信息
             'dealer' => $this->user,
@@ -104,7 +108,9 @@ class Dealer extends Controller
             // 页面文字
             'words' => $this->setting['words']['values'],
             //订阅消息模板id
-            'tid' => SettingModel::getItem('subMsg','10001')['cash_result']['template_id']
+            'tid' => SettingModel::getItem('subMsg','10001')['cash_result']['template_id'],
+
+            'withdraw_setting' => $withdraw_setting
         ]);
     }
 

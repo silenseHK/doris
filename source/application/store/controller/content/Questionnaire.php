@@ -37,6 +37,7 @@ class Questionnaire extends Controller
         try{
             $model = new QuestionnaireModel();
             if(request()->isPost()){
+//                print_r(input());die;
                 $res = $model->edit();
                 if($res !== true)throw new Exception($res);
                 return $this->renderSuccess('操作成功');
@@ -64,8 +65,13 @@ class Questionnaire extends Controller
     }
 
     public function userFillList(){
+        $questionnaire_id = input('questionnaire_id');
+        return $this->fetch('',compact('questionnaire_id'));
+    }
+
+    public function getUserFillList(){
         $model = new Fill();
-        return $this->fetch('',$model->getIndexData());
+        return $this->renderSuccess('','', $model->getIndexData());
     }
 
     public function fillList(){
@@ -76,6 +82,11 @@ class Questionnaire extends Controller
     public function userFillDetail(){
         $model = new Fill();
         return $this->fetch('',$model->userFillDetail());
+    }
+
+    public function getFillList(){
+        $model = new Fill();
+        return $this->renderSuccess('','', $model->getFillList());
     }
 
 }

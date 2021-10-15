@@ -17,16 +17,16 @@ class FoodGroup extends Controller
     }
 
     public function add(){
+        $model = new FoodGroupModel();
         if(request()->isPost()){
             try{
-                $model = new FoodGroupModel();
-                $model->add();
+                if(!$model->add())throw new Exception($model->getError());
                 return $this->renderSuccess('操作成功');
             }catch(Exception $e){
                 return $this->renderError($e->getMessage());
             }
         }else{
-            return $this->fetch();
+            return $this->fetch('',['typeList'=>$model->getTypeList()]);
         }
     }
 
@@ -35,7 +35,7 @@ class FoodGroup extends Controller
             $model = new FoodGroupModel();
             if(request()->isPost()){
                 $model = new FoodGroupModel();
-                $model->edit();
+                if(!$model->edit())throw new Exception($model->getError());
                 return $this->renderSuccess('操作成功');
             }else{
                 return $this->fetch('',$model->info());
@@ -53,10 +53,6 @@ class FoodGroup extends Controller
         }catch(Exception $e){
             return $this->renderError($e->getMessage());
         }
-    }
-
-    public function test(){
-        return $this->fetch();
     }
 
 }

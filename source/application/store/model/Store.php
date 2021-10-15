@@ -2,6 +2,7 @@
 
 namespace app\store\model;
 
+use app\common\enum\user\grade\GradeSize;
 use app\common\model\Store as StoreModel;
 
 /**
@@ -52,7 +53,15 @@ class Store extends StoreModel
                 // 订单总量
                 'order_total' => $this->getOrderTotal(),
                 // 评价总量
-                'comment_total' => $this->getCommentTotal()
+                'comment_total' => $this->getCommentTotal(),
+                //总销售金额
+                'sale_money_total' => $this->getSaleMoneyTotal(),
+                //公司总销售额
+                'company_sale_money_total' => $this->getCompanySaleMoneyTotal(),
+                //总代理数
+                'agent_total' => $this->getAgentTotal(),
+                //各个代理数
+                'agent_detail' => $this->getAgentDetail()
             ],
             'widget-outline' => [
                 // 销售额(元)
@@ -153,6 +162,72 @@ class Store extends StoreModel
     {
         $model = new Comment;
         return number_format($model->getCommentTotal());
+    }
+
+    /**
+     * 获取总销售额
+     * @return string
+     */
+    private function getSaleMoneyTotal(){
+        $model = new Order;
+        return number_format($model->getSaleMoneyTotal());
+    }
+
+    /**
+     * 获取公司总销售额
+     * @return string
+     */
+    private function getCompanySaleMoneyTotal(){
+        $model = new Order;
+        return number_format($model->getCompanySaleMoneyTotal());
+    }
+
+    /**
+     * 获取代理总数
+     * @return string
+     * @throws \think\Exception
+     */
+    private function getAgentTotal(){
+        $model = new User();
+        return number_format($model->getAgentTotal());
+    }
+
+    /**
+     * 获取各级代理数
+     * @return array
+     * @throws \think\Exception
+     */
+    private function getAgentDetail(){
+        $model = new User();
+        ##推广大使
+        $ambassador = $model->getAgentDetail(GradeSize::WEEK);
+        ##推广合伙人
+        $partner = $model->getAgentDetail(GradeSize::MONTH);
+        ##联合创始人
+        $founder = $model->getAgentDetail(GradeSize::VIP);
+        ##游客
+        $visitor = $model->getAgentDetail(GradeSize::VISITOR);
+
+        $data = [
+            [
+                'name' => '游客',
+                'num' => $visitor
+            ],
+            [
+                'name' => '推广大使',
+                'num' => $ambassador
+            ],
+            [
+                'name' => '推广合伙人',
+                'num' => $partner
+            ],
+            [
+                'name' => '联合创始人',
+                'num' => $founder
+            ]
+        ];
+        ##返回
+        return $data;
     }
 
     /**

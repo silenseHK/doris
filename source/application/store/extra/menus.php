@@ -38,6 +38,13 @@ return [
                     'store.role/delete',
                 ],
             ],
+            [
+                'name' => '操作日志',
+                'index' => 'store.handle/index',
+                'uris' => [
+                    'store.handle/index'
+                ],
+            ],
         ]
     ],
     'goods' => [
@@ -71,6 +78,15 @@ return [
                     'goods.comment/index',
                     'goods.comment/detail',
                 ],
+            ],
+            [
+                'name' => '推荐套餐',
+                'index' => 'goods.suggestion/index',
+                'uris' => [
+                    'goods.suggestion/index',
+                    'goods.suggestion/add',
+                    'goods.suggestion/edit',
+                ],
             ]
         ],
     ],
@@ -79,44 +95,52 @@ return [
         'icon' => 'icon-order',
         'index' => 'order/warehouse',
         'submenu' => [
+//            [
+//                'name' => '消费订单',
+//                'active' => false,
+//                'submenu' => [
+//                    [
+//                        'name' => '全部订单',
+//                        'index' => 'order/all_list',
+//                    ],
+//                    [
+//                        'name' => '待审核',
+//                        'index' => 'order/exam_list',
+//                    ],
+//                    [
+//                        'name' => '待发货',
+//                        'index' => 'order/delivery_list',
+//                    ],
+//                    [
+//                        'name' => '待收货',
+//                        'index' => 'order/receipt_list',
+//                    ],
+//                    [
+//                        'name' => '待付款',
+//                        'index' => 'order/pay_list',
+//                    ],
+//                    [
+//                        'name' => '已完成',
+//                        'index' => 'order/complete_list',
+//
+//                    ],
+//                    [
+//                        'name' => '已取消',
+//                        'index' => 'order/cancel_list',
+//                    ],
+//                    [
+//                        'name' => '售后管理',
+//                        'index' => 'order.refund/index',
+//                        'uris' => [
+//                            'order.refund/index',
+//                            'order.refund/detail',
+//                        ]
+//                    ],
+//                ]
+//            ],
             [
                 'name' => '消费订单',
-                'active' => false,
-                'submenu' => [
-                    [
-                        'name' => '全部订单',
-                        'index' => 'order/all_list',
-                    ],
-                    [
-                        'name' => '待发货',
-                        'index' => 'order/delivery_list',
-                    ],
-                    [
-                        'name' => '待收货',
-                        'index' => 'order/receipt_list',
-                    ],
-                    [
-                        'name' => '待付款',
-                        'index' => 'order/pay_list',
-                    ],
-                    [
-                        'name' => '已完成',
-                        'index' => 'order/complete_list',
-
-                    ],
-                    [
-                        'name' => '已取消',
-                        'index' => 'order/cancel_list',
-                    ],
-                    [
-                        'name' => '售后管理',
-                        'index' => 'order.refund/index',
-                        'uris' => [
-                            'order.refund/index',
-                            'order.refund/detail',
-                        ]
-                    ],
-                ]
+                'index' => 'order/order_list',
             ],
             [
                 'name' => '补货订单',
@@ -134,6 +158,20 @@ return [
                 'name' => '运费明细',
                 'index' => 'order/freight',
             ],
+//            [
+//                'name' => '发货管理',
+//                'active' => false,
+//                'submenu' => [
+//                    [
+//                        'name' => '发货列表',
+//                        'index' => 'order.express/lists',
+//                    ],
+//                    [
+//                        'name' => '发货统计',
+//                        'index' => 'order.express/statistics',
+//                    ]
+//                ]
+//            ],
         ]
     ],
     'user' => [
@@ -147,7 +185,7 @@ return [
             ],
             [
                 'name' => '会员等级',
-                'active' => true,
+                'active' => false,
                 'submenu' => [
                     [
                         'name' => '等级管理',
@@ -159,11 +197,15 @@ return [
                             'user.grade/delete',
                         ]
                     ],
+                    [
+                        'name' => '等级记录',
+                        'index' => 'user.grade/log',
+                    ],
                 ]
             ],
             [
                 'name' => '余额记录',
-                'active' => true,
+                'active' => false,
                 'submenu' => [
 //                    [
 //                        'name' => '充值记录',
@@ -177,26 +219,50 @@ return [
             ],
             [
                 'name' => '团队管理',
-                'active' => true,
+                'active' => false,
                 'submenu' => [
                     [
                         'name' => '转换团队',
                         'index' => 'user.team/exchange',
                     ],
                     [
-                        'name' => '团队转换记录',
-                        'index' => 'user.team/exchange_log',
+                        'name' => '月度业绩',
+                        'index' => 'user.team/monthachievement',
                     ],
                     [
-                        'name' => '团队管理奖',
-                        'index' => 'user.team/manage_reward',
+                        'name' => '年度业绩',
+                        'index' => 'user.team/yearachievement',
                     ],
-                    [
-                        'name' => '营养师管理团队',
-                        'index' => 'user.dietician/lists',
-                    ],
+//                    [
+//                        'name' => '团队转换记录',
+//                        'index' => 'user.team/exchange_log',
+//                    ],
+//                    [
+//                        'name' => '团队管理奖',
+//                        'index' => 'user.team/manage_reward',
+//                    ],
+//                    [
+//                        'name' => '营养师管理团队',
+//                        'index' => 'user.dietician/lists',
+//                    ],
+//                    [
+//                        'name' => '代理中心',
+//                        'index' => 'user.agent/index',
+//                    ],
+//                    [
+//                        'name' => '招商管理',
+//                        'index' => 'user.salesperson/index',
+//                    ],
                 ]
             ],
+//            [
+//                'name' => '库存转移',
+//                'index' => 'user.stock/exchange',
+//            ],
+//            [
+//                'name' => '迁移管理',
+//                'index' => 'user.stock/transfer',
+//            ],
         ]
     ],
     'shop' => [
@@ -242,7 +308,7 @@ return [
         'submenu' => [
             [
                 'name' => '文章管理',
-                'active' => true,
+                'active' => false,
                 'submenu' => [
                     [
                         'name' => '文章列表',
@@ -286,27 +352,36 @@ return [
                     ],
                 ]
             ],
-            [
-                'name' => '问卷管理',
-                'submenu' => [
-                    [
-                        'name' => '问卷列表',
-                        'index' => 'content.questionnaire/index',
-                    ],
-                    [
-                        'name' => '问题列表',
-                        'index' => 'content.questionnaire.question/index',
-                    ],
-                    [
-                        'name' => '配餐列表',
-                        'index' => 'content.food_group/index',
-                    ],
-                    [
-                        'name' => '配餐列表',
-                        'index' => 'content.food_group/test',
-                    ],
-                ]
-            ],
+//            [
+//                'name' => '问卷管理',
+//                'submenu' => [
+//                    [
+//                        'name' => '问卷列表',
+//                        'index' => 'content.questionnaire/index',
+//                        'uris' => [
+//                            'content.questionnaire/index',
+//                            'content.questionnaire/add',
+//                            'content.questionnaire/edit',
+//                        ]
+//                    ],
+//                    [
+//                        'name' => '问题列表',
+//                        'index' => 'content.questionnaire.question/index',
+//                    ],
+//                    [
+//                        'name' => '问题分类',
+//                        'index' => 'content.questionnaire.question/cateIndex',
+//                    ],
+//                    [
+//                        'name' => '配餐列表',
+//                        'index' => 'content.food_group/index',
+//                    ],
+//                    [
+//                        'name' => '配餐列表',
+//                        'index' => 'content.food_group/test',
+//                    ],
+//                ]
+//            ],
             [
                 'name' => '百问百答',
                 'submenu' => [
@@ -320,6 +395,15 @@ return [
                     ]
                 ]
             ],
+//            [
+//                'name' => '二维码管理',
+//                'submenu' => [
+//                    [
+//                        'name' => '二维码列表',
+//                        'index' => 'content.qrcode/index',
+//                    ]
+//                ]
+//            ],
         ]
     ],
     'finance' => [
@@ -337,100 +421,108 @@ return [
                     ],
                 ]
             ],
+            [
+                'name' => '订单入账',
+                'index' => 'finance.income.index/index'
+            ],
+            [
+                'name' => '财务设置',
+                'index' => 'finance.setting/index'
+            ],
         ]
     ],
-    'market' => [
-        'name' => '营销管理',
-        'icon' => 'icon-marketing',
-        'index' => 'market.coupon/index',
-        'submenu' => [
-            [
-                'name' => '优惠券',
-//                'active' => true,
-                'submenu' => [
-                    [
-                        'name' => '优惠券列表',
-                        'index' => 'market.coupon/index',
-                        'uris' => [
-                            'market.coupon/index',
-                            'market.coupon/add',
-                            'market.coupon/edit',
-                        ]
-                    ],
-                    [
-                        'name' => '领取记录',
-                        'index' => 'market.coupon/receive'
-                    ],
-                ]
-            ],
+//    'market' => [
+//        'name' => '营销管理',
+//        'icon' => 'icon-marketing',
+//        'index' => 'market.coupon/index',
+//        'submenu' => [
 //            [
-//                'name' => '用户充值',
+//                'name' => '优惠券',
+////                'active' => true,
 //                'submenu' => [
 //                    [
-//                        'name' => '充值套餐',
-//                        'index' => 'market.recharge.plan/index',
+//                        'name' => '优惠券列表',
+//                        'index' => 'market.coupon/index',
 //                        'uris' => [
-//                            'market.recharge.plan/index',
-//                            'market.recharge.plan/add',
-//                            'market.recharge.plan/edit',
+//                            'market.coupon/index',
+//                            'market.coupon/add',
+//                            'market.coupon/edit',
 //                        ]
 //                    ],
 //                    [
-//                        'name' => '充值设置',
-//                        'index' => 'market.recharge/setting'
+//                        'name' => '领取记录',
+//                        'index' => 'market.coupon/receive'
 //                    ],
+//                ]
+//            ],
+////            [
+////                'name' => '用户充值',
+////                'submenu' => [
+////                    [
+////                        'name' => '充值套餐',
+////                        'index' => 'market.recharge.plan/index',
+////                        'uris' => [
+////                            'market.recharge.plan/index',
+////                            'market.recharge.plan/add',
+////                            'market.recharge.plan/edit',
+////                        ]
+////                    ],
+////                    [
+////                        'name' => '充值设置',
+////                        'index' => 'market.recharge/setting'
+////                    ],
+////                ]
+////            ],
+////            [
+////                'name' => '积分管理',
+////                'submenu' => [
+////                    [
+////                        'name' => '积分设置',
+////                        'index' => 'market.points/setting'
+////                    ],
+////                    [
+////                        'name' => '积分明细',
+////                        'index' => 'market.points/log'
+////                    ],
+////                ]
+////            ],
+//            [
+//                'name' => '消息推送',
+//                'submenu' => [
+//                    [
+//                        'name' => '发送消息',
+//                        'index' => 'market.push/send',
+//                    ],
+//                    [
+//                        'name' => '活跃用户',
+//                        'index' => 'market.push/user',
+//                    ],
+////                    [
+////                        'name' => '发送日志',
+////                        'index' => 'market.push/log',
+////                    ],
 //                ]
 //            ],
 //            [
-//                'name' => '积分管理',
+//                'name' => '满额包邮',
+//                'index' => 'market.basic/full_free',
+//            ],
+//            [
+//                'name' => '体验装',
+////                'active' => true,
 //                'submenu' => [
 //                    [
-//                        'name' => '积分设置',
-//                        'index' => 'market.points/setting'
+//                        'name' => '订单',
+//                        'index' => 'market.experience/orders',
 //                    ],
 //                    [
-//                        'name' => '积分明细',
-//                        'index' => 'market.points/log'
+//                        'name' => '排行',
+//                        'index' => 'market.experience/rank'
 //                    ],
 //                ]
 //            ],
-            [
-                'name' => '消息推送',
-                'submenu' => [
-                    [
-                        'name' => '发送消息',
-                        'index' => 'market.push/send',
-                    ],
-                    [
-                        'name' => '活跃用户',
-                        'index' => 'market.push/user',
-                    ],
-//                    [
-//                        'name' => '发送日志',
-//                        'index' => 'market.push/log',
-//                    ],
-                ]
-            ],
-            [
-                'name' => '满额包邮',
-                'index' => 'market.basic/full_free',
-            ],
-            [
-                'name' => '体验装',
-//                'active' => true,
-                'submenu' => [
-                    [
-                        'name' => '订单',
-                        'index' => 'market.experience/orders',
-                    ],
-                    [
-                        'name' => '排行',
-                        'index' => 'market.experience/rank'
-                    ],
-                ]
-            ],
-        ],
-    ],
+//        ],
+//    ],
     'wxapp' => [
         'name' => '小程序',
         'icon' => 'icon-wxapp',
@@ -461,7 +553,11 @@ return [
                     [
                         'name' => '页面链接',
                         'index' => 'wxapp.page/links'
-                    ]
+                    ],
+//                    [
+//                        'name' => '首页属性',
+//                        'index' => 'wxapp.page/home'
+//                    ]
                 ]
             ],
             [
@@ -735,41 +831,69 @@ return [
             ]
         ],
     ],
-    'college' => [
-        'name' => '商学院',
+//    'college' => [
+//        'name' => '商学院',
+//        'icon' => 'icon-guanliyuan',
+//        'index' => 'college.lesson/cateindex',
+//        'submenu' => [
+//            [
+//                'name' => '课程分类',
+//                'index' => 'college.lesson/cateindex',
+//                'uris' => [
+//                    'college.lesson/cateindex',
+//                    'college.lesson/cateadd',
+//                    'college.lesson/cateedit',
+//                    'college.lesson/catedelete',
+//                ],
+//            ],
+//            [
+//                'name' => '讲师管理',
+//                'index' => 'college.lecturer/index',
+//                'uris' => [
+//                    'college.lecturer/index',
+//                    'college.lecturer/add',
+//                    'college.lecturer/edit',
+//                    'college.lecturer/delete',
+//                ],
+//            ],
+//            [
+//                'name' => '课程管理',
+//                'index' => 'college.lesson/index',
+//                'uris' => [
+//                    'college.lesson/index',
+//                    'college.lesson/add',
+//                    'college.lesson/edit',
+//                    'college.lesson/delete',
+//                ],
+//            ],
+//        ]
+//    ],
+//    'operate' => [
+//        'name' => '运营管理',
+//        'icon' => 'icon-guanliyuan',
+//        'index' => 'operate.index/userSaleData',
+//        'submenu' => [
+//            [
+//                'name' => '用户数据',
+//                'index' => 'operate.index/userSaleData',
+//                'uris' => [
+//                    'operate.index/userSaleData'
+//                ],
+//            ]
+//        ]
+//    ],
+    'staff' => [
+        'name' => '员工管理',
         'icon' => 'icon-guanliyuan',
-        'index' => 'college.lesson/cateindex',
+        'index' => 'project.staff/lists',
         'submenu' => [
             [
-                'name' => '课程分类',
-                'index' => 'college.lesson/cateindex',
+                'name' => '员工列表',
+                'index' => 'project.staff/lists',
                 'uris' => [
-                    'college.lesson/cateindex',
-                    'college.lesson/cateadd',
-                    'college.lesson/cateedit',
-                    'college.lesson/catedelete',
+                    'project.staff/lists'
                 ],
-            ],
-            [
-                'name' => '讲师管理',
-                'index' => 'college.lecturer/index',
-                'uris' => [
-                    'college.lecturer/index',
-                    'college.lecturer/add',
-                    'college.lecturer/edit',
-                    'college.lecturer/delete',
-                ],
-            ],
-            [
-                'name' => '课程管理',
-                'index' => 'college.lesson/index',
-                'uris' => [
-                    'college.lesson/index',
-                    'college.lesson/add',
-                    'college.lesson/edit',
-                    'college.lesson/delete',
-                ],
-            ],
+            ]
         ]
     ],
 ];

@@ -17,6 +17,17 @@ use think\Exception;
  */
 class Order extends Controller
 {
+
+    /**
+     * 待审核发货订单列表
+     * @return mixed
+     * @throws \think\exception\DbException
+     */
+    public function exam_list()
+    {
+        return $this->getList('待审核订单列表', 'exam');
+    }
+
     /**
      * 待发货订单列表
      * @return mixed
@@ -77,6 +88,18 @@ class Order extends Controller
         return $this->getList('全部订单列表', 'all');
     }
 
+    public function order_list(){
+        $shopList = ShopModel::getAllList();
+        return $this->fetch('index2',compact('shopList'));
+    }
+
+    public function getOrderList(){
+        $data_type = input('data_type','all','str_filter');
+        $delivery_type = input('delivery_type',10,'intval');
+        $model = new OrderModel;
+        return $this->renderSuccess('','', $model->getList($data_type, $this->request->param(), $delivery_type));
+    }
+
     /**
      * 订单详情
      * @param $order_id
@@ -92,6 +115,22 @@ class Order extends Controller
         // 门店店员列表
         $shopClerkList = (new ShopClerkModel)->getList(true);
         return $this->fetch('detail', compact(
+            'detail',
+            'expressList',
+            'shopClerkList'
+        ));
+    }
+
+    public function orderDetail($order_id)
+    {
+        // 订单详情
+        $detail = OrderModel::detail($order_id);
+        // 物流公司列表
+        $expressList = ExpressModel::getAll();
+        // 门店店员列表
+        $shopClerkList = (new ShopClerkModel)->getList(true);
+        $shopClerkList = $shopClerkList->toArray()['data'];
+        return $this->fetch('detail2', compact(
             'detail',
             'expressList',
             'shopClerkList'
@@ -116,6 +155,21 @@ class Order extends Controller
     }
 
     /**
+     * 审核发货
+     * @param $order_id
+     * @return array|bool
+     * @throws \think\exception\DbException
+     */
+    public function examDelivery($order_id){
+        $model = OrderModel::detail($order_id);
+//        print_r($model->toArray());die;
+        if($model->examDelivery($this->postData('exam_delivery'))){
+            return $this->renderSuccess('审核成功');
+        }
+        return $this->renderError($model->getError()?:'审核失败');
+    }
+
+    /**
      * 修改订单价格
      * @param $order_id
      * @return array
@@ -125,6 +179,34 @@ class Order extends Controller
     {
         $model = OrderModel::detail($order_id);
         if ($model->updatePrice($this->postData('order'))) {
+            return $this->renderSuccess('修改成功');
+        }
+        return $this->renderError($model->getError() ?: '修改失败');
+    }
+
+    /**
+     * 修改订单物流
+     * @param $order_id
+     * @return array|bool
+     * @throws \think\exception\DbException
+     */
+    public function updateExpress($order_id){
+        $model = OrderModel::detail($order_id);
+        if ($model->updateExpress($this->postData('express'))) {
+            return $this->renderSuccess('修改成功');
+        }
+        return $this->renderError($model->getError() ?: '修改失败');
+    }
+
+    /**
+     * 修改订单物流
+     * @param $order_id
+     * @return array|bool
+     * @throws \think\exception\DbException
+     */
+    public function updateDeliveryExpress($order_id){
+        $model = OrderDelivery::detail($order_id);
+        if ($model->updateExpress($this->postData('express'))) {
             return $this->renderSuccess('修改成功');
         }
         return $this->renderError($model->getError() ?: '修改失败');
@@ -148,14 +230,10 @@ class Order extends Controller
         return $this->fetch('index', compact('title', 'dataType', 'list', 'shopList'));
     }
 
-    public function getStockList($title, $deliveryType=30){
+    public function getStockList($deliveryType=30){
         // 订单列表
         $model = new OrderModel;
-        $list = $model->getStockList($this->request->param(), $deliveryType);
-//        print_r($list->toArray());die;
-        // 自提门店列表
-        $shopList = ShopModel::getAllList();
-        return $this->fetch('order_stock', compact('title', 'dataType', 'list', 'shopList'));
+        return $model->getStockList($this->request->param(), $deliveryType);
     }
 
     /**
@@ -165,8 +243,18 @@ class Order extends Controller
      */
     public function order_delivery(){
         $model = new OrderDelivery();
-        $data = $model->makeData($this->request->param());
-        return $this->fetch('order_delivery', $data);
+        $delivery_type = $model->getDeliveryTypeList();
+        return $this->fetch('order_delivery2', compact('delivery_type'));
+    }
+
+    /**
+     * 提货发货数据列表
+     * @return array
+     * @throws \think\exception\DbException
+     */
+    public function getOrderDeliveryList(){
+        $model = new OrderDelivery();
+        return $this->renderSuccess('','',$model->getList($this->request->param()));
     }
 
     /**
@@ -215,7 +303,7 @@ class Order extends Controller
         // 物流公司列表
         $expressList = ExpressModel::getAll();
 
-        return $this->fetch('order_delivery_detail', compact(
+        return $this->fetch('order_delivery_detail2', compact(
             'detail',
             'expressList'
         ));
@@ -229,6 +317,20 @@ class Order extends Controller
         try{
             $model = new OrderDelivery();
             $model->deliver($this->request->param());
+            return $this->renderSuccess('操作成功');
+        }catch(Exception $e){
+            return $this->renderError($e->getMessage());
+        }
+    }
+
+    /**
+     * 审核发货
+     * @return array|bool
+     */
+    public function examOrderDelivery(){
+        try{
+            $model = new OrderDelivery();
+            if(!$model->examOrderDelivery($this->request->param()))throw new Exception($model->getError());
             return $this->renderSuccess('操作成功');
         }catch(Exception $e){
             return $this->renderError($e->getMessage());
@@ -254,7 +356,16 @@ class Order extends Controller
      * @return mixed
      */
     public function order_stock(){
-        return $this->getStockList('补货订单', DeliveryType::STOCK);
+//        $shopList = ShopModel::getAllList();
+        return $this->fetch('order_stock2');
+    }
+
+    /**
+     * 补货订单列表
+     * @return array
+     */
+    public function getOrderStockList(){
+        return $this->renderSuccess('','',$this->getStockList(DeliveryType::STOCK));
     }
 
     /**

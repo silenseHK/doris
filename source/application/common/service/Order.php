@@ -57,6 +57,26 @@ class Order
         return $data;
     }
 
+    public static function getOrderList2(&$data, $orderIndex = 'order', $with = [])
+    {
+        // 整理订单id
+        $orderIds = [];
+        foreach ($data as &$item) {
+            $orderIds[$item['order_type']['value']][] = $item['order_id'];
+        }
+        // 获取订单列表
+        $orderList = [];
+        foreach ($orderIds as $orderType => $values) {
+            $model = self::model($orderType);
+            $orderList[$orderType] = $model->getListByIds($values, $with);
+        }
+        // 格式化到数据源
+        foreach ($data as &$item) {
+            $item[$orderIndex] = $orderList[$item['order_type']['value']][$item['order_id']];
+        }
+        return $data;
+    }
+
     /**
      * 获取订单详情 (根据order_type获取不同类型的订单详情)
      * @param $orderId

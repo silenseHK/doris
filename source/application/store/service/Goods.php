@@ -44,8 +44,10 @@ class Goods extends Bases
             $goodsGradeList = GoodsGrade::getGoodsGradeList($model['goods_id']);
             if($goodsGradeList){
                 foreach($gradeList as $k =>$v){
-                    $gradeList[$k]['price'] = $goodsGradeList[$k]['price'];
-                    $gradeList[$k]['rebate'] = $goodsGradeList[$k]['rebate'];
+                    if(isset($goodsGradeList[$k])){
+                        $gradeList[$k]['price'] = $goodsGradeList[$k]['price'];
+                        $gradeList[$k]['rebate'] = $goodsGradeList[$k]['rebate'];
+                    }
                 }
             }
         }

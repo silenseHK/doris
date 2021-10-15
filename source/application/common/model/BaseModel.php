@@ -18,6 +18,8 @@ class BaseModel extends Model
 
     protected $alias = '';
 
+    protected $main_goods_sku_id = 59;
+
     /**
      * 模型基类初始化
      */
@@ -64,7 +66,7 @@ class BaseModel extends Model
     protected static function setStoreWxappId()
     {
         $session = Session::get('yoshop_store');
-        self::$wxapp_id = $session['wxapp']['wxapp_id'];
+        self::$wxapp_id = $session['wxapp']['wxapp_id'] ? : 10001;
     }
 
     /**
@@ -73,7 +75,7 @@ class BaseModel extends Model
     protected static function setApiWxappId()
     {
         $request = Request::instance();
-        self::$wxapp_id = $request->param('wxapp_id');
+        self::$wxapp_id = $request->param('wxapp_id') ? : 10001;
     }
 
     /**

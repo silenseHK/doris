@@ -5,6 +5,7 @@ namespace app\store\model;
 
 use app\common\model\GoodsExperience as GoodsExperienceModel;
 use think\db\Query;
+use think\Exception;
 
 class GoodsExperience extends GoodsExperienceModel
 {
@@ -16,18 +17,32 @@ class GoodsExperience extends GoodsExperienceModel
      * @throws \think\exception\DbException
      */
     public function getRankList(){
+        $is_true = input('post.rankType',true);
+        $where = [
+            'first_user_id'=>['GT', 0]
+        ];
+        if($is_true=='true')$where['is_fake'] = 0;
         ##获取体验装商品id
         $list = $this->alias('ge')
             ->join('order o', 'ge.order_id = o.order_id', 'LEFT')
-            ->where(
-                [
-                    'o.pay_status' => 20,
-                    'o.order_status' => ['IN', [10, 30]]
-                ]
-            )
+            ->where(function($query){
+                $query->where(
+                    [
+                        'ge.is_online' => 1,
+                        'o.pay_status' => 20,
+                        'o.order_status' => ['IN', [10, 30]]
+                    ]
+                )->whereOr(
+                    [
+                        'ge.is_online' => 0
+                    ]
+                );
+            })
+            ->where($where)
             ->group('ge.first_user_id')
-            ->field(['ge.first_user_id', 'count(ge.user_id) as num'])
-            ->order('num', 'desc')
+            ->field(['ge.first_user_id', 'count(ge.user_id) as num', 'ge.first_user_id as member_num', 'ge.first_user_id as redirect_member_num'])
+            ->order(['num'=>'desc', 'member_num'=>'desc', 'redirect_member_num'=>'desc'])
+//            ->order(['num'=>'desc', 'redirect_member_num'=>'desc'])
             ->with(
                 [
                     'first_user' => function (Query $query) {
@@ -41,11 +56,12 @@ class GoodsExperience extends GoodsExperienceModel
         $page = $list->render();
         $total = $list->total();
         $list = $list->toArray()['data'];
-        $userModel = new User();
-        foreach ($list as &$item) {
-            $item['member_num'] = $userModel->getMemberNumAttr($item['first_user_id']);
-        }
-        $list = sortArrByManyField($list, 'num', SORT_DESC, 'member_num', SORT_DESC);
+//        $userModel = new User();
+//        foreach ($list as &$item) {
+//            $item['member_num'] = $userModel->getMemberNumAttr($item['first_user_id']);
+//            $item['redirect_member_num'] = $userModel->getRedirectMemberNumAttr($item['first_user_id']);
+//        }
+        $list = sortArrByManyField($list, 'num', SORT_DESC, 'member_num', SORT_DESC, 'redirect_member_num', SORT_DESC, 'first_user_id', SORT_ASC);
         return compact('list','page','total');
     }
 
@@ -78,6 +94,7 @@ class GoodsExperience extends GoodsExperienceModel
                     'user'
                 ]
             )
+            ->order('create_time','desc')
             ->paginate(15,false,['type' => 'Bootstrap',
                 'var_page' => 'page',
                 'path' => 'javascript:getRankList([PAGE]);']);
@@ -92,6 +109,7 @@ class GoodsExperience extends GoodsExperienceModel
      * @param $params
      */
     public function setOrderListWhere($params){
+        $where['is_online'] = 1;
         ##订单状态
         switch($params['order_status']){
             case 1: ##待发货

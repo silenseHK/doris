@@ -8,15 +8,30 @@
                 <div class="widget-body am-fr">
                     <!-- 工具栏 -->
                     <div class="page_toolbar am-margin-bottom-xs am-cf">
+
                         <form class="toolbar-form" action="">
                             <input type="hidden" name="s" value="/<?= $request->pathinfo() ?>">
-                            <div class="am-u-sm-12 am-u-md-9 am-u-sm-push-3">
+
+                            <div class="am-u-sm-12 am-u-md-12 am-u-sm-push-12">
+                                <div class="am fl">
+                                    <div class="am-form-group am-fl">
+                                        <?php if (checkPrivilege('user/fileTransferStock')): ?>
+                                            <div class="am-btn-group am-btn-group-xs">
+                                                <a class="am-btn am-btn-default am-btn-success j-transfer-stock"
+                                                   href="javascript:;">批量迁移库存
+                                                </a>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+
                                 <div class="am fr">
                                     <div class="am-form-group am-fl">
                                         <?php $grade = $request->get('grade'); ?>
                                         <select name="grade"
                                                 data-am-selected="{btnSize: 'sm', placeholder: '请选择会员等级'}">
                                             <option value=""></option>
+                                            <option value="1">全部</option>
                                             <?php foreach ($gradeList as $item): ?>
                                                 <option value="<?= $item['grade_id'] ?>"
                                                     <?= $grade == $item['grade_id'] ? 'selected' : '' ?>><?= $item['name'] ?>
@@ -209,6 +224,12 @@
                                                                href="javascript:void(0);">成为战略董事</a>
                                                         </li>
                                                     <?php endif; ?>
+                                                    <?php if (checkPrivilege('user.team/freeze')): ?>
+                                                        <li>
+                                                            <a data-id="<?= $item['user_id'] ?>" class="am-dropdown-item j-team-freeze" target=""
+                                                               href="javascript:void(0);">冻结团队</a>
+                                                        </li>
+                                                    <?php endif; ?>
                                                 </ul>
                                             </div>
                                         </div>
@@ -265,6 +286,64 @@
         </form>
     </div>
 </script>
+
+<!-- 模板：修改会员等级 -->
+<script id="tpl-transfer-stock" type="text/template">
+    <div class="am-padding-xs am-padding-top">
+        <form class="am-form tpl-form-line-form" method="post" action="" enctype="multipart/form-data">
+            <div class="am-tab-panel am-padding-0 am-active">
+                <div class="am-form-group">
+                    <label class="am-u-sm-3 am-form-label">
+                        补充库存商品
+                    </label>
+                    <div class="am-u-sm-8 am-u-end wrap-goods">
+                        <select id="doc-select-1" name="transfer_stock[goods_id]" onchange="goodsSku2.call(this)">
+                            <option value="0">请选择商品</option>
+                            <?php if(!empty($goodsList)){ ?>
+                                <?php foreach($goodsList as $goods){ ?>
+                                    <option value="<?= $goods['goods_id'] ?>"><?= $goods['goods_name'] ?></option>
+                                <?php } ?>
+                            <?php } ?>
+                        </select>
+                        <input class="ipt-goods-sku-id" type="hidden" name="transfer_stock[goods_sku_id]" value="0">
+                    </div>
+                </div>
+
+                <div class="am-form-group wrap-attr">
+                    <label class="am-u-sm-3 am-form-label">
+                        规格
+                    </label>
+                    <div class="am-u-sm-8 am-u-end">
+                        <select class="doc-select-attr" name="transfer_stock[goods_sku_id2]" onchange="chooseGoods2.call(this)">
+                            <option value="0">请选择规格</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="am-form-group">
+                    <label class="am-u-sm-3 am-form-label form-require">
+                        迁移文件
+                    </label>
+                    <div class="am-u-sm-8 am-u-end">
+                        <input style="position: absolute;left:0px; z-index:999;opacity: 0;" type="file" name="transfer_stock_file">
+                        <a class="am-btn am-btn-default am-btn-success" style="position: absolute;left:0px;z-index:998;"
+                           href="javascript:;">选择文件
+                        </a>
+                    </div>
+                </div>
+
+                <div class="am-form-group">
+                    <label class="am-u-sm-3 am-form-label"> 管理员备注 </label>
+                    <div class="am-u-sm-8 am-u-end">
+                        <textarea rows="2" name="transfer_stock[remark]" placeholder="请输入管理员备注"
+                                  class="am-field-valid"></textarea>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</script>
+
 <!-- 商品列表 -->
 <script id="tpl-goods-list-item" type="text/template">
     {{ each $data }}
@@ -287,6 +366,7 @@
                     <li class="am-active"><a href="#tab1">充值余额</a></li>
                     <li><a href="#tab2">补充库存</a></li>
                     <li><a href="#tab3">活动补充库存</a></li>
+                    <li><a href="#tab4">补充库存[迁移代理]</a></li>
                 </ul>
 
                 <div class="am-tabs-bd am-padding-xs">
@@ -364,7 +444,7 @@
                                 规格
                             </label>
                             <div class="am-u-sm-8 am-u-end">
-                                <select id="doc-select-attr" name="recharge[points][goods_sku_id2]" onchange="chooseGoods.call(this)">
+                                <select class="doc-select-attr" name="recharge[points][goods_sku_id2]" onchange="chooseGoods.call(this)">
                                     <option value="0">请选择规格</option>
                                 </select>
                             </div>
@@ -458,7 +538,7 @@
                                 规格
                             </label>
                             <div class="am-u-sm-8 am-u-end">
-                                <select id="doc-select-attr" name="recharge[grade][goods_sku_id2]" onchange="chooseGoods.call(this)">
+                                <select class="doc-select-attr" name="recharge[grade][goods_sku_id2]" onchange="chooseGoods.call(this)">
                                     <option value="0">请选择规格</option>
                                 </select>
                             </div>
@@ -511,6 +591,84 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="am-tab-panel am-padding-0" id="tab4">
+
+                        <div class="am-form-group">
+                            <label class="am-u-sm-3 am-form-label">
+                                补充库存商品
+                            </label>
+                            <div class="am-u-sm-8 am-u-end wrap-goods">
+                                <select id="doc-select-1" name="recharge[transfer][goods_id]" onchange="goodsSku.call(this)">
+                                    <option value="0">请选择商品</option>
+                                    <?php if(!empty($goodsList)){ ?>
+                                        <?php foreach($goodsList as $goods){ ?>
+                                            <option value="<?= $goods['goods_id'] ?>"><?= $goods['goods_name'] ?></option>
+                                        <?php } ?>
+                                    <?php } ?>
+                                </select>
+                                <input class="ipt-goods-sku-id" type="hidden" name="recharge[transfer][goods_sku_id]" value="0">
+                            </div>
+                        </div>
+
+                        <div class="am-form-group wrap-attr">
+                            <label class="am-u-sm-3 am-form-label">
+                                规格
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <select class="doc-select-attr" name="recharge[transfer][goods_sku_id2]" onchange="chooseGoods.call(this)">
+                                    <option value="0">请选择规格</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="am-form-group">
+                            <label class="am-u-sm-3 am-form-label">
+                                当前库存
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <div class="am-form--static stock-wrap">0</div>
+                            </div>
+                        </div>
+                        <div class="am-form-group">
+                            <label class="am-u-sm-3 am-form-label">
+                                充值方式
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <label class="am-radio-inline">
+                                    <input type="radio" name="recharge[transfer][mode]"
+                                           value="inc" data-am-ucheck checked>
+                                    增加
+                                </label>
+                                <!--                                <label class="am-radio-inline">-->
+                                <!--                                    <input type="radio" name="recharge[points][mode]" value="dec" data-am-ucheck>-->
+                                <!--                                    减少-->
+                                <!--                                </label>-->
+                                <!--                                <label class="am-radio-inline">-->
+                                <!--                                    <input type="radio" name="recharge[points][mode]" value="final" data-am-ucheck>-->
+                                <!--                                    最终库存-->
+                                <!--                                </label>-->
+                            </div>
+                        </div>
+                        <div class="am-form-group">
+                            <label class="am-u-sm-3 am-form-label">
+                                充值数量
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <input type="number" min="0" class="tpl-form-input"
+                                       placeholder="请输入要变更的数量" name="recharge[transfer][value]" value="" required>
+                            </div>
+                        </div>
+                        <div class="am-form-group">
+                            <label class="am-u-sm-3 am-form-label">
+                                管理员备注
+                            </label>
+                            <div class="am-u-sm-8 am-u-end">
+                                <textarea rows="2" name="recharge[transfer][remark]" placeholder="请输入管理员备注"
+                                          class="am-field-valid"></textarea>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -544,7 +702,7 @@
                         规格
                     </label>
                     <div class="am-u-sm-8 am-u-end">
-                        <select id="doc-select-attr" name="goods_sku_id2" onchange="chooseGoods.call(this)">
+                        <select class="doc-select-attr" name="goods_sku_id2" onchange="chooseGoods.call(this)">
                             <option value="0">请选择规格</option>
                         </select>
                     </div>
@@ -581,7 +739,7 @@
             var $tabs, data = $(this).data();
             $.showModal({
                 title: '用户充值'
-                , area: '460px'
+                , area: '560px'
                 , content: template('tpl-recharge', data)
                 , uCheck: true
                 , success: function ($content) {
@@ -623,6 +781,25 @@
             });
         });
 
+        $('.j-transfer-stock').on('click', function () {
+            var data = $(this).data();
+            $.showModal({
+                title: '修改会员等级'
+                , area: '460px'
+                , content: template('tpl-transfer-stock', data)
+                , uCheck: true
+                , success: function ($content) {
+                }
+                , yes: function ($content) {
+                    $content.find('form').myAjaxSubmit({
+                        url: '<?= url('user/fileTransferStock') ?>',
+                        data: {user_id: data.id}
+                    });
+                    return true;
+                }
+            });
+        });
+
         /**
          * 返利
          */
@@ -643,6 +820,18 @@
                     });
                     return true;
                 }
+            });
+        });
+
+        $('.j-team-freeze').on('click', function () {
+            var data = $(this).data();
+
+            layer.confirm('确定冻结该用户的团队吗？', function (index) {
+                $.post('<?= url('user.team/freeze') ?>', data, function (result) {
+                    result.code === 1 ? $.show_success(result.msg, result.url)
+                        : $.show_error(result.msg);
+                });
+                layer.close(index);
             });
         });
 
@@ -691,6 +880,11 @@
         }
     }
 
+    function chooseGoods2(goods_sku_id){
+        goods_sku_id = goods_sku_id||$(this).val()
+        $('input.ipt-goods-sku-id').val(goods_sku_id)
+    }
+
     function goodsSku(){
         var goods_id = $(this).val()
         if(goods_id){
@@ -703,13 +897,40 @@
                             html_ += '<option value="'+v.goods_sku_id+'">'+v.attr+'</option>';
                         })
                         $('.wrap-attr').show();
-                        $("#doc-select-attr").html(html_);
+                        $(".doc-select-attr").html(html_);
                         ipt.val(res.data.list[0]['goods_sku_id']);
                         chooseGoods(res.data.list[0]['goods_sku_id']);
                     }else{
                         $('.wrap-attr').hide();
                         ipt.val(res.data.spec_id)
                         chooseGoods(res.data.spec_id);
+                    }
+                }else{
+                    layer.msg(res.msg)
+                }
+            }, 'json')
+        }
+    }
+
+    function goodsSku2(){
+        var goods_id = $(this).val()
+        if(goods_id){
+            var ipt = $('input.ipt-goods-sku-id');
+            $.post('index.php?s=/store/goods/getGoodsSpec', {goods_id}, function(res){
+                if(res.code == 1){
+                    if(res.data.spec_id == 0){
+                        var html_ = '';
+                        $.each(res.data.list, function(i,v){
+                            html_ += '<option value="'+v.goods_sku_id+'">'+v.attr+'</option>';
+                        })
+                        $('.wrap-attr').show();
+                        $(".doc-select-attr").html(html_);
+                        ipt.val(res.data.list[0]['goods_sku_id']);
+                        chooseGoods2(res.data.list[0]['goods_sku_id']);
+                    }else{
+                        $('.wrap-attr').hide();
+                        ipt.val(res.data.spec_id)
+                        chooseGoods2(res.data.spec_id);
                     }
                 }else{
                     layer.msg(res.msg)

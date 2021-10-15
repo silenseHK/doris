@@ -15,14 +15,19 @@ class Access extends BaseModel
 
     /**
      * 获取所有权限
+     * @param int $is_super
      * @return array
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    protected static function getAll()
+    protected static function getAll($is_super=0)
     {
-        $data = static::useGlobalScope(false)->order(['sort' => 'asc', 'create_time' => 'asc'])->select();
+        if(!$is_super){
+            $data = static::useGlobalScope(false)->where(['is_normal_show'=>1])->order(['sort' => 'asc', 'create_time' => 'asc'])->select();
+        }else{
+            $data = static::useGlobalScope(false)->order(['sort' => 'asc', 'create_time' => 'asc'])->select();
+        }
         return $data ? $data->toArray() : [];
     }
 

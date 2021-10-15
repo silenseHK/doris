@@ -19,26 +19,46 @@ class Order extends OrderModel
      * @return \think\Paginator
      * @throws \think\exception\DbException
      */
-    public function getList($shop_id = 0, $search = '')
+    public function getList($shop_id = 0, $search = '', $order_type=10)
     {
         // 检索查询条件
         $shop_id > 0 && $this->where('clerk.shop_id', '=', (int)$shop_id);
         !empty($search) && $this->where('clerk.real_name', 'like', "%{$search}%");
-        $this->where('order.order_type','NEQ','40');
-        // 查询列表数据
-        $data = $this->with(['shop', 'clerk'])
-            ->alias('order')
-            ->field(['order.*'])
-            ->join('store_shop_clerk clerk', 'clerk.clerk_id = order.clerk_id', 'INNER')
-            ->order(['order.create_time' => 'desc'])
-            ->paginate(15, false, [
-                'query' => \request()->request()
-            ]);
-        if ($data->isEmpty()) {
-            return $data;
+        if($order_type == 10){
+            $this->where('order.order_type','NEQ','40');
+            // 查询列表数据
+            $data = $this->with(['shop', 'clerk'])
+                ->alias('order')
+                ->field(['order.*'])
+                ->join('store_shop_clerk clerk', 'clerk.clerk_id = order.clerk_id', 'INNER')
+                ->order(['order.create_time' => 'desc'])
+                ->paginate(15, false, [
+                    'query' => \request()->request()
+                ]);
+            if ($data->isEmpty()) {
+                return $data;
+            }
+            return OrderService::getOrderList($data);
+        }else{
+            $this->where('order.order_type','EQ','40');
+            // 查询列表数据
+            $data = $this->with(['shop', 'clerk'])
+                ->alias('order')
+                ->field(['order.*'])
+                ->join('store_shop_clerk clerk', 'clerk.clerk_id = order.clerk_id', 'INNER')
+                ->order(['order.create_time' => 'desc'])
+                ->paginate(15, false, [
+                    'query' => \request()->request()
+                ]);
+            if ($data->isEmpty()) {
+                return $data;
+            }
+            return OrderService::getOrderList2($data);
         }
+
+
         // 整理订单信息
-        return OrderService::getOrderList($data);
+
     }
 
 }

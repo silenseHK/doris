@@ -96,7 +96,7 @@ class GoodsStock extends UserGoodsStock
         $stock = $order['stock'];
         try{
             ##减库存 添加冻结库存
-            if(self::freezeStockByUserGoodsId($user_id, $goods_id, $goods_sku_id, $num,1) === false)throw new Exception('提交申请失败');
+            if(self::freezeStockByUserGoodsId($user_id, $goods_id, $goods_sku_id, $num, $order['order_no'],1) === false)throw new Exception('提交申请失败');
             ##添加库存变更记录
             $stockLogData = [
                 'user_id' => $user_id,

@@ -5,12 +5,16 @@ namespace app\api\model;
 use app\api\model\dealer\Withdraw;
 use app\api\model\user\BalanceLog;
 use app\api\model\user\GoodsStock;
+use app\api\model\user\GradeLog;
+use app\api\service\Export;
 use app\api\validate\user\TeamValidate;
+use app\api\validate\user\TransferValid;
 use app\common\enum\user\balanceLog\Scene;
 use app\common\enum\VerifyCode;
 use app\common\model\GoodsGrade;
 use app\common\model\MobileVerifyCode;
 use app\common\model\NoticeMessage;
+use app\common\model\PlatformIncomeLog;
 use app\common\model\user\Grade;
 use app\common\model\user\IntegralLog;
 use app\common\model\UserGoodsStock;
@@ -43,15 +47,42 @@ class User extends UserModel
     protected $insert = ['grade_id', 'relation'];
 
     /**
+     * 迁移对应的等级
+     * @var int[]
+     */
+    protected $transfer_grade = [
+        '0' => 1, // 游客 =》 游客
+        '1' => 2,  //周体验 =》 周体验
+        '2' => 3,  //月体验 =》 月体验
+        '3' => 4,  //VIP =》 VIP特约
+        '5' => 6,  //经销商 =》 战董
+        '6' => 7,  //总代理 =》 董事
+        '7' => 1
+    ];
+
+    protected $transfer_integral = [
+        '0' => 0, // 游客 =》 游客
+        '1' => 4,  //周体验 =》 周体验
+        '2' => 12,  //月体验 =》 月体验
+        '3' => 40,  //VIP =》 VIP特约
+        '5' => 1000,  //经销商 =》 战董
+        '6' => 3000,  //总代理 =》 董事
+        '7' => 0
+    ];
+
+    /**
      * 获取器 -- 设置用户初始会员等级
      * @param $value
+     * @param $data
      * @return mixed
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    public function setGradeIdAttr($value){
-        return Grade::getLowestGrade()['grade_id'];
+    public function setGradeIdAttr($value, $data){
+        if(isset($data['is_transfer']) && $data['is_transfer'])
+            return $value;
+        else return Grade::getLowestGrade()['grade_id'];
     }
 
     /**
@@ -108,11 +139,14 @@ class User extends UserModel
     public function login($post)
     {
         // 微信登录 获取session_key
-        $session = $this->wxlogin($post['code'], $post['encrypted_data'], $post['iv']);
+        $login_info = $this->wxlogin($post['code'], $post['encrypted_data'], $post['iv']);
+        $session = $login_info['session'];
         // 自动注册用户
         $referee_id = isset($post['referee_id']) ? $post['referee_id'] : null;
+        $referee_id = $referee_id?intval($referee_id):null;
         $userInfo = json_decode(htmlspecialchars_decode($post['user_info']), true);
         $userInfo['open_id'] = $session['openid'];
+//        $userInfo['union_id'] = $login_info['union_id'];
         $userData = $this->register($userInfo, $referee_id);
         // 生成token (session3rd)
         $this->token = $this->token($session['openid']);
@@ -183,7 +217,8 @@ class User extends UserModel
             throw new BaseException(['msg' => $WxUser->getError()]);
         }
 //        $union_id = $WxUser->unionId($session['session_key'], $encrypted_data, $iv);
-        return $session;
+        $union_id = '';
+        return compact('session','union_id');
     }
 
     /**
@@ -226,8 +261,9 @@ class User extends UserModel
         $this->startTrans();
         try {
             if(!$user){
+//                throw new BaseException(['msg' => '网络异常，请稍后注册.']);
                 ##用户的邀请人
-//                $invitation_user_id = decode($referee_id)?:0;
+                $invitation_user_id = decode($referee_id)?:0;
                 $invitation_user_id = $referee_id?:0;
                 ##检查邀请人是否存在
                 if($invitation_user_id > 0 && !(self::checkUserExist($invitation_user_id)))$invitation_user_id = 0;
@@ -334,14 +370,27 @@ class User extends UserModel
 
             ##逻辑
             ## 价格
-            $agentData = UserModel::getAgentGoodsPriceSupplyUser($user['user_id'], $goodsId, $num);
+            ##获取购买商品对应的等级
+            $grade_info = self::getBuyGoodsGrade2($goodsId, $num);
+
+            ##获取用户等级
+            $userInfo = $user;
+
+            if($userInfo['grade']['weight'] >= $grade_info['weight']){
+                $grade_id = $userInfo['grade_id'];
+            }else{
+                $grade_id = $grade_info['grade_id'];
+            }
+
+//            $agentData = UserModel::getAgentGoodsPriceSupplyUser($user['user_id'], $goodsId, $num);
             ## 检查库存
             $is_stock_enough = 1;
 //            if(!$agentData['supplyUserId']){
 //                $is_stock_enough = Goods::checkAgentGoodsStock($goodsSkuId, $num);
 //            }
             ##返回
-            $price = $agentData['price'];
+//            $price = $agentData['price'];
+            $price = GoodsGrade::getGoodsPrice($grade_id, $goodsId);
             return compact('price','is_stock_enough');
         }catch(Exception $e){
             return $e->getMessage();
@@ -416,10 +465,32 @@ class User extends UserModel
             $integralLogId = $IntegralModel->getLastInsID();
         }
 
+        $noticeMessage = new NoticeMessage();
+
         ##将货款转到出货人帐下
         $balance = $model['pay_price'] - $model['express_price'];
-        if($model['supply_user_id'] > 0)
+        if($model['supply_user_id'] > 0){
             self::addBalanceByOrder($model['supply_user_id'], $model['order_id'], $balance, $model['order_no']);
+            $noticeMessage->balanceChangeMsg(['order_no'=>$model['order_no'], 'money'=>$balance, 'user_id'=>$model['supply_user_id']],10);
+        }else{
+            PlatformIncomeLog::addLog([
+                'money' => $balance,
+                'order_no' => $model['order_no'],
+                'type' => 10,
+                'direction' => 10,
+                'order_type' => 10
+            ]);
+        }
+
+        if($model['express_price'] > 0){
+            PlatformIncomeLog::addLog([
+                'money' => $model['express_price'],
+                'order_no' => $model['order_no'],
+                'type' => 20,
+                'direction' => 10,
+                'order_type' => 10
+            ]);
+        }
 
         ##返利
         if($model['rebate_money'] > 0){
@@ -427,10 +498,20 @@ class User extends UserModel
             foreach($rebate_info as $item){
                 ### 返利给用户
                 self::addBalanceByOrder($item['user_id'], $model['order_id'], $item['money'], $model['order_no'], Scene::REBATE);
+                $noticeMessage->balanceChangeMsg(['order_no'=>$model['order_no'], 'money'=>$item['money'], 'user_id'=>$item['user_id']],20);
             }
             if($model['supply_user_id'] > 0){
                 ### 扣除出货人返利金额
                 self::reduceBalanceByOrder($model['supply_user_id'], $model['order_id'], $model['rebate_money'], $model['order_no']);
+                $noticeMessage->balanceChangeMsg(['order_no'=>$model['order_no'], 'money'=>$model['rebate_money'], 'user_id'=>$model['supply_user_id']],30);
+            }else{
+                PlatformIncomeLog::addLog([
+                    'money' => $model['rebate_money'],
+                    'order_no' => $model['order_no'],
+                    'type' => 30,
+                    'direction' => 20,
+                    'order_type' => 10
+                ]);
             }
         }
 
@@ -530,20 +611,42 @@ class User extends UserModel
         ##操作
         Db::startTrans();
         try{
-            ##绑定
-            $res = $this->where(['user_id'=>$user['user_id']])->setField('mobile', $mobile);
-            if($res === false)throw new Exception('手机号绑定失败');
-            ##使用验证码
-            $res = MobileVerifyCode::useVerifyByMobileCode($mobile, $code);
-            if($res === false)throw new Exception('验证码使用失败');
-            ##通知邀请人
-            if($user['invitation_user_id'] > 0){
-                $noticeMessage = new NoticeMessage();
-                $noticeMessage->newChildRegisterMsg($user);
+            ##检查是否是迁移用户
+            $transfer = $this->where(['mobile'=>$mobile, 'is_transfer'=>1, 'open_id'=>''])->find();
+            if($transfer){
+                $data = [
+                    'open_id' => $user['open_id'],
+                    'union_id' => $user['union_id'],
+                    'nickName' => $user['nickName'],
+                    'avatarUrl' => $user['avatarUrl'],
+                    'gender' => $user['gender'],
+                    'country' => $user['country'],
+                    'province' => $user['province'],
+                    'city' => $user['city'],
+                    'token' => $user['token'],
+                ];
+                $res = $this->where(['user_id'=>$transfer['user_id']])->update($data);
+                if($res === false)throw new Exception('手机号绑定失败');
+                $this->where(['user_id'=>$user['user_id']])->delete();
+            }else{
+                ##绑定
+                $res = $this->where(['user_id'=>$user['user_id']])->setField('mobile', $mobile);
+                if($res === false)throw new Exception('手机号绑定失败');
+                ##使用验证码
+                $res = MobileVerifyCode::useVerifyByMobileCode($mobile, $code);
+                if($res === false)throw new Exception('验证码使用失败');
+                ##通知邀请人
+                if($user['invitation_user_id'] > 0){
+                    $noticeMessage = new NoticeMessage();
+                    $noticeMessage->newChildRegisterMsg($user);
+                }
             }
             Db::commit();
+            return true;
         }catch(Exception $e){
             Db::rollback();
+            $this->error = $e->getMessage();
+            return false;
         }
     }
 
@@ -746,7 +849,7 @@ class User extends UserModel
         $this['setting'] = $setting_info;
 
         ##待入账
-        $this['wait_income_money'] = Order::getUserWaitIncomeMoney($this['user_id']);
+        $this['wait_income_money'] = number_format(Order::getUserWaitIncomeMoney($this['user_id']),2);
 
         return $this;
     }
@@ -840,6 +943,405 @@ class User extends UserModel
      */
     public function getMessageNum($user_id){
         return NoticeMessageUser::countDisReadMessage($user_id);
+    }
+
+    /**
+     * 普通用户团队列表
+     * @return \think\Paginator
+     * @throws Exception
+     * @throws \think\exception\DbException
+     */
+    public function getNormalTeamList(){
+        ##验证
+        $Validate = new TeamValidate();
+        $res = $Validate->scene('normal_team_list')->check(input());
+        if(!$res)throw new Exception($Validate->getError());
+        ##接收参数
+        $params = [
+            'grade_id' => input('get.grade_id',0,'intval'),
+            'keywords' => input('get.keywords','','search_filter'),
+            'page' => input('get.page',1,'intval'),
+            'size' => input('get.size',6,'intval'),
+            'user_id' => input('get.user_id',0,'intval')
+        ];
+        $this->setNormalTeamListWhere($params);
+        $list = $this
+            ->field(['user_id', 'nickName', 'avatarUrl', 'grade_id', 'create_time', 'mobile', 'user_id as redirect_member_num'])
+            ->with(
+                [
+                    'grade' => function(Query $query){
+                        $query->field(['grade_id', 'name']);
+                    }
+                ]
+            )
+            ->paginate($params['size'],false, ['query'=>\request()->request()]);
+        return $list;
+    }
+
+    /**
+     * 设置普通用户团队筛选条件
+     * @param $params
+     */
+    public function setNormalTeamListWhere($params){
+        $user_id = $params['user_id'] ? : $this['user_id'];
+        $where['invitation_user_id'] = $user_id;
+        if($params['grade_id']){
+            $where['grade_id'] = $params['grade_id'];
+        }
+
+        if($params['keywords']){
+            $where['mobile|nickName'] = ['LIKE', "%{$params['keywords']}%"];
+        }
+
+        $this->where($where);
+    }
+
+    /**
+     * 计算直推下级
+     * @param $user_id
+     * @return int|string
+     * @throws Exception
+     */
+    public function getRedirectMemberNumAttr($user_id){
+        return $this->where(['invitation_user_id'=>$user_id])->count();
+    }
+
+    /**
+     * 获取最新等级
+     * @param $level
+     * @return int
+     */
+    public static function transferGrade($level){
+        return (new self)->transfer_grade[$level];
+    }
+
+    /**
+     * 获取迁移用户积分
+     * @param $level
+     * @return int
+     */
+    public static function transferIntegral($level){
+        return (new self)->transfer_integral[$level];
+    }
+
+    /**
+     * 迁移代理
+     * @return bool
+     */
+    public function transferAgent(){
+        try{
+            $this->startTrans();
+            ##验证参数
+            $valid = new TransferValid();
+            if(!$valid->scene('transfer_agent')->rule(input()))throw new Exception($valid->getError());
+            $data = [
+                'user_id' => 84080,
+                'nickName' => input('nickname','','str_filter'),
+                'avatarUrl' => input('headimgurl',''),
+                'ws_openid' => input('openid',''),
+                'invitation_user_id' => 10014,
+                'mobile' => input('phone',''),
+                'grade_id' => self::transferGrade(input('level',0,'intval')),
+                'is_transfer' => 1,
+                'wxapp_id' => self::$wxapp_id,
+                'sysid' => input('sysid','','str_filter')
+            ];
+            if(!$this->addTransferUser($data))throw new Exception($this->getError());
+            $this->commit();
+            return true;
+        }catch(Exception $e){
+            Db::rollback();
+            $this->error = $e->getMessage();
+            return false;
+        }
+    }
+
+    /**
+     * 添加迁移用户
+     * @param $data
+     * @return bool
+     */
+    public function addTransferUser($data){
+        try{
+            ##验证手机号是否存在
+            $user = self::get(['mobile'=>$data['mobile']]);
+            if($user)throw new Exception('电话号码已存在');
+            ##添加用户数据
+            if($data['grade_id'] > 1){
+                $integralLogModel = new IntegralLog;
+                $gradeInfo = Grade::get(['grade_id'=>$data['grade_id']]);
+                $data['integral'] = $gradeInfo['upgrade_integral'];
+            }
+            $res = $this->isUpdate(false)->save($data);
+            if($res === false)throw new Exception('操作失败');
+            $user_id = $this->getLastInsID();
+            $invitation_code = createCode($user_id);
+            $this->where(['user_id'=>$user_id])->update(['invitation_code' => $invitation_code]);
+            if($data['grade_id'] > 1){
+                ##增加积分变更记录
+                $integralLogModel->save([
+                    'user_id' => $user_id,
+                    'balance_integral' => 0,
+                    'change_integral' => $gradeInfo['upgrade_integral'],
+                    'change_direction' => 10,
+                    'change_type' => 10
+                ]);
+                $integralLogId = $integralLogModel->getLastInsID();
+                ##增加升级记录
+                $grade_log = [
+                    'user_id' => $user_id,
+                    'old_grade_id' => 1,
+                    'new_grade_id' => $data['grade_id'],
+                    'change_type' => 10,
+                    'remark' => '公众号代理迁移',
+                    'change_direction' => 10,
+                    'integral_log_id' => $integralLogId
+                ];
+                (new GradeLog)->recordsOne($grade_log);
+            }
+            $goods_id = 47;
+            $goods_sku_id = 127;
+
+            $stock = input('stock',0,'intval');
+            if($stock > 0){
+                $res = UserGoodsStock::incTransferAgentStock($user_id, $goods_id, $goods_sku_id, $stock);
+                if(is_string($res))throw new Exception($res);
+            }
+            return true;
+        }catch(Exception $e){
+            $this->error = $e->getMessage();
+            return false;
+        }
+    }
+
+    /**
+     * 添加迁移用户
+     * @param $data
+     * @return bool
+     */
+    public function addTransferUser2($data){
+        try{
+            ##验证手机号是否存在
+            if($data['mobile'] && $data['mobile'] != 18888888888){
+                $user = self::get(['mobile'=>$data['mobile']]);
+                if($user)echo "\r\n {$user['mobile']}";
+//                if($user)throw new Exception("电话号码已存在{$data['mobile']}");
+            }
+
+            ##添加用户数据
+            if($data['grade_id'] > 1){
+//                $integralLogModel = new IntegralLog;
+                $gradeInfo = Grade::get(['grade_id'=>$data['grade_id']]);
+                $data['integral'] = $gradeInfo['upgrade_integral'];
+            }
+            $user_id = $this->insertGetId($data);
+            if($user_id === false)throw new Exception('操作失败');
+            $invitation_code = createCode($user_id);
+            $this->where(['user_id'=>$user_id])->update(['invitation_code' => $invitation_code]);
+            return $user_id;
+            if($data['grade_id'] > 1){
+                ##增加积分变更记录
+                $integralLogId = $integralLogModel->insertGetId([
+                    'user_id' => $user_id,
+                    'balance_integral' => 0,
+                    'change_integral' => $gradeInfo['upgrade_integral'],
+                    'change_direction' => 10,
+                    'change_type' => 10
+                ]);
+                ##增加升级记录
+                $grade_log = [
+                    'user_id' => $user_id,
+                    'old_grade_id' => 1,
+                    'new_grade_id' => $data['grade_id'],
+                    'change_type' => 10,
+                    'remark' => '公众号代理迁移',
+                    'change_direction' => 10,
+                    'integral_log_id' => $integralLogId
+                ];
+                (new GradeLog)->recordsOne($grade_log);
+            }
+            $goods_id = 47;
+            $goods_sku_id = 127;
+
+            $stock = input('stock',0,'intval');
+            if($stock > 0){
+                $res = UserGoodsStock::incTransferAgentStock($user_id, $goods_id, $goods_sku_id, $stock);
+                if(is_string($res))throw new Exception($res);
+            }
+            return true;
+        }catch(Exception $e){
+            $this->error = $e->getMessage();
+            return false;
+        }
+    }
+
+    public function addTransferUser3($data){
+
+        try{
+            ##验证手机号是否存在
+            if($data['mobile'] && $data['mobile'] != 18888888888){
+                $user = self::get(['mobile'=>$data['mobile']]);
+                if($user)echo "\r\n {$user['mobile']}";
+//                if($user)throw new Exception("电话号码已存在{$data['mobile']}");
+            }
+            return;
+            ##添加用户数据
+//            if($data['grade_id'] > 1){
+////                $integralLogModel = new IntegralLog;
+//                $gradeInfo = Grade::get(['grade_id'=>$data['grade_id']]);
+//                $data['integral'] = $gradeInfo['upgrade_integral'];
+//            }
+//            $user_id = $this->insertGetId($data);
+//            if($user_id === false)throw new Exception('操作失败');
+//            $invitation_code = createCode($user_id);
+//            $this->where(['user_id'=>$user_id])->update(['invitation_code' => $invitation_code]);
+//            return $user_id;
+            if($data['grade_id'] > 1){
+                ##增加积分变更记录
+                $integralLogId = $integralLogModel->insertGetId([
+                    'user_id' => $user_id,
+                    'balance_integral' => 0,
+                    'change_integral' => $gradeInfo['upgrade_integral'],
+                    'change_direction' => 10,
+                    'change_type' => 10
+                ]);
+                ##增加升级记录
+                $grade_log = [
+                    'user_id' => $user_id,
+                    'old_grade_id' => 1,
+                    'new_grade_id' => $data['grade_id'],
+                    'change_type' => 10,
+                    'remark' => '公众号代理迁移',
+                    'change_direction' => 10,
+                    'integral_log_id' => $integralLogId
+                ];
+                (new GradeLog)->recordsOne($grade_log);
+            }
+            $goods_id = 47;
+            $goods_sku_id = 127;
+
+            $stock = input('stock',0,'intval');
+            if($stock > 0){
+                $res = UserGoodsStock::incTransferAgentStock($user_id, $goods_id, $goods_sku_id, $stock);
+                if(is_string($res))throw new Exception($res);
+            }
+            return true;
+        }catch(Exception $e){
+            $this->error = $e->getMessage();
+            return false;
+        }
+    }
+
+    public function transferTeam($team){
+        $agent_id = input('post.agent_id',0,'intval');
+        try{
+            $this->startTrans();
+            $this->doTransfer($agent_id, $team);
+            $this->commit();
+            return true;
+        }catch(Exception $e){
+            $this->rollback();
+            return false;
+        }
+    }
+
+    public function doTransfer($invite_user_id, $team){
+        foreach($team as $item){
+            $data = [
+                'nickName' => $item['nickname'],
+                'avatarUrl' => $item['headimgurl'],
+                'ws_openid' => $item['openid'],
+                'invitation_user_id' => $invite_user_id,
+                'mobile' => $item['phone'],
+                'grade_id' => self::transferGrade($item['level']),
+                'is_transfer' => 1,
+                'wxapp_id' => self::$wxapp_id,
+                'create_time' => time(),
+                'update_time' => time(),
+                'sysid' => $item['sysid']
+            ];
+            $data['relation'] = $this->setRelationAttr('',$data);
+            $user_id = $this->addTransferUser2($data);
+            if(!$user_id)throw new Exception($this->getError());
+            if($item['child'])$this->doTransfer($user_id, $item['child']);
+        }
+        return true;
+    }
+
+    public function didTransferTeams($info){
+        ##获取父级
+        $invitation_user_id = $this->getInvitationUserId($info['recid']);
+        if(!$invitation_user_id)throw new Exception("推荐人不存在{$info['openid']}");
+        $data = [
+            'nickName' => $info['nickname'],
+            'avatarUrl' => $info['headimgurl'],
+            'ws_openid' => $info['openid'],
+            'invitation_user_id' => $invitation_user_id,
+            'mobile' => $info['phone'],
+            'grade_id' => self::transferGrade($info['level']),
+            'integral' => self::transferIntegral($info['level']),
+            'is_transfer' => 1,
+            'wxapp_id' => self::$wxapp_id,
+            'create_time' => time(),
+            'update_time' => time(),
+            'sysid' => $info['sysid']
+        ];
+        $data['relation'] = $this->setRelationAttr('',$data);
+        $this->addTransferUser3($data);
+        return $data;
+    }
+
+    public function getInvitationUserId($recid){
+        return $this->where(['sysid'=>$recid])->value('user_id');
+    }
+
+    public function filterTransfer($team){
+        $stock_arr = [];
+        $money_arr = [];
+        $mobile_arr = [];
+        $repeat_mobile_arr = [];
+        $rtn = $this->circleFilterTransfer($team, $stock_arr, $money_arr,$mobile_arr,$repeat_mobile_arr);
+//        print_r($rtn['money_arr']);die;
+//        $user_ids = array_column($rtn['money_arr'], 'user_id');
+//        print_r($user_ids);die;
+//        echo implode(',',$user_ids);die;
+//        print_r($rtn['stock_arr']);die;
+        $export = new Export();
+        return $export->transferStockList($rtn['stock_arr']);
+//        print_r($rtn);die;
+//        echo json_encode($rtn);die;
+//        print_r($rtn['stock_arr']);die;
+    }
+
+    public function filterTransfer2($data){
+        $export = new Export();
+        return $export->transferStockList($data);
+//        print_r($rtn);die;
+//        echo json_encode($rtn);die;
+    }
+
+    public function circleFilterTransfer($team, &$stock_arr, &$money_arr, &$mobile_arr, &$repeat_mobile_arr){
+        foreach($team as $item){
+            if(in_array($item['phone'], $mobile_arr) && $item['phone'] != 0){
+                $repeat_mobile_arr[] = ['user_id'=>$item['id'], 'stock'=>$item['stock'], 'mobile'=>$item['phone'], 'name'=>$item['name'], 'openid'=>$item['openid']];
+            }
+            $mobile_arr[] = $item['phone'];
+            if($item['stock'] != 0){
+                $stock_arr[] = ['user_id'=>$item['id'], 'stock'=>$item['stock'], 'mobile'=>$item['phone'], 'name'=>$item['name'], 'openid'=>$item['openid'], 'level'=>$item['level']];
+            }
+            if($item['money'] > 0){
+                $money_arr[] = ['user_id'=>$item['id'], 'money'=>$item['money'], 'mobile'=>$item['phone'], 'name'=>$item['name']];
+            }
+            if($item['child']){
+                $this->circleFilterTransfer($item['child'], $stock_arr, $money_arr,$mobile_arr,$repeat_mobile_arr);
+            }
+        }
+        return compact('stock_arr','money_arr','repeat_mobile_arr');
+    }
+
+    public function transferStockRecord($data){
+        $export = new Export();
+        return $export->transferStockRecord($data);
     }
 
 }

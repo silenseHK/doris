@@ -227,12 +227,18 @@ class Order extends OrderModel
                 case 20: #发货人
                     ##先查找user_id
                     $like_user_ids = UserModel::getLikeUserByName($keywords);
-                    $this->where(['supply_user_id'=>['IN', $like_user_ids]]);
+                    if($like_user_ids)
+                        $this->where(['supply_user_id'=>['IN', $like_user_ids]]);
+                    else
+                        $this->where(['supply_user_id'=>1.1]);
                     break;
                 case 30: #进货人
                     ##先查user_id
                     $like_user_ids = UserModel::getLikeUserByName($keywords);
-                    $this->where(['user_id'=>['IN', $like_user_ids]]);
+                    if($like_user_ids)
+                        $this->where(['order.user_id'=>['IN', $like_user_ids]]);
+                    else
+                        $this->where(['order.user_id'=>1.1]);
                     break;
             }
         }
@@ -299,7 +305,8 @@ class Order extends OrderModel
         $updateList = [[
             'order_id' => $this['order_id'],
             'express_id' => $data['express_id'],
-            'express_no' => $data['express_no']
+            'express_no' => $data['express_no'],
+            'delivery_remark' => str_filter($data['delivery_remark'])
         ]];
         // 更新订单发货状态
         if ($status = $this->updateToDelivery($updateList)) {
@@ -396,6 +403,7 @@ class Order extends OrderModel
                 'order_id' => $item['order_id'],
                 'express_no' => $item['express_no'],
                 'express_id' => $item['express_id'],
+                'delivery_remark' => $item['delivery_remark'],
                 'delivery_status' => 20,
                 'delivery_time' => time(),
             ];
@@ -480,6 +488,22 @@ class Order extends OrderModel
                 'update_price' => helper::bcsub($data['update_price'], helper::bcsub($this['total_price'], $this['coupon_money'])),
                 'express_price' => $data['update_express_price']
             ]) !== false;
+    }
+
+    /**
+     * 修改订单物流
+     * @param $data
+     * @return bool
+     */
+    public function updateExpress($data){
+        if(!isset($data['express_id']) || !$data['express_id'] || !isset($data['express_no']) || !$data['express_no']){
+            $this->error = '参数缺失';
+            return false;
+        }
+        return $this->save([
+            'express_id' => $data['express_id'],
+            'express_no' => $data['express_no']
+        ]) !== false;
     }
 
     /**
@@ -590,7 +614,7 @@ class Order extends OrderModel
     }
 
     public function warehouse(){
-        $goods_id = 21;
+        $goods_id = 35;
         ##库存
         $stock_info = GoodsSku::where(['goods_id'=>$goods_id])->field(['stock_num', 'total_stock_num', 'goods_sku_id'])->find();
         ##发货量
@@ -613,7 +637,7 @@ class Order extends OrderModel
         return compact('nums','time_nums','spec_list','deliver_list');
     }
 
-    public function getTimeNums($goods_id=21){
+    public function getTimeNums($goods_id=35){
         $goods_sku_id = GoodsSku::where(['goods_id'=>$goods_id])->value('goods_sku_id');
         $start_time = input('start_time','','str_filter');
         $end_time = input('end_time','','str_filter');
@@ -692,7 +716,7 @@ class Order extends OrderModel
             $res = self::where(['order_id'=>$order_id])->setField('order_status',40);
             if($res === false)throw new Exception('操作失败');
             ##返还积分和等级、返还返利金额、
-            if($order_info['order_status']['value'] == 30){
+            if($order_info['order_status']['value'] == 30){ ##订单已完成的
                 $integral_info = IntegralLog::get(['order_id'=>$order_id]);
                 if($integral_info){
                     IntegralLog::refund($integral_info, $order_id);
@@ -805,7 +829,7 @@ class Order extends OrderModel
                     'supplyGrade',
                     'userGrade',
                     'goods' => function(Query $query){
-                        $query->with(['sku.image']);
+                        $query->with(['spec.image']);
                     }
                 ]
              )
@@ -861,6 +885,81 @@ class Order extends OrderModel
         if(!$list->isEmpty())$total_freight = $this->where($where)->sum('express_price');
         $page = $list->render();
         return compact('page','list','total_freight');
+    }
+
+    /**
+     * 总销售额
+     * @return bool|float|int|string|null
+     */
+    public function getSaleMoneyTotal(){
+        ##平台出货的订单金额[待发货、待收货、待提货的、补库存]
+        $money = $this->where(
+                [
+                    'pay_status' => 20,
+                    'order_status' => ['IN', [10, 30]]
+                ]
+
+            )
+            ->sum('order_price');
+        return $money;
+    }
+
+    /**
+     * 公司总销售额
+     * @return bool|float|int|string|null
+     */
+    public function getCompanySaleMoneyTotal(){
+        ##公司出货的订单金额[待发货、待收货、待提货的、补库存]
+        $money = $this->where(
+                [
+                    'pay_status' => 20,
+                    'order_status' => ['IN', [10, 30]],
+                    'supply_user_id' => 0
+                ]
+            )
+            ->sum('order_price');
+        return $money;
+    }
+
+    /**
+     * 统计销售数据
+     * @param $users
+     * @param $start_time
+     * @param $end_time
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function statisticsSaleDataS($users, $start_time, $end_time){
+        $user_ids = array_column($users, 'user_id');
+        $list = $this->alias('o')
+            ->join('order_goods og','og.order_id = o.order_id','RIGHT')
+            ->where([
+                'o.supply_user_id' => ['IN', $user_ids],
+                'o.pay_status' => 20,
+                'o.order_status' => ['IN', [10, 30]],
+                'o.create_time' => ['between time', [$start_time, $end_time]]
+            ])
+            ->field(['og.total_num', 'o.total_price', 'o.supply_user_id', 'o.order_status'])
+            ->select();
+        $list = $list->isEmpty() ? [] : $list->toArray();
+        $data = [];
+        foreach($users as $user){
+            $data[$user['user_id']] = [
+                'total_num' => 0,
+                'total_money' => 0,
+                'name' => $user['name'],
+                'group' => $user['group_id']['text'],
+                'type' => $user['type']['text'],
+            ];
+        }
+
+        foreach($list as $item){
+            $data[$item['supply_user_id']]['total_num'] += $item['total_num'];
+            $data[$item['supply_user_id']]['total_money'] += $item['total_price'];
+        }
+        return $data;
     }
 
 }

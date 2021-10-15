@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title></title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<!-- 引入Vue -->
+<!-- 引入样式文件 -->
+<!-- <link rel="stylesheet" type="text/css" href="weui.css"> -->
+<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vant@2.6/lib/index.css"/> -->
+<!-- 引入样式 -->
+<!-- <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css"> -->
+<link rel="stylesheet" href="css/element.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vant@2.6/lib/index.css"/>
+<!-- 引入组件库 -->
+<style>
+body{
+    margin: 0;
+    font-family: Helvetica Neue,Helvetica,PingFang SC,Hiragino Sans GB,Microsoft YaHei,SimSun,sans-serif;
+}
+#app{
+    padding-bottom: 100px;
+}
+.header img{
+    width: 100%;
+}
+.form-container{
+    margin: 20px;
+    margin-top: -16px;
+}
+.el-form-item{
+    margin-bottom: 26px;
+}
+.checkbox-item{
+    width: 50%;
+    flex: 1;
+    float: left;
+}
+.el-checkbox,.el-radio{
+    margin: 0;
+    margin: 0 0 12px 0;
+    display: flex;
+    white-space: wrap;
+}
+.el-form--label-top .el-form-item__label{
+    width: 100%;
+    background: #313131;
+    border-radius: 5px;
+    color: #fff;
+    padding: 0;
+    margin-bottom: 20px;
+    line-height: 1.6;
+    padding: 10px 0;
+    padding-left: 8px;
+}
+.el-input__inner,.el-textarea__inner,.el-checkbox__inner,.el-radio__inner{
+    border: 1px solid #e6c49f;
+}
+.el-checkbox__label{
+    white-space: pre-line;
+}
+.submitBtn{
+    display: flex;
+    justify-content: center;
+}
+.submitBtn .el-button--medium{
+    width: 100%;
+}
+.el-message-box{
+	width: 80%;
+}
+.showResultImg img{
+	width: 100%;
+}
+
+.wrap-container{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	 height: 100%;
+}
+.wrap-block{
+	width: 80%;
+	background: #fff;
+	border-radius: 5px;
+}
+.wrap-block img{
+	width: 100%;
+	height: auto;
+}
+.press-save{
+	text-align: center;
+}
+.van-cell{
+	border: 1px solid #e6c49f;
+	border-radius: 4px;
+}
+[v-cloak]{
+	display: none;
+}
+</style>
+</head>
+
+<body>
+<div id="app" v-cloak>
+<!--如果提交过表单，显示配餐图-->
+<div v-if="is_submit">
+	<div class="showResultImg">
+		<img :src="showResultImg" alt="" />
+	</div>
+</div>
+
+<!--没有提交过表单，填写表单-->
+<div v-else-if="!is_submit">
+	<div class="header">
+        <img src="img/header-bg.jpeg" alt="">
+    </div>
+    <div class="form-container" ref="formContainer">
+        <el-form :model="form" :rules="rules" ref="form" :label-position="labelPosition" status-icon="true" class="demo-ruleForm">
+            <div class="el-form" v-for="(item,index) in list" :key="item.question_id">
+            	<!--输入框通用-->
+                <el-form-item :ref="item.name" :class="item.name" v-if="item.type.value===10&&item.name !=='height'&&item.name !=='weight'&&item.name !=='birth_date'" :prop="item.name">
+                    <span slot="label">问题{{index+1}}：{{item.label}}</span>
+                    	<el-input v-model="form[item.name]"></el-input>
+                </el-form-item>
+                <!--出生年月-->
+                <el-form-item :ref="item.name" :class="item.name" v-if="item.type.value===10&&item.name=='birth_date'" :prop="item.name">
+                    <span slot="label">问题{{index+1}}：{{item.label}}</span>
+                    <div @click="showPickerBirthday = true">
+                    	<van-field
+						  readonly
+						  clickable
+						  :value="form[item.name]"
+						  placeholder="选择您的出生年月"
+						  @click="showPickerBirthday = true"
+						/>
+                    	<el-input v-model="form[item.name]"></el-input>
+                    </div>
+                </el-form-item>
+                <!--身高-->
+                <el-form-item :ref="item.name" :class="item.name" v-if="item.type.value===10&&item.name=='height'" :prop="item.name">
+                    <span slot="label">问题{{index+1}}：{{item.label}}</span>
+                    <div @click="showPickerHeight = true">
+                    	<van-field
+						  readonly
+						  clickable
+						  :value="form[item.name]"
+						  placeholder="选择您的身高"
+						  @click="showPickerHeight = true"
+						/>
+                    	<el-input v-model="form[item.name]"></el-input>
+                    </div>
+                </el-form-item>
+                <!--体重-->
+                <el-form-item :ref="item.name" :class="item.name" v-if="item.type.value===10&&item.name=='weight'" :prop="item.name">
+                    <span slot="label">问题{{index+1}}：{{item.label}}</span>
+                    <div @click="showPickerWeight = true">
+                    	<van-field
+						  readonly
+						  clickable
+						  :value="form[item.name]"
+						  placeholder="选择您的体重"
+						  @click="showPicker = true"
+						/>
+                    	<el-input v-model="form[item.name]"></el-input>
+                    </div>
+                </el-form-item>
+        
+                <el-form-item :ref="item.name" v-if="item.type.value===20" :prop="item.name">
+                    <span slot="label">问题{{index+1}}：{{item.label}}</span>
+                    <el-radio-group v-model="form[item.name]">
+                        <el-radio v-for="child in item.option" :label="child.mark">{{child.label}}</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+
+                <el-form-item :ref="item.name" v-if="item.type.value===30" :prop="item.name">
+                    <span slot="label">问题{{index+1}}：{{item.label}}</span>
+                    <el-checkbox-group v-model="form[item.name]">
+                        <div class="checkbox-item" v-for="child in item.option">
+                            <el-checkbox :label="child.mark" @change="selectCheckbox(child)" slots="other">{{child.label}}</el-checkbox>
+                        </div>
+                    </el-checkbox-group>
+                    <el-input class="extra-input" name="other" v-if="form['show'+item.question_id]"  v-model="form[item.question_id]" placeholder="请输入内容"></el-input>
+                </el-form-item>
+
+                <el-form-item :ref="item.name" v-if="item.type.value===40" :prop="item.name">
+                    <span slot="label">问题{{index+1}}：{{item.label}}</span>
+                    <el-input type="textarea" :rows="3" placeholder="请输入内容" v-model="form[item.name]"></el-input>
+                </el-form-item>
+            </div>
+            
+            <div class="submitBtn">
+                <el-button type="primary" @click="submitForm('form')" size="medium">提交表单</el-button>
+            </div>
+                <!-- <el-button @click="resetForm('ruleForm')">重置</el-button> -->
+        </el-form>
+    </div>
+    <!--提交成功后配餐图弹框-->
+	<!--<van-overlay :show="show" z-index="9999">-->
+	<!--	<div class="wrap-container" @click.stop="showWrap">-->
+	<!--		<div class="wrap-block" @click.stop>-->
+	<!--			<div>您的健康状况</div>-->
+	<!--			<img :src="resultImg" alt="" />-->
+	<!--			<div class="press-save">点击获取配餐表</div>-->
+	<!--		</div>-->
+	<!--	</div>-->
+	<!--</van-overlay>-->
+	<van-popup v-model="showPickerBirthday" round position="bottom">
+		<van-datetime-picker
+		  v-model="currentDate"
+		  type="date"
+		  title="选择年月日"
+		  :min-date="minDate"
+		  :max-date="maxDate"
+		  @confirm="onConfirmBirthday"
+		/>
+	</van-popup>
+	<!--选择身高-->
+	<van-popup v-model="showPickerHeight" round position="bottom">
+	  <van-picker
+	    show-toolbar
+	    :columns="height"
+		:default-index="45"
+	    @cancel="showPickerHeight = false"
+	    @confirm="onConfirmHeight"
+	  />
+	</van-popup>
+	
+	<van-popup v-model="showPickerWeight" round position="bottom">
+	  <van-picker
+	    show-toolbar
+	    :columns="weight"
+	    :default-index="20"
+	    @cancel="showPickerWeight = false"
+	    @confirm="onConfirmWeight"
+	  />
+	</van-popup>
+</div>
+
+
+</div>
+
+<!-- <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script> -->
+<!-- 引入 Vue 和 Vant 的 JS 文件 -->
+<!-- 引入 Vue 和 Vant 的 JS 文件 -->
+
+<script src="js/vue.min.js"></script>
+<script src="js/element.js"></script>
+<script src="js/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vant@2.6/lib/vant.min.js"></script>
+<!--<script type="text/javascript" src="https://res.wx.qq.com/open/js/jweixin-1.3.2.js"></script>-->
+<script type="text/javascript">
+     const base_url = window.location.protocol+'//'+window.location.host;
+     new Vue({
+     	el: '#app',
+        data: {
+        	// show: false,
+        	showResultImg:'', //验证是否提交了表单
+        	urlParams: '',
+        	resultImg:'',  //提交成功返回配餐
+            labelPosition: 'top',
+            form: {},
+            rules: {
+        //   name: [
+        //     { required: false, message: '请输入活动名称', trigger: 'blur' },
+        //   ],
+        //   motion_type: [
+        //     { type: 'array', required: true, message: '请至少选择一个', trigger: 'change' }
+        //   ],
+        //   sex: [
+        //     { required: true, message: '请选择性别', trigger: 'change' }
+        //   ],
+        //   advice: [
+        //     { required: true, message: '请填写意见', trigger: 'blur' }
+        //   ]
+            },
+            params:{},
+            list:'',
+            questionnaire_id: '',
+            is_submit: '',
+            minDate: new Date(1950, 0, 1),
+		    maxDate: new Date(),
+		    currentDate: new Date(),
+		    showPickerBirthday: false,
+            showPickerHeight: false,
+            showPickerWeight: false,
+    		height: [],
+    		weight: []
+        },
+        created(){
+        	this.getParams();
+        	this.getForm();
+        	this.getHeight();
+        	this.getWeight();
+        },
+        methods: {
+        	getHeight:function(){
+        		var heightArr = [];
+        		for(var i=120;i<250;i++){
+        			heightArr.push(i);
+        		}
+        		this.height = heightArr;
+        	},
+        	getWeight:function(){
+        		var weightArr = [];
+        		for(var k=30;k<151;k++){
+        			console.log(k)
+        			weightArr.push(k);
+        		}
+        		this.weight = weightArr;
+        	},
+        	getParams:function(){
+        		var name,value;
+	            var str=location.href; //取得整个地址栏
+	            var num=str.indexOf("?")
+	            str=str.substr(num+1); //取得所有参数   stringvar.substr(start [, length ]
+	            
+	            var arr=str.split("&"); //各个参数放到数组里
+	            this.urlParams = str;
+        	},
+        	getForm:function(){
+        		let _this = this; //10 input 20 单选 30 多选 40textarea 
+        		axios.get(base_url+'/index.php?s=/api/questionnaire/questionnaire&wxapp_id=10001&'+_this.urlParams).then(function (response) {
+                    // vant.Toast.clear();
+                    _this.is_submit = response.data.data.is_submit;
+                   _this.showResultImg = response.data.data.img;
+                    _this.questionnaire_id = response.data.data.questionnaire_id;
+                     resData = response.data.data.questions;
+                     var arrContact = {};
+                     var ruleItem = {};
+                     for(let i in resData){
+                         var reVal = {};
+               
+                         if(resData[i].type.value == 30){
+                            //  验证信息
+                            let rules = {
+                                'type': 'array',
+                                'required': resData[i].is_require==1?true:false,
+                                'message': '请至少选择一个'+resData[i].label,
+                                'trigger': 'change'
+                            }
+                            ruleItem[resData[i].name] = [rules];
+                            //  如果是多选类型变为数组
+                            arrContact[resData[i].name] = [];
+                            arrContact[resData[i].question_id] = '';
+                            arrContact['show'+resData[i].question_id] = false;
+                         }else if(resData[i].type.value == 20){
+                            let rules = {
+                                'required': resData[i].is_require==1?true:false,
+                                'message': '请选择'+resData[i].label,
+                                'trigger': 'change'
+                            }
+                            ruleItem[resData[i].name] = [rules];
+                            arrContact[resData[i].name] = [];
+                         }else{
+                            let rules = {
+                                'required': resData[i].is_require==1?true:false,
+                                'message': '请填写'+resData[i].label,
+                                'trigger': 'blur'
+                            }
+                            ruleItem[resData[i].name] = [rules];
+                            arrContact[resData[i].name] = '';
+                         }
+                     }
+
+                     _this.rules = ruleItem;
+                     _this.form = arrContact;
+                     _this.list = resData;
+                }).catch(function (error) {
+                    console.log(error.response);
+                });
+            },
+            selectCheckbox:function(e){
+                if(e.is_input==1){
+                    this.form['show'+e.question_id] = !this.form['show'+e.question_id];
+                }
+            },
+            onConfirmBirthday(value){
+            	console.log(value);	
+            	this.form.birth_date = this.timeFormat(value);
+            	this.showPickerBirthday = false;
+            },
+            timeFormat(time) {
+            	// 时间格式化 2019-09-08
+		        let year = time.getFullYear();
+		        let month = time.getMonth() + 1;
+		        let day = time.getDate();
+		        return year + '-' + month + '-' + day
+		     },
+            onConfirmHeight(value) {
+		      this.form.height = value;
+		      this.showPickerHeight = false;
+		    },
+		    onConfirmWeight(value) {
+		      this.form.weight = value;
+		      this.showPickerWeight = false;
+		    },
+            onSubmit() {
+                let _this = this;
+                var arr = new Array();
+                const resList = _this.list;
+                     for(let i in resList){
+                        //  console.log(resData[i])
+                         var reVal = new Object();
+                         const inputName =  resList[i].name;
+
+                         for(k in _this.form){
+                             if(resData[i].name == k){
+                                 if(resData[i].type.value ===20){
+                                     console.log(_this.form[k]);
+                                    reVal['answer_mark'] = [_this.form[k]];
+                                    reVal['answer'] = '';
+                                 }else if(resData[i].type.value ===30){
+                                    reVal['answer_mark'] = _this.form[k];
+                                 }else{
+                                    reVal['answer_mark'] = '';
+                                    reVal['answer'] = _this.form[k];
+                                 }
+                              
+                            }else{
+                                if(resData[i].question_id == k){
+                                    console.log(k);
+                                    reVal['answer'] = _this.form[k]; 
+                                }
+                            }
+                         }
+                        //  console.log(resList[i].type.value);
+  
+                        //  reVal['answer_mark'] = 
+                        reVal['question_id'] = resList[i].question_id;
+                     	arr.push(reVal);
+                     }
+                _this.params = arr;
+                // console.log(_this.params);
+            },
+            submitForm(formName) {
+                let _this = this;
+                _this.$refs[formName].validate((valid,dom) => {
+                if (valid) {
+                    // alert('submit!');
+                    _this.onSubmit();
+                    let postData = new Object();
+                    postData['questionnaire_id'] = _this.questionnaire_id;
+                    postData['answer'] = _this.params;
+                    axios.post(base_url+'/index.php?s=/api/questionnaire/submitQuestionnaire&wxapp_id=10001&'+_this.urlParams,postData).then(function (response) {
+                    	console.log(response.data);
+                    	if(response.data.code ===1){
+                    		// _this.show = !_this.show;
+                    		// _this.resultImg = response.data.data.img;
+                    		vant.Dialog.alert({
+							  title: '提示',
+							  confirmButtonText: '获取我的配餐表',
+							  message: '您的bmi值为:'+response.data.data.bmi,
+							}).then(() => {
+							  // on close
+							  _this.getForm();
+							});
+                    
+                    	}else{
+                    		console.log("内部错误");
+                    		alert('提交错误，请稍后再试');
+                    	}
+                      
+                    }).catch(function (error) {
+                        console.log(error.response);
+                    });
+
+                	} else {
+                    for (let key of Object.keys(dom)) {
+                        //获取ref dom 点进行锚点定位
+                        let anchor = _this.$refs[key][0].$el.offsetTop;
+                        _this.$nextTick(() => {
+                            _this.$refs[key][0].$el.scrollIntoView();
+                        });
+                    break;
+                    }
+                    console.log('error submit!!');
+                    return false;
+                }
+                });
+            },
+            showWrap:function(){
+            	this.show = !this.show;
+            }
+        }
+    })
+   
+
+</script>
+</body>
+</html>

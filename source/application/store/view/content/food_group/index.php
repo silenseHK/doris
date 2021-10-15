@@ -31,9 +31,10 @@
                             <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>图片</th>
+                                <th width="500px">图片</th>
                                 <th>最大BMI</th>
                                 <th>最小BMI</th>
+                                <th>类型</th>
                                 <th>创建时间</th>
                                 <th>操作</th>
                             </tr>
@@ -43,14 +44,17 @@
                                 <tr>
                                     <td class="am-text-middle"><?= $item['id'] ?></td>
                                     <td class="am-text-middle">
-                                        <a href="javascript:void(0);" onclick="showImage.call(this)" data-image="<?= $item['image']['file_path'] ?>" title="点击查看大图" target="">
-                                            <img src="<?= $item['image']['file_path'] ?>" width="72" height="72" alt="">
+                                        <?php foreach($item['images'] as $it):?>
+                                        <a href="javascript:void(0);" onclick="showImage.call(this)" data-image="<?= $it['images']['file_path'] ?>" title="点击查看大图" target="">
+                                            <img src="<?= $it['images']['file_path'] ?>" width="72" height="72" alt="">
                                         </a>
+                                        <?php endforeach; ?>
                                     </td>
                                     <td class="am-text-middle">
                                         <?= $item['max_bmi'] ?>
                                     </td>
                                     <td class="am-text-middle"><?= $item['min_bmi'] ?></td>
+                                    <td class="am-text-middle"><?= $item['type']['title'] ?></td>
                                     <td class="am-text-middle"><?= $item['create_time'] ?></td>
                                     <td class="am-text-middle">
                                         <div class="tpl-table-black-operation">
@@ -119,6 +123,7 @@
 
     function showImage(){
         let img = $(this).data('image')
+        let imgs = $(this).data('images')
         let content = '<img style="width:375px;" src="'+ img +'" />'
         layer.open({
             type: 1,

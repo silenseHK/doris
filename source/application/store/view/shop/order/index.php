@@ -18,6 +18,13 @@ use app\common\enum\OrderType as OrderTypeEnum;
                             <div class="am-u-sm-12 am-u-md-9 am-u-sm-push-3">
                                 <div class="am fr">
                                     <div class="am-form-group am-fl">
+                                        <select name="order_type"
+                                                data-am-selected="{btnSize: 'sm', placeholder: '订单类型'}">
+                                            <option value="10">消费订单</option>
+                                            <option value="20">提货发货订单</option>
+                                        </select>
+                                    </div>
+                                    <div class="am-form-group am-fl">
                                         <select name="shop_id"
                                                 data-am-selected="{btnSize: 'sm', placeholder: '所属门店'}">
                                             <option value=""></option>

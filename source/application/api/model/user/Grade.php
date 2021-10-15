@@ -22,8 +22,7 @@ class Grade extends GradeModel
     public function getGradeList(){
         $list = $this->where([
             'status' => 1,
-            'is_delete' => 0,
-            'is_show'=>1
+            'is_delete' => 0
         ])->field(['grade_id', 'name'])->order('weight','desc')->select()->toArray();
         $all[] = [
             'grade_id' => 0,

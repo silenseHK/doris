@@ -25,7 +25,7 @@ class GradeType extends EnumBasics
     public static function data(){
         return [
             self::HIDE => [
-                'text' => '合伙人OR董事',
+                'text' => '创始人',
                 'value' => self::HIDE
             ],
             self::HIGH => [

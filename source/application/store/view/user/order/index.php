@@ -39,7 +39,7 @@
                                         label="商品图片"
                                         width="120">
                                     <template slot-scope="scope">
-                                        <el-image v-if="scope.row.order_id" style="width: 100px; height: 100px" :src="scope.row.orders.goods[0].sku.image.file_path"></el-image>
+                                        <el-image v-if="scope.row.order_id" style="width: 100px; height: 100px" :src="scope.row.orders.goods[0].spec.image.file_path"></el-image>
                                     </template>
                                 </el-table-column>
                                 <el-table-column
@@ -114,7 +114,8 @@
                                 <el-table-column
                                     prop="scene.text"
                                     label="场景"
-                                    width="170">
+                                    width="170"
+                                    fixed="right">
                                 </el-table-column>
                             </el-table>
                         </el-main>
@@ -247,7 +248,7 @@
                                     label="商品图片"
                                     width="120">
                                     <template slot-scope="scope">
-                                        <el-image style="width: 100px; height: 100px" :src="scope.row.goods[0].sku.image.file_path"></el-image>
+                                        <el-image style="width: 100px; height: 100px" :src="scope.row.goods[0].spec.image.file_path"></el-image>
                                     </template>
                                 </el-table-column>
                                 <el-table-column
@@ -431,7 +432,7 @@
                                     }
                                     data[k]['status_text'] = v.orders.order_status.text;
                                     data[k]['get_user_name'] = v.orders.user.nickName;
-                                    data[k]['get_user_grade'] = v.orders.user_grade.name;
+                                    data[k]['get_user_grade'] = v.orders.user_grade?v.orders.user_grade.name: '';
                                 }else{
                                     data[k]['stock'] =  "" ;
                                     data[k]['prev_stock'] = "";
@@ -491,7 +492,7 @@
                                 }
                                 data[k]['status_text'] = v.order_status.text;
                                 data[k]['get_user_name'] = v.user.nickName;
-                                data[k]['get_user_grade'] = v.user_grade.name;
+                                data[k]['get_user_grade'] = v.user_grade ? v.user_grade.name : '';
 
                             });
                             that.tableData3 = res.data.list.data

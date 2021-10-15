@@ -20,7 +20,7 @@ class Access extends AccessModel
      */
     public function getList()
     {
-        $all = static::getAll();
+        $all = static::getAll(1);
         return $this->formatTreeData($all);
     }
 
@@ -37,13 +37,14 @@ class Access extends AccessModel
 
     /**
      * 更新记录
+     * @param $access_id
      * @param $data
      * @return bool
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\ModelNotFoundException
      * @throws \think\exception\DbException
      */
-    public function edit($data)
+    public function edit($access_id, $data)
     {
         // 判断上级角色是否为当前子级
         if ($data['parent_id'] > 0) {
@@ -53,8 +54,25 @@ class Access extends AccessModel
                 $this->error = '上级权限不允许设置为当前子权限';
                 return false;
             }
+            ##获取上级的is_normal_show
+            $p_is_normal_show = self::where(['access_id'=>$data['parent_id']])->value('is_normal_show');
+            if($p_is_normal_show == 2)
+                $data['is_normal_show'] = 2;
+        }
+        if($data['is_normal_show'] != 1){
+           $this->hideChildNormalShow($access_id);
         }
         return $this->allowField(true)->save($data) !== false;
+    }
+
+    public function hideChildNormalShow($access_id){
+        $ids = self::where(['parent_id'=>$access_id])->column('access_id');
+        if($ids){
+            self::where(['access_id'=>['IN', $ids]])->setField('is_normal_show',2);
+            foreach ($ids as $id){
+                $this->hideChildNormalShow($id);
+            }
+        }
     }
 
     /**
@@ -84,7 +102,7 @@ class Access extends AccessModel
     private function getTopAccessIds($access_id, &$all = null)
     {
         static $ids = [];
-        is_null($all) && $all = $this->getAll();
+        is_null($all) && $all = $this->getAll(1);
         foreach ($all as $item) {
             if ($item['access_id'] == $access_id && $item['parent_id'] > 0) {
                 $ids[] = $item['parent_id'];

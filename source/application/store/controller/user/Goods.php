@@ -19,19 +19,27 @@ class Goods extends Controller
     }
 
     public function log(){
-        $model = new UserGoodsStockLog();
+//        $model = new UserGoodsStockLog();
 //        print_r($this->model->getLog($this->request->param())->toArray());die;
-        return $this->fetch('log',[
-            'list' => $model->getLog($this->request->param()),
-            'sceneList' => StockChangeScene::data()
+        return $this->fetch('log2',[
+//            'list' => $model->getLog($this->request->param()),
+            'sceneList' => StockChangeScene::data(),
+            'user_id' => input('user_id',0,'intval'),
+            'goods_id' => input('goods_id',0,'intval'),
+            'goods_sku_id' => input('goods_sku_id',0,'intval')
         ]);
+    }
+
+    public function getLogList(){
+        $model = new UserGoodsStockLog();
+        return $this->renderSuccess('','', $model->getLog($this->request->param()));
     }
 
     public function goodsStock(){
         $model = new UserGoodsStock();
 //        print_r($model->getList($this->request->param())->toArray());die;
-        return $this->fetch('goods_stock',[
-            'list' => $model->getList($this->request->param())
+        return $this->fetch('goods_stock2',[
+            'list' => $model->getList($this->request->param())->toArray()
         ]);
     }
 

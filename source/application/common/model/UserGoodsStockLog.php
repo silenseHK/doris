@@ -3,6 +3,8 @@
 
 namespace app\common\model;
 
+use app\common\enum\user\StockChangeScene;
+
 class UserGoodsStockLog extends BaseModel
 {
 
@@ -36,6 +38,25 @@ class UserGoodsStockLog extends BaseModel
      */
     public function setWxappIdAttr(){
         return self::$wxapp_id ? : '10001';
+    }
+
+    /**
+     * 获取器 --格式化库存变化数量
+     * @param $value
+     * @param $data
+     * @return int
+     */
+    public function getChangeNumAttr($value, $data){
+        return $data['change_direction'] == 20 ? -$value : $value;
+    }
+
+    /**
+     * 获取器 --格式化库存变化场景
+     * @param $value
+     * @return mixed
+     */
+    public function getChangeTypeAttr($value){
+        return StockChangeScene::data()[$value];
     }
 
     /**
