@@ -34,12 +34,23 @@
                         <fieldset>
 
                             <div class="widget-head am-cf">
-                                <div class="widget-title am-fl">编辑分公司</div>
+                                <div class="widget-title am-fl">编辑部门</div>
                             </div>
 
                             <el-form ref="form" :model="form" label-width="120px">
-                                <el-form-item label="公司名 *">
+                                <el-form-item label="部门名 *">
                                     <el-input v-model="form.title" maxlength="20"></el-input>
+                                </el-form-item>
+
+                                <el-form-item label="所属分公司 *">
+                                    <el-select v-model="form.c_id" filterable placeholder="请选择">
+                                        <el-option
+                                            v-for="item in company_list"
+                                            :key="item.id"
+                                            :label="item.title"
+                                            :value="item.id">
+                                        </el-option>
+                                    </el-select>
                                 </el-form-item>
 
                                 <el-form-item>
@@ -69,6 +80,8 @@
         var App = new Vue({
             el: '#my-form',
             data: {
+                company_list: <?= $company_ist ?>,
+
                 form: <?= json_encode($info) ?>,
                 can_submit: true,
             },
@@ -83,7 +96,7 @@
                     }
                     let that = this;
                     this.can_submit = false;
-                    $.post("<?= url('project.company/edit') ?>", {...this.form}, function(res){
+                    $.post("<?= url('project.department/edit') ?>", {...this.form}, function(res){
                         if(res.code == 1){
                             that.$message.success(res.msg);
                         }else{
@@ -97,8 +110,12 @@
                 },
             },
             computed: {
+                department_list(){
+                    if(!this.form.c_id || !this.department_lists[this.form.c_id])return [];
+                    return this.department_lists[this.form.c_id];
+                },
                 check(){
-                    if(!this.form.title || !this.can_submit)
+                    if(!this.form.title || !this.form.c_id || !this.can_submit)
                         return false;
                     return true;
                 },

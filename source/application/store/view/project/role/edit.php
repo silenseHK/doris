@@ -34,12 +34,16 @@
                         <fieldset>
 
                             <div class="widget-head am-cf">
-                                <div class="widget-title am-fl">编辑分公司</div>
+                                <div class="widget-title am-fl">编辑角色</div>
                             </div>
 
                             <el-form ref="form" :model="form" label-width="120px">
-                                <el-form-item label="公司名 *">
+                                <el-form-item label="角色名 *">
                                     <el-input v-model="form.title" maxlength="20"></el-input>
+                                </el-form-item>
+
+                                <el-form-item label="描述">
+                                    <el-input v-model="form.desc" maxlength="255"></el-input>
                                 </el-form-item>
 
                                 <el-form-item>
@@ -83,13 +87,13 @@
                     }
                     let that = this;
                     this.can_submit = false;
-                    $.post("<?= url('project.company/edit') ?>", {...this.form}, function(res){
+                    $.post("<?= url('project.role/edit') ?>", {...this.form}, function(res){
+                        that.can_submit = true;
                         if(res.code == 1){
                             that.$message.success(res.msg);
                         }else{
                             that.$message.error(res.msg)
                         }
-                        that.can_submit = true;
                     }, 'json')
                 },
                 goBack(){

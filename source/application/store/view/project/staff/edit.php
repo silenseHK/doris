@@ -34,7 +34,7 @@
                         <fieldset>
 
                             <div class="widget-head am-cf">
-                                <div class="widget-title am-fl">添加员工</div>
+                                <div class="widget-title am-fl">编辑员工</div>
                             </div>
 
                             <el-form ref="form" :model="form" label-width="120px">
@@ -95,7 +95,7 @@
 
                                 <el-form-item>
                                     <el-button type="primary" @click="onSubmit">添加</el-button>
-                                    <el-button>取消</el-button>
+                                    <el-button @click="goBack">取消</el-button>
                                 </el-form-item>
                             </el-form>
 
@@ -144,11 +144,14 @@
                         }else{
                             that.$message.error(res.msg)
                         }
-                        this.can_submit = true;
+                        that.can_submit = true;
                     }, 'json')
                 },
                 selectCompany(){
                     this.form.a_id = '';
+                },
+                goBack(){
+                    window.history.go(-1)
                 },
             },
             computed: {

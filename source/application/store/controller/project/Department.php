@@ -7,8 +7,6 @@ namespace app\store\controller\project;
 use app\store\controller\Controller;
 use app\store\model\project\P_Company;
 use app\store\model\project\P_Department;
-use app\store\model\project\P_Role;
-use app\store\model\project\P_Staff;
 use app\store\validate\DepartmentValid;
 use think\db\Query;
 
@@ -71,18 +69,14 @@ class Department extends Controller
                 return $this->renderError($this->validate->getError());
             }
             ##获取数据
-            if(!$this->staffModel->add()){
+            if(!$this->departmentModel->add()){
                 return $this->renderError('操作失败');
             }
             return $this->renderSuccess('操作成功');
         }else{
             ##分公司列表
             $company_ist = $this->companyModel->lists();
-            ##角色列表
-            $role_list = $this->roleModel->lists();
-            ##部门列表
-            $department_list = $this->departmentModel->listsGroupByCompany();
-            return $this->fetch('',compact('company_ist','role_list','department_list'));
+            return $this->fetch('',compact('company_ist'));
         }
     }
 
@@ -95,24 +89,18 @@ class Department extends Controller
                 return $this->renderError($this->validate->getError());
             }
             ##获取数据
-            if(!$this->staffModel->edit()){
+            if(!$this->departmentModel->edit()){
                 return $this->renderError('操作失败');
             }
             return $this->renderSuccess('操作成功');
         }else{
             ##员工信息
-            $info = $this->staffModel->where('id',$id)->field('id, title, pwd, account, a_id, c_id, role_id, status, is_expert')->find();
+            $info = $this->departmentModel->where('id',$id)->field('id, title, c_id')->find();
             if(!$info)
-                return $this->renderError('员工数据已删除或不存在');
-            $info = $info->getData();
-            $info['pwd'] = '';
+                return $this->renderError('部门数据已删除或不存在');
             ##分公司列表
             $company_ist = $this->companyModel->lists();
-            ##角色列表
-            $role_list = $this->roleModel->lists();
-            ##部门列表
-            $department_list = $this->departmentModel->listsGroupByCompany();
-            return $this->fetch('',compact('company_ist','role_list','department_list','info'));
+            return $this->fetch('',compact('company_ist','info'));
         }
     }
 
@@ -125,7 +113,7 @@ class Department extends Controller
             }
             $id = request()->post('id');
             ##删除
-            if(!$this->staffModel->where('id',$id)->setField('delete_time',time())){
+            if(!$this->departmentModel->where('id',$id)->setField('delete_time',time())){
                 return $this->renderError('操作失败');
             }
             return $this->renderSuccess('操作成功');

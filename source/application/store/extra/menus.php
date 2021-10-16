@@ -908,6 +908,13 @@ return [
                     'project.staff/lists',
                 ],
             ],
+            [
+                'name' => '角色管理',
+                'index' => 'project.role/lists',
+                'uris' => [
+                    'project.role/lists',
+                ],
+            ],
         ]
     ],
 ];

@@ -95,7 +95,7 @@
 
                                 <el-form-item>
                                     <el-button type="primary" @click="onSubmit">添加</el-button>
-                                    <el-button>取消</el-button>
+                                    <el-button @click="goBack">取消</el-button>
                                 </el-form-item>
                             </el-form>
 
@@ -154,7 +154,7 @@
                         }else{
                             that.$message.error(res.msg)
                         }
-                        this.can_submit = true;
+                        that.can_submit = true;
                     }, 'json')
                 },
                 init(){
@@ -171,6 +171,9 @@
                 },
                 selectCompany(){
                     this.form.a_id = '';
+                },
+                goBack(){
+                    window.history.go(-1)
                 },
             },
             computed: {

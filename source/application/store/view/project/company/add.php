@@ -92,7 +92,7 @@
                         }else{
                             that.$message.error(res.msg)
                         }
-                        this.can_submit = true;
+                        that.can_submit = true;
                     }, 'json')
                 },
                 init(){
