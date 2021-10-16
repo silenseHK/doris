@@ -5,6 +5,9 @@ namespace app\api\model\business;
 
 
 use app\common\model\project\P_Matter as Base_P_Matter;
+use think\Db;
+use think\db\Query;
+use think\Exception;
 
 class P_Matter extends Base_P_Matter
 {
@@ -22,11 +25,157 @@ class P_Matter extends Base_P_Matter
 
     public function add()
     {
-        if(!$this->save(request()->post()))
-        {
-            return $this->setError('创建失败');
+        ##指派部门
+        $a_id = input('post.a_id/s','');
+        ##附件
+        $annex = input('post.annex/s','');
+        $this->startTrans();
+        try{
+            if(!$this->save(request()->post()))
+            {
+                throw new Exception('问题创建失败');
+            }
+            $matter_id = $this->getLastInsID();
+            if($a_id)
+            {
+                $a_arr = explode(',',trim($a_id,','));
+                $a_data = [];
+                foreach($a_arr as $a)
+                {
+                    $a_data[] = [
+                        'matter_id' => $matter_id,
+                        'a_id' => $a
+                    ];
+                }
+                $res = Db::name('p_matter_department')->insertAll($a_data);
+                if(!$res)throw new Exception('指派部门失败');
+            }
+            if($annex)
+            {
+                $a_arr = explode(',',trim($annex,','));
+                $a_data = [];
+                foreach($a_arr as $a)
+                {
+                    $a_data[] = [
+                        'matter_id' => $matter_id,
+                        'file_id' => $a
+                    ];
+                }
+                $res = Db::name('p_matter_annex')->insertAll($a_data);
+                if(!$res)throw new Exception('绑定附件失败');
+            }
+            $this->commit();
+            return true;
+        }catch(Exception $e){
+            $this->rollback();
+            return $this->setError($e->getMessage());
         }
-        return true;
+    }
+
+    public function edit()
+    {
+        ##问题id
+        $id = input('post.id/d',0);
+        ##指派部门
+        $a_id = input('post.a_id/s','');
+        ##附件
+        $annex = input('post.annex/s','');
+        $this->startTrans();
+        try{
+            ##修改信息
+            if($this->where('id',$id)->update(request()->post()) === false)
+            {
+                throw new Exception('操作失败');
+            }
+            ##修改附件
+            ###删除以前的附件
+            Db::name('p_matter_annex')->where('matter_id',$id)->delete();
+            ###删除以前的指派
+            Db::name('p_matter_department')->where('matter_id',$id)->delete();
+
+            if($a_id)
+            {
+                $a_arr = explode(',',trim($a_id,','));
+                $a_data = [];
+                foreach($a_arr as $a)
+                {
+                    $a_data[] = [
+                        'matter_id' => $id,
+                        'a_id' => $a
+                    ];
+                }
+                $res = Db::name('p_matter_department')->insertAll($a_data);
+                if(!$res)throw new Exception('指派部门失败');
+            }
+            if($annex)
+            {
+                $a_arr = explode(',',trim($annex,','));
+                $a_data = [];
+                foreach($a_arr as $a)
+                {
+                    $a_data[] = [
+                        'matter_id' => $id,
+                        'file_id' => $a
+                    ];
+                }
+                $res = Db::name('p_matter_annex')->insertAll($a_data);
+                if(!$res)throw new Exception('绑定附件失败');
+            }
+            $this->commit();
+            return true;
+        }catch(Exception $e){
+            $this->rollback();
+            return $this->setError($e->getMessage());
+        }
+    }
+
+    public function detail()
+    {
+        $id = input('post.id/d',0);
+        ##信息
+        $info = $this
+            ->where('id',$id)
+            ->with(
+                [
+                    'annex_list',
+                    'department_list',
+                    'contact_user_info' => function(Query $query)
+                    {
+                        $query->field('id, title');
+                    }
+                ]
+            )
+            ->field('id, project_id, type, desc, risk, amount, reform_time, contact_user, status, create_time, annex, a_id')
+            ->find();
+        if(!$info)
+        {
+            return $this->setError('问题数据不存在或已删除');
+        }
+        return $info;
+    }
+
+    public function projectMatters()
+    {
+        ##项目id
+        $project_id = input('post.id/d',0);
+        ##每页条数
+        $size = input('post.size/d',15);
+        ##获取列表
+        $list = $this
+            ->where('project_id',$project_id)
+            ->with(
+                [
+                    'annex_list',
+                    'department_list',
+                    'contact_user_info' => function(Query $query)
+                    {
+                        $query->field('id, title');
+                    }
+                ]
+            )
+            ->field('id, project_id, type, desc, risk, amount, reform_time, contact_user, status, create_time, annex, a_id')
+            ->paginate($size);
+        return $list;
     }
 
 }

@@ -11,6 +11,7 @@ namespace app\api\controller\business;
 use app\api\model\business\P_Company;
 use app\api\model\business\P_Matter;
 use app\api\model\business\P_Project;
+use app\api\validate\business\MatterValid;
 use app\api\validate\business\ProjectValid;
 
 class Project extends Base
@@ -25,7 +26,8 @@ class Project extends Base
         ProjectValid $validate,
         P_Project $p_Project,
         P_Company $p_Company,
-        P_Matter $p_Matter
+        P_Matter $p_Matter,
+        MatterValid $matterValid
     )
     {
         parent::__construct();
@@ -33,6 +35,7 @@ class Project extends Base
         $this->projectModel = $p_Project;
         $this->companyModel = $p_Company;
         $this->matterModel = $p_Matter;
+        $this->matterValidate = $matterValid;
     }
 
     public function lists()
@@ -78,7 +81,18 @@ class Project extends Base
 
     public function matters()
     {
-
+        if(request()->isPost()){
+            ##验证参数
+            if(!$this->validate->scene('matters')->check(request()->post())){
+                return $this->renderError($this->validate->getError());
+            }
+            ##问题列表
+            if(!$data = $this->matterModel->projectMatters()){
+                return $this->renderError($this->matterModel->getError());
+            }
+            return $this->renderSuccess($data);
+        }
+        return false;
     }
 
     public function addMatter()
@@ -86,13 +100,45 @@ class Project extends Base
         if(request()->isPost()){
             ##验证参数
             if(!$this->matterValidate->scene('add')->check(request()->post())){
-                return $this->renderError($this->validate->getError());
+                return $this->renderError($this->matterValidate->getError());
             }
             ##创建
             if(!$this->matterModel->add()){
-                return $this->renderError($this->projectModel->getError());
+                return $this->renderError($this->matterModel->getError());
             }
             return $this->renderSuccess('','创建成功');
+        }
+        return false;
+    }
+
+    public function matterDetail()
+    {
+        if(request()->isPost()){
+            ##验证参数
+            if(!$this->matterValidate->scene('detail')->check(request()->post())){
+                return $this->renderError($this->matterValidate->getError());
+            }
+            ##创建
+            if(!$data = $this->matterModel->detail()){
+                return $this->renderError($this->matterModel->getError());
+            }
+            return $this->renderSuccess($data);
+        }
+        return false;
+    }
+
+    public function editMatter()
+    {
+        if(request()->isPost()){
+            ##验证参数
+            if(!$this->matterValidate->scene('edit')->check(request()->post())){
+                return $this->renderError($this->matterValidate->getError());
+            }
+            ##创建
+            if(!$this->matterModel->edit()){
+                return $this->renderError($this->matterModel->getError());
+            }
+            return $this->renderSuccess('','修改成功');
         }
         return false;
     }

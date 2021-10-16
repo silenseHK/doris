@@ -24,6 +24,7 @@ class MatterValid extends Validate
     protected $scene = [
         'add' => ['project_id', 'type', 'desc', 'risk', 'amount', 'reform_time', 'a_id', 'contact_user', 'status'],
         'edit' => ['id', 'project_id', 'type', 'desc', 'risk', 'amount', 'reform_time', 'a_id', 'contact_user', 'status'],
+        'detail' => ['id'],
     ];
 
 }

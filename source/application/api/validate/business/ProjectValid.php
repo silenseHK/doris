@@ -26,6 +26,7 @@ class ProjectValid extends Validate
     protected $scene = [
         'add' => ['level', 'type', 'title', 'company_id', 'check_time', 'manager', 'desc', 'status'],
         'detail' => ['id'],
+        'matters' => ['id'],
     ];
 
 }
