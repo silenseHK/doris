@@ -21,4 +21,19 @@ class P_Staff extends BaseModel
 
     protected $delete_time = 'delete_time';
 
+    public function company()
+    {
+        return $this->belongsTo('app\common\model\project\P_Company','c_id','id');
+    }
+
+    public function department()
+    {
+        return $this->belongsTo('app\common\model\project\P_Department','a_id','id');
+    }
+
+    public function role()
+    {
+        return $this->belongsTo('app\common\model\project\P_Role','role_id','id');
+    }
+
 }
