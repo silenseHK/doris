@@ -19,9 +19,12 @@ class Base extends Controller
 
     protected $user_id;
 
+    protected $token;
+
     public function __construct()
     {
         parent::__construct();
+        if($this->checkoutWhite())return;
         ##验证用户token
         if(!$token = request()->header('token')){
             $this->throwError('请先登录',100);
@@ -33,8 +36,19 @@ class Base extends Controller
         if($user['expire_time'] <= time()){
             $this->throwError('请重新登录',100);
         }
-        $this->user_id = $user['user_id'];
+        $this->user_id = $user['id'];
+        $this->token = $token;
     }
+
+    private function checkoutWhite()
+    {
+        $path = strtolower(request()->controller() . '/' . request()->action());
+        return in_array($path, $this->white);
+    }
+
+    private $white = [
+        'business.user/login',
+    ];
 
     /**
      * 返回操作成功json

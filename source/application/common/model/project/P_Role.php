@@ -10,7 +10,7 @@ use traits\model\SoftDelete;
 class P_Role extends BaseModel
 {
 
-    protected $table = 'yoshop_p_role';
+    protected $name = 'p_role';
 
     use SoftDelete;
 
