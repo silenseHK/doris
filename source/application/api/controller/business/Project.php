@@ -63,6 +63,38 @@ class Project extends Base
         return false;
     }
 
+    public function edit()
+    {
+        if(request()->isPost()){
+            ##验证参数
+            if(!$this->validate->scene('edit')->check(request()->post())){
+                return $this->renderError($this->validate->getError());
+            }
+            ##创建
+            if(!$this->projectModel->edit()){
+                return $this->renderError($this->projectModel->getError());
+            }
+            return $this->renderSuccess('','操作成功');
+        }
+        return false;
+    }
+
+    public function del()
+    {
+        if(request()->isPost()){
+            ##验证参数
+            if(!$this->validate->scene('del')->check(request()->post())){
+                return $this->renderError($this->validate->getError());
+            }
+            ##创建
+            if(!$this->projectModel->del()){
+                return $this->renderError($this->projectModel->getError());
+            }
+            return $this->renderSuccess('','操作成功');
+        }
+        return false;
+    }
+
     public function detail()
     {
         if(request()->isPost()){
@@ -139,6 +171,26 @@ class Project extends Base
                 return $this->renderError($this->matterModel->getError());
             }
             return $this->renderSuccess('','修改成功');
+        }
+        return false;
+    }
+
+    /**
+     * 删除问题
+     * @return array|bool
+     */
+    public function delMatter()
+    {
+        if(request()->isPost()){
+            ##验证参数
+            if(!$this->matterValidate->scene('del')->check(request()->post())){
+                return $this->renderError($this->matterValidate->getError());
+            }
+            ##创建
+            if(!$this->matterModel->del()){
+                return $this->renderError($this->matterModel->getError());
+            }
+            return $this->renderSuccess('','操作成功');
         }
         return false;
     }

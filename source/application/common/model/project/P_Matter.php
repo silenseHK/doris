@@ -4,10 +4,9 @@
 namespace app\common\model\project;
 
 
-use app\common\model\BaseModel;
 use traits\model\SoftDelete;
 
-class P_Matter extends BaseModel
+class P_Matter extends P_Base
 {
 
     protected $name = 'p_matters';

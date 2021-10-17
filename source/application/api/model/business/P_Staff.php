@@ -10,18 +10,7 @@ use think\db\Query;
 class P_Staff extends Base_P_Staff
 {
 
-    protected $error = '';
-
-    protected $code = 0;
-
     protected $column = 'id, title, a_id, c_id, is_expert, role_id, pwd, login_time, status';
-
-    protected function setError($msg='操作失败', $code=1)
-    {
-        $this->error = $msg;
-        $this->code = $code;
-        return false;
-    }
 
     public function login()
     {

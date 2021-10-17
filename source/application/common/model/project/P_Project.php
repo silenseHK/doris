@@ -4,15 +4,12 @@
 namespace app\common\model\project;
 
 
-use app\common\model\BaseModel;
 use traits\model\SoftDelete;
 
-class P_Project extends BaseModel
+class P_Project extends P_Base
 {
 
     protected $name = 'p_project';
-
-    protected $updateTime = false;
 
     use SoftDelete;
 

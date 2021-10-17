@@ -12,17 +12,6 @@ use think\Exception;
 class P_Project extends Base_P_Project
 {
 
-    protected $error = '';
-
-    protected $code = 0;
-
-    protected function setError($msg='操作失败', $code=1)
-    {
-        $this->error = $msg;
-        $this->code = $code;
-        return false;
-    }
-
     public function lists()
     {
         $size = input('post.size',15);
@@ -107,7 +96,60 @@ class P_Project extends Base_P_Project
             $this->rollback();
             return $this->setError($e->getMessage());
         }
+    }
 
+    public function edit()
+    {
+        $data = request()->post();
+        $id = $data['id'];
+        unset($data['id']);
+        ##检查组组员
+        $member = isset($data['member']) ? $data['member'] : '';
+        if($member)
+        {
+            $member = explode(',',trim($member,','));
+        }
+        unset($data['member']);
+        $this->startTrans();
+        try{
+            $res = $this->where('id', $id)->update($data);
+            if($res === false){
+                throw new Exception('编辑项目失败');
+            }
+            ##删除以前的组员
+            Db::name('p_project_staff')->where('project_id',$id)->delete();
+            if($member)
+            {
+                $member_data = [];
+                foreach($member as $mem)
+                {
+                    $member_data[] = [
+                        'project_id' => $id,
+                        'staff_id' => intval($mem)
+                    ];
+                }
+                $res = Db::name('p_project_staff')->insertAll($member_data);
+                if(!$res)
+                {
+                    throw new Exception('检查组组员编辑失败');
+                }
+            }
+            Db::commit();
+            return true;
+        }catch(Exception $e){
+            $this->rollback();
+            return $this->setError($e->getMessage());
+        }
+    }
+
+    public function del()
+    {
+        $id = input('post.id/d',0);
+        if(!$this->destroy($id))
+        {
+            return $this->setError('操作失败');
+        }
+        return true;
     }
 
     public function detail()

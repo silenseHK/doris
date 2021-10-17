@@ -9,10 +9,9 @@
 namespace app\common\model\project;
 
 
-use app\common\model\BaseModel;
 use traits\model\SoftDelete;
 
-class P_Staff extends BaseModel
+class P_Staff extends P_Base
 {
 
     protected $table = 'yoshop_p_staff';
