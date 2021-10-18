@@ -44,6 +44,11 @@
                                                     <i class="am-icon-pencil"></i> 编辑
                                                 </a>
                                             <?php endif; ?>
+                                            <?php if (checkPrivilege('project.role/auth')): ?>
+                                                <a href="<?= url('project.role/auth', ['id' => $item['id']]) ?>">
+                                                    <i class="am-icon-eye-slash"></i> 权限
+                                                </a>
+                                            <?php endif; ?>
                                             <?php if (checkPrivilege('project.role/delete')): ?>
                                                 <a href="javascript:void(0);"
                                                    class="item-delete tpl-table-black-operation-del"

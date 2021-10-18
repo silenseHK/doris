@@ -10,24 +10,27 @@ namespace app\store\controller\project;
 
 
 use app\store\controller\Controller;
+use app\store\model\project\P_Page;
 use app\store\model\project\P_Role;
 use app\store\validate\RoleValid;
 
 class Role extends Controller
 {
 
-    protected $roleModel;
+    protected $roleModel, $pageModel;
 
     protected $validate;
 
     public function __construct
     (
         P_Role $p_Role,
-        RoleValid $validate
+        RoleValid $validate,
+        P_Page $p_Page
     )
     {
         parent::__construct();
         $this->roleModel = $p_Role;
+        $this->pageModel = $p_Page;
         $this->validate = $validate;
     }
 
@@ -94,6 +97,21 @@ class Role extends Controller
                 return $this->renderError('操作失败');
             }
             return $this->renderSuccess('操作成功');
+        }
+        return false;
+    }
+
+    public function auth()
+    {
+        $role_id = input('id/d',0);
+        if(request()->isPost()){
+            if(!$this->roleModel->auth())
+            {
+                return $this->renderError($this->roleModel->getError());
+            }
+            return $this->renderSuccess('操作成功');
+        }else{
+            return $this->fetch('',['auths' => $this->pageModel->auths(), 'role_id' => $role_id, 'power'=>$this->roleModel->power($role_id)]);
         }
     }
 

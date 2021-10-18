@@ -31,7 +31,7 @@ class P_Staff extends Base_P_Staff
                     },
                     'role' => function(Query $query)
                     {
-                        $query->field('id, title');
+                        $query->field('id, title')->with('access');
                     }
                 ]
             )
@@ -47,6 +47,7 @@ class P_Staff extends Base_P_Staff
         unset($staff['pwd']);
         ##生成token
         $staff['token'] = $this->setToken($staff);
+        $staff['access'] = array_column($staff['role']['access'],'alias');
         return $staff;
     }
 

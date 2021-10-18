@@ -20,4 +20,9 @@ class P_Role extends P_Base
         return $this->field('id, title')->select();
     }
 
+    public function access()
+    {
+        return $this->belongsToMany('app\common\model\project\P_Handle','p_access','handle_id','role_id')->field('yoshop_p_handle.id, yoshop_p_handle.title, page_id, alias');
+    }
+
 }
