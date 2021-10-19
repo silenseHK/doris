@@ -10,16 +10,19 @@ namespace app\api\controller\business;
 
 use app\api\model\business\P_Company;
 use app\api\model\business\P_Matter;
+use app\api\model\business\P_Matter_Cate;
 use app\api\model\business\P_Project;
+use app\api\model\business\P_Reform_Log;
 use app\api\validate\business\MatterValid;
 use app\api\validate\business\ProjectValid;
+use app\api\validate\business\ReformValid;
 
 class Project extends Base
 {
 
-    protected $projectModel, $companyModel, $matterModel;
+    protected $projectModel, $companyModel, $matterModel, $matterCateModel, $reformLogModel;
 
-    protected $validate, $matterValidate;
+    protected $validate, $matterValidate, $reformValidate;
 
     public function __construct
     (
@@ -27,7 +30,10 @@ class Project extends Base
         P_Project $p_Project,
         P_Company $p_Company,
         P_Matter $p_Matter,
-        MatterValid $matterValid
+        P_Matter_Cate $p_Matter_Cate,
+        P_Reform_Log $p_Reform_Log,
+        MatterValid $matterValid,
+        ReformValid $reformValid
     )
     {
         parent::__construct();
@@ -35,7 +41,10 @@ class Project extends Base
         $this->projectModel = $p_Project;
         $this->companyModel = $p_Company;
         $this->matterModel = $p_Matter;
+        $this->matterCateModel = $p_Matter_Cate;
+        $this->reformLogModel = $p_Reform_Log;
         $this->matterValidate = $matterValid;
+        $this->reformValidate = $reformValid;
     }
 
     public function lists()
@@ -127,6 +136,14 @@ class Project extends Base
         return false;
     }
 
+    public function matterCateList()
+    {
+        if(request()->isPost()){
+            return $this->renderSuccess($this->matterCateModel->lists());
+        }
+        return false;
+    }
+
     public function addMatter()
     {
         if(request()->isPost()){
@@ -159,6 +176,10 @@ class Project extends Base
         return false;
     }
 
+    /**
+     * 编辑问题
+     * @return array|false
+     */
     public function editMatter()
     {
         if(request()->isPost()){
@@ -204,6 +225,59 @@ class Project extends Base
         if(request()->isPost()){
             $data = $this->companyModel->projectCompanyLists();
             return $this->renderSuccess($data);
+        }
+        return false;
+    }
+
+    /**
+     * 整改列表
+     * @return array|false
+     */
+    public function reformList()
+    {
+        if(request()->isPost()){
+            ##验证参数
+            if(!$this->reformValidate->scene('list')->check(request()->post())){
+                return $this->renderError($this->reformValidate->getError());
+            }
+            $data = $this->reformLogModel->lists();
+            return $this->renderSuccess($data);
+        }
+        return false;
+    }
+
+    /**
+     * 新增整改记录
+     * @return array|false
+     */
+    public function addReform()
+    {
+        if(request()->isPost()){
+            ##验证参数
+            if(!$this->reformValidate->scene('add')->check(request()->post())){
+                return $this->renderError($this->reformValidate->getError());
+            }
+            if(!$this->reformLogModel->add())
+            {
+                return $this->renderError($this->reformLogModel->getError());
+            }
+            return $this->renderSuccess('','操作成功');
+        }
+        return false;
+    }
+
+    public function finishMatter()
+    {
+        if(request()->isPost()){
+            ##验证参数
+            if(!$this->matterValidate->scene('done')->check(request()->post())){
+                return $this->renderError($this->matterValidate->getError());
+            }
+            if(!$this->matterModel->done())
+            {
+                return $this->renderError($this->matterModel->getError());
+            }
+            return $this->renderSuccess('','操作成功');
         }
         return false;
     }

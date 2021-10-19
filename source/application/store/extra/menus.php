@@ -883,7 +883,7 @@ return [
 //        ]
 //    ],
     'project' => [
-        'name' => '组织架构',
+        'name' => '系统配置',
         'icon' => 'icon-guanliyuan',
         'index' => 'project.staff/lists',
         'submenu' => [
@@ -911,6 +911,13 @@ return [
             [
                 'name' => '角色管理',
                 'index' => 'project.role/lists',
+                'uris' => [
+                    'project.role/lists',
+                ],
+            ],
+            [
+                'name' => '问题分类',
+                'index' => 'project.matter/cate',
                 'uris' => [
                     'project.role/lists',
                 ],

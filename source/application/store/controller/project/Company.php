@@ -31,8 +31,6 @@ class Company extends Controller
 
     public function lists()
     {
-        ##参数
-        $title = input('title','');
         $obj = $this->companyModel;
         ##分公司列表
         $lists = $obj->paginate(15, false, [

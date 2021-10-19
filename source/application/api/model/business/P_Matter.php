@@ -12,17 +12,6 @@ use think\Exception;
 class P_Matter extends Base_P_Matter
 {
 
-    protected $error = '';
-
-    protected $code = 0;
-
-    protected function setError($msg='操作失败', $code=1)
-    {
-        $this->error = $msg;
-        $this->code = $code;
-        return false;
-    }
-
     public function add()
     {
         ##指派部门
@@ -142,6 +131,10 @@ class P_Matter extends Base_P_Matter
                     'contact_user_info' => function(Query $query)
                     {
                         $query->field('id, title');
+                    },
+                    'cate' => function(Query $query)
+                    {
+                        $query->field('id, title');
                     }
                 ]
             )
@@ -181,7 +174,7 @@ class P_Matter extends Base_P_Matter
     public function done()
     {
         ##问题id
-        $id = input('matter_id/d',0);
+        $id = input('id/d',0);
         ##完成整改
         if(!$this->where('id', $id)->setField('status',2))
         {

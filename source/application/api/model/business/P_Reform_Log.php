@@ -10,17 +10,58 @@ namespace app\api\model\business;
 
 
 use app\common\model\project\P_Reform_Log as Base_P_Reform_Log;
+use think\Db;
+use think\Exception;
 
 class P_Reform_Log extends Base_P_Reform_Log
 {
 
     public function add()
     {
-        if(!$this->save(request()->post()))
+        ##问题id
+        $matter_id = input('post.matter_id/d',0);
+        ##项目id
+        $matter = Db::name('p_matters')->where('id',$matter_id)->field('id, project_id')->find();
+        if(!$matter)
         {
-            return $this->setError();
+            return $this->setError('问题不存在或已删除');
         }
-        return true;
+        $project_id = $matter['project_id'];
+        $data = request()->post();
+        if(isset($data['annex']) && $data['annex'])
+        {
+            $annex = explode(',',trim($data['annex'],','));
+        }
+        unset($data['annex']);
+        $this->startTrans();
+        try{
+            ##创建整改记录
+            if(!$this->save(array_merge($data,compact('project_id')))){
+                throw new Exception('整改记录创建失败');
+            }
+            ##保存附件
+            if(isset($annex) && $annex)
+            {
+                $reform_id = $this->getLastInsID();
+                $annex_data = [];
+                foreach($annex as $an)
+                {
+                    $annex_data[] = [
+                        'reform_id' => $reform_id,
+                        'file_id' => $an
+                    ];
+                }
+                if(Db::name('p_reform_annex')->insertAll($annex_data) === false)
+                {
+                    throw new Exception('附件添加失败');
+                }
+            }
+            $this->commit();
+            return true;
+        }catch(Exception $e){
+            $this->rollback();
+            return $this->setError($e->getMessage());
+        }
     }
 
     public function lists()

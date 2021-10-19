@@ -75,4 +75,9 @@ class P_Matter extends P_Base
         return $this->belongsToMany('app\common\model\project\P_Department','p_matter_department','a_id','matter_id');
     }
 
+    public function cate()
+    {
+        return $this->belongsTo('app\common\model\project\P_Matter_Cate','type','id');
+    }
+
 }
