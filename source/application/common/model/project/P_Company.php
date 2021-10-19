@@ -17,7 +17,7 @@ class P_Company extends P_Base
 
     public function lists()
     {
-        return $this->select();
+        return $this->field('id, title')->select();
     }
 
 }
