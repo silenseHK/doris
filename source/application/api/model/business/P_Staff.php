@@ -91,4 +91,16 @@ class P_Staff extends Base_P_Staff
         return $this->where('c_id',$c_id)->field('id, title')->select();
     }
 
+    /**
+     * 员工列表
+     * @return false|\PDOStatement|string|\think\Collection
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function staff()
+    {
+        return $this->field('id, title')->select();
+    }
+
 }

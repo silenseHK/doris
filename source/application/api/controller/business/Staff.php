@@ -49,4 +49,14 @@ class Staff extends Controller
         return false;
     }
 
+    public function staff()
+    {
+        if(request()->isPost())
+        {
+            $list = $this->staffModel->staff();
+            return $this->renderSuccess($list);
+        }
+        return false;
+    }
+
 }
