@@ -78,4 +78,17 @@ class P_Staff extends Base_P_Staff
         return md5((string)$user_id . (string)time());
     }
 
+    /**
+     * 分公司下的员工
+     * @return false|\PDOStatement|string|\think\Collection
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function companyStaff()
+    {
+        $c_id = input('post.c_id/d',0);
+        return $this->where('c_id',$c_id)->field('id, title')->select();
+    }
+
 }
