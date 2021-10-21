@@ -103,4 +103,40 @@ class P_Staff extends Base_P_Staff
         return $this->field('id, title')->select();
     }
 
+    /**
+     * 收藏问题
+     * @param $staff_id
+     * @return bool|int|string
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function matterCollect($staff_id)
+    {
+        $matter_id = input('post.id/d',0);
+        if(Db::name('p_matter_collect')->where('staff_id',$staff_id)->where('matter_id',$matter_id)->find())
+        {
+            return true;
+        }
+        return Db::name('p_matter_collect')->insert(compact('matter_id','staff_id'));
+    }
+
+    /**
+     * 收藏指导意见
+     * @param $staff_id
+     * @return bool|int|string
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function adviceCollect($staff_id)
+    {
+        $advice_id = input('post.id/d',0);
+        if(Db::name('p_advice_collect')->where('staff_id',$staff_id)->where('matter_id',$advice_id)->find())
+        {
+            return true;
+        }
+        return Db::name('p_advice_collect')->insert(compact('advice_id','staff_id'));
+    }
+
 }
