@@ -303,7 +303,7 @@ class Project extends Base
             if(!$this->adviceValidate->scene('add')->check(request()->post())){
                 return $this->renderError($this->adviceValidate->getError());
             }
-            if(!$this->adviceModel->add())
+            if(!$this->adviceModel->add($this->user_id))
             {
                 return $this->renderError($this->matterModel->getError());
             }
@@ -316,6 +316,14 @@ class Project extends Base
     {
         if(request()->isPost()){
             return $this->renderSuccess($this->matterModel->lists());
+        }
+        return false;
+    }
+
+    public function adviceLib()
+    {
+        if(request()->isPost()){
+            return $this->renderSuccess($this->adviceModel->adviceList());
         }
         return false;
     }

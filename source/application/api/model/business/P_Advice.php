@@ -16,7 +16,7 @@ use think\Exception;
 class P_Advice extends Base_P_Advice
 {
 
-    public function add()
+    public function add($uid)
     {
         ##数据
         $data = request()->post();
@@ -25,6 +25,7 @@ class P_Advice extends Base_P_Advice
             $annex = explode(',',trim($data['annex'],','));
         }
         unset($data['annex']);
+        $data['uid'] = $uid;
         ##添加数据
         $this->startTrans();
         try{
