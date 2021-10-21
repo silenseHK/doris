@@ -37,25 +37,51 @@ class P_Matter_Cate extends P_Base
         return $this->where('status',1)->field('id, title')->select();
     }
 
-    public function cateLists()
+    public function cateLists($strict=false)
     {
-        return $this
-            ->where('status',1)
-            ->where('level',1)
+        $model = $this->where('level',1);
+        if($strict){
+            $model = $model->where('status',1);
+        }
+        return $model
             ->with(
                 [
-                    'children' => function(Query $query)
+                    'children' => function(Query $query) use ($strict)
                     {
-                        $query
-                            ->with(
-                                [
-                                    'children' => function(Query $query)
-                                    {
-                                        $query->field('id, title, pid,  level, status');
-                                    }
-                                ]
-                            )
-                            ->field('id, title, pid,  level, status');
+                        if($strict){
+                            $query
+                                ->where('status',1)
+                                ->with(
+                                    [
+                                        'children' => function(Query $query) use ($strict)
+                                        {
+                                            if($strict){
+                                                $query->where('status',1)->field('id, title, pid,  level, status');
+                                            }else{
+                                                $query->field('id, title, pid,  level, status');
+                                            }
+
+                                        }
+                                    ]
+                                )
+                                ->field('id, title, pid,  level, status');
+                        }else{
+                            $query
+                                ->with(
+                                    [
+                                        'children' => function(Query $query) use ($strict)
+                                        {
+                                            if($strict){
+                                                $query->where('status',1)->field('id, title, pid,  level, status');
+                                            }else{
+                                                $query->field('id, title, pid,  level, status');
+                                            }
+
+                                        }
+                                    ]
+                                )
+                                ->field('id, title, pid,  level, status');
+                        }
                     }
                 ]
             )

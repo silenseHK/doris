@@ -139,7 +139,7 @@ class Project extends Base
     public function matterCateList()
     {
         if(request()->isPost()){
-            return $this->renderSuccess($this->matterCateModel->lists());
+            return $this->renderSuccess($this->matterCateModel->cateLists(true));
         }
         return false;
     }
