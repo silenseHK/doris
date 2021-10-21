@@ -153,9 +153,19 @@ class P_Matter extends Base_P_Matter
         $project_id = input('post.id/d',0);
         ##每页条数
         $size = input('post.size/d',15);
+        ##获取类型
+        $type = input('post.type/d',0);
+        $model = $this->where('project_id',$project_id);
+        if($type != 0){
+            $matter_ids = P_Reform_Log::where('project_id', $project_id)->group('matter_id')->column('matter_id');
+            if($type == 1){//已反馈
+                $model = $model->whereIn('id',$matter_ids);
+            }else{//未反馈
+                $model = $model->whereNotIn('id',$matter_ids);
+            }
+        }
         ##获取列表
-        $list = $this
-            ->where('project_id',$project_id)
+        $list = $model
             ->with(
                 [
                     'annex_list',

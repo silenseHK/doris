@@ -8,6 +8,7 @@ use app\common\model\project\P_Project as Base_P_Project;
 use think\Db;
 use think\db\Query;
 use think\Exception;
+use app\api\model\business\P_Matter;
 
 class P_Project extends Base_P_Project
 {
@@ -176,9 +177,14 @@ class P_Project extends Base_P_Project
             )
             ->field('id, title, type, desc, company_id, manager, create_time, status, check_time, level')
             ->find();
-        if(!$data){
-            $this->setError('项目不存在或已删除');
+        if(empty($data)){
+            return $this->setError('项目不存在或已删除');
         }
+        ##项目相关的问题
+        $data->all = P_Matter::where('project_id',$id)->count();
+        $data->reform = P_Reform_Log::where('project_id',$id)->group('matter_id')->count();
+        $data->wait = $data->all - $data->reform;
+
         return $data;
     }
 
