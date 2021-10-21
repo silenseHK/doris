@@ -8,11 +8,13 @@
 
 namespace app\api\controller\business;
 
+use app\api\model\business\P_Advice;
 use app\api\model\business\P_Company;
 use app\api\model\business\P_Matter;
 use app\api\model\business\P_Matter_Cate;
 use app\api\model\business\P_Project;
 use app\api\model\business\P_Reform_Log;
+use app\api\validate\business\AdviceValid;
 use app\api\validate\business\MatterValid;
 use app\api\validate\business\ProjectValid;
 use app\api\validate\business\ReformValid;
@@ -20,9 +22,9 @@ use app\api\validate\business\ReformValid;
 class Project extends Base
 {
 
-    protected $projectModel, $companyModel, $matterModel, $matterCateModel, $reformLogModel;
+    protected $projectModel, $companyModel, $matterModel, $matterCateModel, $reformLogModel, $adviceModel;
 
-    protected $validate, $matterValidate, $reformValidate;
+    protected $validate, $matterValidate, $reformValidate, $adviceValidate;
 
     public function __construct
     (
@@ -32,8 +34,10 @@ class Project extends Base
         P_Matter $p_Matter,
         P_Matter_Cate $p_Matter_Cate,
         P_Reform_Log $p_Reform_Log,
+        P_Advice $p_Advice,
         MatterValid $matterValid,
-        ReformValid $reformValid
+        ReformValid $reformValid,
+        AdviceValid $adviceValid
     )
     {
         parent::__construct();
@@ -43,8 +47,10 @@ class Project extends Base
         $this->matterModel = $p_Matter;
         $this->matterCateModel = $p_Matter_Cate;
         $this->reformLogModel = $p_Reform_Log;
+        $this->adviceModel = $p_Advice;
         $this->matterValidate = $matterValid;
         $this->reformValidate = $reformValid;
+        $this->adviceValidate = $adviceValid;
     }
 
     public function lists()
@@ -266,6 +272,10 @@ class Project extends Base
         return false;
     }
 
+    /**
+     * 完成整改
+     * @return array|false
+     */
     public function finishMatter()
     {
         if(request()->isPost()){
@@ -274,6 +284,26 @@ class Project extends Base
                 return $this->renderError($this->matterValidate->getError());
             }
             if(!$this->matterModel->done())
+            {
+                return $this->renderError($this->matterModel->getError());
+            }
+            return $this->renderSuccess('','操作成功');
+        }
+        return false;
+    }
+
+    /**
+     * 添加指导意见
+     * @return array|false
+     */
+    public function advice()
+    {
+        if(request()->isPost()){
+            ##验证参数
+            if(!$this->adviceValidate->scene('add')->check(request()->post())){
+                return $this->renderError($this->adviceValidate->getError());
+            }
+            if(!$this->adviceModel->add())
             {
                 return $this->renderError($this->matterModel->getError());
             }

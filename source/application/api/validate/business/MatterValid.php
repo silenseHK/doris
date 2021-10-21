@@ -11,6 +11,7 @@ class MatterValid extends Validate
 
     protected $rule = [
         'id' => 'require|number|>=:1',
+        'title|问题标题' => 'require|max:255',
         'project_id|项目' => 'require|number|>=:1',
         'type|问题类型' => 'require|number|>=:1',
         'desc|问题描述' => 'require|max:255',
@@ -22,8 +23,8 @@ class MatterValid extends Validate
     ];
 
     protected $scene = [
-        'add' => ['project_id', 'type', 'desc', 'risk', 'amount', 'reform_time', 'a_id', 'contact_user', 'status'],
-        'edit' => ['id', 'project_id', 'type', 'desc', 'risk', 'amount', 'reform_time', 'a_id', 'contact_user', 'status'],
+        'add' => ['title', 'project_id', 'type', 'desc', 'risk', 'amount', 'reform_time', 'a_id', 'contact_user', 'status'],
+        'edit' => ['id', 'title', 'project_id', 'type', 'desc', 'risk', 'amount', 'reform_time', 'a_id', 'contact_user', 'status'],
         'detail' => ['id'],
         'del' => ['id'],
         'done' => ['id'],
