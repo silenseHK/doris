@@ -138,7 +138,7 @@ class P_Matter extends Base_P_Matter
                     }
                 ]
             )
-            ->field('id, project_id, type, desc, risk, amount, reform_time, contact_user, status, create_time, annex, a_id')
+            ->field('id, title, project_id, type, desc, risk, amount, reform_time, contact_user, status, create_time, annex, a_id')
             ->find();
         if(!$info)
         {
@@ -176,7 +176,7 @@ class P_Matter extends Base_P_Matter
                     }
                 ]
             )
-            ->field('id, project_id, type, desc, risk, amount, reform_time, contact_user, status, create_time, annex, a_id')
+            ->field('id, title, project_id, type, desc, risk, amount, reform_time, contact_user, status, create_time, annex, a_id')
             ->paginate($size);
         return $list;
     }
@@ -242,13 +242,17 @@ class P_Matter extends Base_P_Matter
                 [
                     'annex_list',
                     'department_list',
+                    'cate' => function(Query $query)
+                    {
+                        $query->field('id, title');
+                    },
                     'contact_user_info' => function(Query $query)
                     {
                         $query->field('id, title');
                     }
                 ]
             )
-            ->field('id, project_id, type, desc, risk, amount, reform_time, contact_user, status, create_time, annex, a_id')
+            ->field('id, title, project_id, type, desc, risk, amount, reform_time, contact_user, status, create_time, annex, a_id')
             ->paginate($size);
     }
 
