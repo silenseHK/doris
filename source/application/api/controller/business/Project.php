@@ -305,13 +305,18 @@ class Project extends Base
             }
             if(!$this->adviceModel->add($this->user_id))
             {
-                return $this->renderError($this->matterModel->getError());
+                return $this->renderError($this->adviceModel->getError());
             }
             return $this->renderSuccess('','操作成功');
         }
         return false;
     }
 
+    /**
+     * 问题库
+     * @return array|false
+     * @throws \think\exception\DbException
+     */
     public function matterLib()
     {
         if(request()->isPost()){
@@ -320,10 +325,35 @@ class Project extends Base
         return false;
     }
 
+    /**
+     * 指导库
+     * @return array|false
+     */
     public function adviceLib()
     {
         if(request()->isPost()){
             return $this->renderSuccess($this->adviceModel->adviceList());
+        }
+        return false;
+    }
+
+    /**
+     * 问题指派
+     * @return array|false
+     * @throws \think\exception\PDOException
+     */
+    public function matterAssign()
+    {
+        if(request()->isPost()){
+            ##验证参数
+            if(!$this->matterValidate->scene('assign')->check(request()->post())){
+                return $this->renderError($this->matterValidate->getError());
+            }
+            if(!$this->matterModel->assign())
+            {
+                return $this->renderError($this->matterModel->getError());
+            }
+            return $this->renderSuccess('','操作成功');
         }
         return false;
     }

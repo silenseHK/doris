@@ -302,7 +302,7 @@ class P_Matter extends Base_P_Matter
                         'a_id' => $a
                     ];
                 }
-                if(Db::name('p_matter_department')->insertAll($data))
+                if(!Db::name('p_matter_department')->insertAll($data))
                 {
                     throw new Exception('操作失败.');
                 }

@@ -11,6 +11,7 @@ class MatterValid extends Validate
 
     protected $rule = [
         'id' => 'require|number|>=:1',
+        'matter_id|问题' => 'require|number|>=:1',
         'title|问题标题' => 'require|max:255',
         'project_id|项目' => 'require|number|>=:1',
         'type|问题类型' => 'require|number|>=:1',
@@ -28,6 +29,7 @@ class MatterValid extends Validate
         'detail' => ['id'],
         'del' => ['id'],
         'done' => ['id'],
+        'assign' => ['matter_id'],
     ];
 
 }
