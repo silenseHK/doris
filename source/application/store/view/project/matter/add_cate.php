@@ -42,6 +42,30 @@
                                     <el-input v-model="form.title" maxlength="20"></el-input>
                                 </el-form-item>
 
+                                <el-form-item label="一级分类 *">
+                                    <el-select v-model="form.level_1" filterable placeholder="请选择" @change="selectLevel1">
+                                        <el-option label="一级分类" :value="-1"></el-option>
+                                        <el-option
+                                                v-for="(item, index) in cate_list"
+                                                :key="item.id"
+                                                :label="item.title"
+                                                :value="index">
+                                        </el-option>
+                                    </el-select>
+                                </el-form-item>
+
+                                <el-form-item label="二级分类" v-show="cate_list[form.level_1]">
+                                    <el-select v-model="form.level_2" filterable placeholder="请选择">
+                                        <el-option label="二级分类" :value="-1"></el-option>
+                                        <el-option
+                                                v-for="(item, index) in (cate_list[form.level_1] ? cate_list[form.level_1].children : [])  "
+                                                :key="item.id"
+                                                :label="item.title"
+                                                :value="index">
+                                        </el-option>
+                                    </el-select>
+                                </el-form-item>
+
                                 <el-form-item label="状态 *">
                                     <el-radio v-model="form.status" :label="1">使用</el-radio>
                                     <el-radio v-model="form.status" :label="2">禁用</el-radio>
@@ -77,21 +101,40 @@
                 form: {
                     title: '',
                     status: 1,
+                    level_1: '',
+                    level_2: '',
                 },
                 can_submit: true,
+                cate_list: <?= json_encode($cateList) ?>
             },
             created(){
 
             },
             methods: {
                 onSubmit() {
+                    console.log(this.form)
                     if(!this.check){
                         this.$message('请将数据补充完整')
                         return false;
                     }
+                    //判断上级id
+                    let {level_1, level_2, title, status} = this.form;
+                    let p_id, level;
+                    if(level_1 == -1){
+                        p_id = 0;
+                        level = 1;
+                    }else{
+                        if(level_2 == -1){ //二级分类
+                            p_id = this.cate_list[level_1].id
+                            level = 2;
+                        }else{ //三级分类
+                            p_id = this.cate_list[level_1].children[level_2].id
+                            level = 3;
+                        }
+                    }
                     let that = this;
                     this.can_submit = false;
-                    $.post("<?= url('project.matter/addCate') ?>", {...this.form}, function(res){
+                    $.post("<?= url('project.matter/addCate') ?>", {title, status, pid: p_id, level}, function(res){
                         that.can_submit = true;
                         if(res.code == 1){
                             that.$message.success(res.msg);
@@ -110,10 +153,16 @@
                 goBack(){
                     window.history.go(-1)
                 },
+                selectLevel1()
+                {
+                    this.form.level_2 = '';
+                },
             },
             computed: {
                 check(){
                     if(!this.form.title || !this.can_submit)
+                        return false;
+                    if(this.form.level_1 === '' || this.form.level_2 === '')
                         return false;
                     return true;
                 },

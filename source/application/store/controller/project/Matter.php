@@ -28,10 +28,8 @@ class Matter extends Controller
 
     public function cate()
     {
-        ##分公司列表
-        $lists = $this->matterCateModel->field('id, title, create_time, status')->paginate(15, false, [
-            'query' => \request()->request()
-        ]);
+        ##问题分类列表
+        $lists = $this->matterCateModel->cateLists();
         return $this->fetch('',compact('lists'));
     }
 
@@ -48,7 +46,7 @@ class Matter extends Controller
             }
             return $this->renderSuccess('操作成功');
         }else{
-            return $this->fetch('add_cate');
+            return $this->fetch('add_cate', ['cateList' => $this->matterCateModel->cateLists()]);
         }
     }
 
@@ -66,14 +64,18 @@ class Matter extends Controller
             return $this->renderSuccess('操作成功');
         }else{
             ##分类信息
-            $info = $this->matterCateModel->where('id',input('id/d',0))->field('id, title, status')->find();
+            $info = $this->matterCateModel->info();
+
             if(!$info)
             {
                 $this->error('分类信息不存在或已删除');
             }
             $info = $info->toArray();
             $info['status'] = $info['status']['value'];
-            return $this->fetch('edit_cate', compact('info'));
+            $info['level_1'] = '';
+            $info['level_2'] = '';
+            $cateList = $this->matterCateModel->cateLists();
+            return $this->fetch('edit_cate', compact('info','cateList'));
         }
     }
 
