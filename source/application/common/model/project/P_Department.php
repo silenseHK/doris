@@ -39,6 +39,23 @@ class P_Department extends P_Base
         return $group;
     }
 
+    /**
+     * 部门列表
+     * @return bool|\PDOStatement|string|\think\Collection
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function department()
+    {
+        $company_id = input('post.company_id/d',0);
+        $where = [];
+        if($company_id > 0){
+            $where = ['c_id' => ['=', $company_id]];
+        }
+        return $this->where($where)->field('id, title')->select();
+    }
+
     public function company()
     {
         return $this->belongsTo('app\common\model\project\P_Company','c_id','id');
