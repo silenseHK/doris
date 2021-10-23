@@ -83,7 +83,7 @@
                                     </el-select>
                                 </el-form-item>
 
-                                <el-form-item label="专家 *">
+                                <el-form-item label="专责 *">
                                     <el-radio v-model="form.is_expert" :label="1">是</el-radio>
                                     <el-radio v-model="form.is_expert" :label="0">否</el-radio>
                                 </el-form-item>

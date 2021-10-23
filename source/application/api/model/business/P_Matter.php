@@ -173,6 +173,10 @@ class P_Matter extends Base_P_Matter
                     'contact_user_info' => function(Query $query)
                     {
                         $query->field('id, title');
+                    },
+                    'cate' => function(Query $query)
+                    {
+                        $query->field('id, title');
                     }
                 ]
             )

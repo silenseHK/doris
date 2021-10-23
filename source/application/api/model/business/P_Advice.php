@@ -35,7 +35,7 @@ class P_Advice extends Base_P_Advice
                 throw new Exception('添加意见失败');
             }
             ##添加附件
-            if($annex)
+            if(isset($annex) && $annex)
             {
                 $advice_id = $this->getLastInsID();
                 $annex_data = [];

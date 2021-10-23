@@ -47,7 +47,7 @@ class P_Matter extends P_Base
 
     public function getStatusAttr($value)
     {
-        return $this->status[$value];
+        return isset($this->status[$value]) ? $this->status[$value] : [];
     }
 
     public function getRiskAttr($value)
