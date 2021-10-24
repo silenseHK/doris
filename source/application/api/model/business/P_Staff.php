@@ -48,6 +48,10 @@ class P_Staff extends Base_P_Staff
         ##生成token
         $staff['token'] = $this->setToken($staff);
         $staff['access'] = array_column($staff['role']['access'],'alias');
+
+        ##更新登录时间
+        $this->where('id',$staff['id'])->setField('login_time', time());
+
         return $staff;
     }
 

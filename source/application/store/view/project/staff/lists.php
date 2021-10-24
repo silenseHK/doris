@@ -76,10 +76,10 @@
                                     <td class="am-text-middle"><?= $item['id'] ?></td>
                                     <td class="am-text-middle"><?= $item['title'] ?></td>
                                     <td class="am-text-middle"><?= $item['account'] ?></td>
-                                    <td class="am-text-middle"><?= $item['c_id'] ?></td>
-                                    <td class="am-text-middle"><?= $item['a_id'] ?></td>
+                                    <td class="am-text-middle"><?= $item['company'] ? $item['company']['title'] : '--' ?></td>
+                                    <td class="am-text-middle"><?= $item['department'] ? $item['department']['title'] : '--' ?></td>
                                     <td class="am-text-middle"><?= $item['is_expert'] ? '是' : '否' ?></td>
-                                    <td class="am-text-middle"><?= $item['role_id'] ?></td>
+                                    <td class="am-text-middle"><?= $item['role'] ? $item['role']['title'] : '--' ?></td>
                                     <td class="am-text-middle">
                                             <span class="am-badge am-badge-<?= $item['status'] ? 'success' : 'warning' ?>">
                                                <?= $item['status'] == 1 ? '启用' : '禁用' ?>

@@ -53,7 +53,15 @@ class Staff extends Controller
             $obj->where('c_id', $c_id);
         }
         ##员工列表
-        $lists = $obj->paginate(15, false, [
+        $lists = $obj
+            ->with(
+                [
+                    'company',
+                    'department',
+                    'role'
+                ]
+            )
+            ->paginate(15, false, [
             'query' => \request()->request()
         ]);
         ##分公司列表

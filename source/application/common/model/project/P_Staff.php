@@ -20,6 +20,11 @@ class P_Staff extends P_Base
 
     protected $delete_time = 'delete_time';
 
+    public function getLoginTimeAttr($value)
+    {
+        return date('Y-m-d H:i', $value);
+    }
+
     public function company()
     {
         return $this->belongsTo('app\common\model\project\P_Company','c_id','id');
