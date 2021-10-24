@@ -12,13 +12,14 @@ namespace app\api\controller\business;
 use app\api\controller\Controller;
 use app\api\model\business\P_Company;
 use app\api\model\business\P_Department;
+use app\api\model\business\P_Matter;
 use app\api\model\business\P_Staff;
 use app\api\validate\business\StaffValid;
 
 class Staff extends Base
 {
 
-    protected $companyModel, $staffModel, $departmentModel;
+    protected $companyModel, $staffModel, $departmentModel, $matterModel;
 
     protected $validate;
 
@@ -27,6 +28,7 @@ class Staff extends Base
         P_Company $company,
         P_Staff $staff,
         P_Department $p_Department,
+        P_Matter $p_Matter,
         StaffValid $staffValid
     )
     {
@@ -34,6 +36,7 @@ class Staff extends Base
         $this->companyModel = $company;
         $this->staffModel = $staff;
         $this->departmentModel = $p_Department;
+        $this->matterModel = $p_Matter;
         $this->validate = $staffValid;
     }
 
@@ -107,6 +110,57 @@ class Staff extends Base
                 return $this->renderError($this->staffModel->getError());
             }
             return $this->renderSuccess('','操作成功');
+        }
+        return false;
+    }
+
+    /**
+     * 指派的问题列表
+     * @return array|bool
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function assignMatters()
+    {
+        if(request()->isPost())
+        {
+            if(!$list = $this->matterModel->assignMatters($this->user_id))
+            {
+                return $this->renderError($this->matterModel->getError());
+            }
+            return $this->renderSuccess($list);
+        }
+        return false;
+    }
+
+    /**
+     * 收藏的问题列表
+     * @return array|bool
+     * @throws \think\exception\DbException
+     */
+    public function collectMatters()
+    {
+        if(request()->isPost())
+        {
+            if(!$list = $this->matterModel->collectMatters($this->user_id))
+            {
+                return $this->renderError($this->matterModel->getError());
+            }
+            return $this->renderSuccess($list);
+        }
+        return false;
+    }
+
+    public function pendingMatters()
+    {
+        if(request()->isPost())
+        {
+            if(!$list = $this->matterModel->pendingMatters($this->user_id))
+            {
+                return $this->renderError($this->matterModel->getError());
+            }
+            return $this->renderSuccess($list);
         }
         return false;
     }

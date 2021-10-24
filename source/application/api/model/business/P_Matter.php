@@ -303,7 +303,8 @@ class P_Matter extends Base_P_Matter
                 {
                     $data[] = [
                         'matter_id' => $matter_id,
-                        'a_id' => $a
+                        'a_id' => $a,
+                        'create_time' => time()
                     ];
                 }
                 if(!Db::name('p_matter_department')->insertAll($data))
@@ -317,6 +318,75 @@ class P_Matter extends Base_P_Matter
             $this->rollback();
             return $this->setError($e->getMessage());
         }
+    }
+
+    /**
+     * 个人中心--问题列表
+     * @param $user_id
+     * @return bool|\think\Paginator
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\ModelNotFoundException
+     * @throws \think\exception\DbException
+     */
+    public function assignMatters($user_id)
+    {
+        ##用户所在部门
+        $user = Db::name('p_staff')->where('id', $user_id)->field('id, a_id, is_expert')->find();
+        if(!$user['is_expert'] || !$user['a_id'])
+        {
+            return $this->setError('专责员工才能查看部门的指派问题');
+        }
+        if(!$user['a_id'])
+        {
+            return $this->setError('清联系管理员为您分配部门');
+        }
+        $where = [];
+        $where['ma.a_id'] = ['=', $user['a_id']];
+        $status = input('post.status/d',0);  //1未处理 2已处理
+        if($status > 0)
+        {
+            $where['m.status'] = ['=', $status];
+        }
+        $size = input('post.size/d',15);
+        $list = Db::name('p_matter_department')->alias('ma')
+            ->join('p_matters m','m.id = ma.matter_id','left')
+            ->join('p_project p','m.project_id = p.id','left')
+            ->where($where)
+            ->field('m.id, m.title, m.project_id, m.desc, m.risk, m.create_time, ma.create_time assign_time, p.title')
+            ->paginate($size)->toArray();
+        foreach($list['data'] as $ke => $da)
+        {
+            $list['data'][$ke]['create_time'] = date('Y-m-d H:i', $da['create_time']);
+            $list['data'][$ke]['assign_time'] = date('Y-m-d H:i', $da['assign_time']);
+            $list['data'][$ke]['risk'] = $this->getRisk($da['risk']);
+        }
+        return $list;
+    }
+
+    /**
+     * 员工收藏问题列表
+     * @param $user_id
+     * @return array
+     * @throws \think\exception\DbException
+     */
+    public function collectMatters($user_id)
+    {
+        $where = [];
+        $where['mc.staff_id'] = ['=', $user_id];
+        $size = input('post.size/d',15);
+        $list = Db::name('p_matter_department')->alias('mc')
+            ->join('p_matters m','m.id = mc.matter_id','left')
+            ->join('p_project p','m.project_id = p.id','left')
+            ->where($where)
+            ->field('m.id, m.title, m.project_id, m.desc, m.risk, m.create_time, mc.create_time assign_time, p.title')
+            ->paginate($size)->toArray();
+        foreach($list['data'] as $ke => $da)
+        {
+            $list['data'][$ke]['create_time'] = date('Y-m-d H:i', $da['create_time']);
+            $list['data'][$ke]['assign_time'] = date('Y-m-d H:i', $da['assign_time']);
+            $list['data'][$ke]['risk'] = $this->getRisk($da['risk']);
+        }
+        return $list;
     }
 
 }
