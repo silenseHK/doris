@@ -283,7 +283,7 @@ class P_Matter extends Base_P_Matter
         ##问题id
         $matter_id = input('post.matter_id/d',0);
         ##部门id
-        $a_id = input('post.a_id/d','');
+        $a_id = input('post.a_id/s','');
         if($a_id)
         {
             $a_arr = explode(',',trim($a_id,','));
