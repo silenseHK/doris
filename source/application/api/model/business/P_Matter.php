@@ -235,7 +235,7 @@ class P_Matter extends Base_P_Matter
         $keywords = input('post.keywords/s','');
         if($keywords)
         {
-            $where['desc'] = ['like', "%{$keywords}%"];
+            $where['title'] = ['like', "%{$keywords}%"];
         }
         ##每页条数
         $size = input('post.size/d',0);
