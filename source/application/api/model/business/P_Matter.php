@@ -210,32 +210,32 @@ class P_Matter extends Base_P_Matter
         $matter_type = input('post.matter_type/d',0);
         if($matter_type > 0)
         {
-            $where[] = ['type', '=', $matter_type];
+            $where['type'] = ['=', $matter_type];
         }
         ##创建时间
         $start_time = input('post.start_time/d',0);
         $end_time = input('post.end_time/d',0);
         if($start_time && $end_time)
         {
-            $where[] = ['create_time', 'between', [$start_time, $end_time]];
+            $where['create_time'] = ['between', [$start_time, $end_time]];
         }
         ##项目id
         $project_id = input('post.project_id/d',0);
         if($project_id > 0)
         {
-            $where[] = ['project_id', '=', $project_id];
+            $where['project_id'] = ['=', $project_id];
         }
         ##问题等级
         $risk = input('post.risk/d',0);
         if($risk > 0)
         {
-            $where[] = ['risk', '=', $risk];
+            $where['risk'] = ['=', $risk];
         }
         ##关键字
         $keywords = input('post.keywords/s','');
         if($keywords)
         {
-            $where[] = ['desc', 'like', "%{$keywords}%"];
+            $where['desc'] = ['like', "%{$keywords}%"];
         }
         ##每页条数
         $size = input('post.size/d',0);

@@ -67,26 +67,26 @@ class P_Advice extends Base_P_Advice
         $matter_type = input('post.matter_type/d',0);
         if($matter_type > 0)
         {
-            $where[] = ['m.type', '=', $matter_type];
+            $where['m.type'] = ['=', $matter_type];
         }
         ##创建时间
         $start_time = input('post.start_time/d',0);
         $end_time = input('post.end_time/d',0);
         if($start_time && $end_time)
         {
-            $where[] = ['a.create_time', 'between', [$start_time, $end_time]];
+            $where['a.create_time'] = ['between', [$start_time, $end_time]];
         }
         ##关键字
         $keywords = input('post.keywords/s','');
         if($keywords)
         {
-            $where[] = ['a.advice', 'like', "%{$keywords}%"];
+            $where['a.advice'] = ['like', "%{$keywords}%"];
         }
         ##问题等级
         $risk = input('post.risk/d',0);
         if($risk > 0)
         {
-            $where[] = ['m.risk', '=', $risk];
+            $where['m.risk'] = ['=', $risk];
         }
         ##每页条数
         $size = input('post.size/d',0);
