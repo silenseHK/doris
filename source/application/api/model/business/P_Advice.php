@@ -93,8 +93,9 @@ class P_Advice extends Base_P_Advice
         ##查询列表
         return $this->alias('a')
             ->join('p_matters m','m.id = a.matter_id','left')
+            ->join('p_matter_cate mc','mc.id = m.type','left')
             ->where($where)
-            ->field('m.type, m.risk, m.desc, a.desc as advice_desc, a.advice, a.create_time, a.id')
+            ->field('m.title, m.create_time, m.type, m.risk, m.desc, a.desc as advice_desc, a.advice, a.create_time, a.id, mc.title')
             ->order('a.create_time','desc')
             ->paginate($size);
     }
