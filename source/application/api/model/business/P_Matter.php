@@ -378,7 +378,7 @@ class P_Matter extends Base_P_Matter
             ->join('p_matters m','m.id = mc.matter_id','left')
             ->join('p_project p','m.project_id = p.id','left')
             ->where($where)
-            ->field('m.id, m.title, m.project_id, m.desc, m.risk, m.create_time, mc.create_time assign_time, p.title')
+            ->field('m.id, m.title, m.project_id, m.desc, m.risk, m.create_time, mc.create_time assign_time, p.title as project_title')
             ->paginate($size)->toArray();
         foreach($list['data'] as $ke => $da)
         {
