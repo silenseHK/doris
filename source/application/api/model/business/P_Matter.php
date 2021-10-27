@@ -374,7 +374,7 @@ class P_Matter extends Base_P_Matter
         $where = [];
         $where['mc.staff_id'] = ['=', $user_id];
         $size = input('post.size/d',15);
-        $list = Db::name('p_matter_department')->alias('mc')
+        $list = Db::name('p_matter_collect')->alias('mc')
             ->join('p_matters m','m.id = mc.matter_id','left')
             ->join('p_project p','m.project_id = p.id','left')
             ->where($where)
