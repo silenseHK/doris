@@ -31,11 +31,8 @@ class Company extends Controller
 
     public function lists()
     {
-        $obj = $this->companyModel;
         ##分公司列表
-        $lists = $obj->paginate(15, false, [
-            'query' => \request()->request()
-        ]);
+        $lists = $this->companyModel->lists();
         return $this->fetch('lists',compact('lists'));
     }
 
@@ -52,6 +49,15 @@ class Company extends Controller
             }
             return $this->renderSuccess('操作成功');
         }else{
+            $id = input('id',-1,'intval');
+            ##公司列表
+            $companies = $this->companyModel->adminLists();
+            ##上级数
+            $tree = [];
+            $this->companyModel->getParents($id,$tree);
+            $this->assign('pid', $id);
+            $this->assign('companies', $companies);
+            $this->assign('tree', $tree);
             return $this->fetch();
         }
     }

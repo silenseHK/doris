@@ -14,7 +14,13 @@ class P_Company extends Base_P_Company
 
     public function add()
     {
-        return $this->save(request()->post());
+        $pidArr = input('pid/a',[]);
+        $pid = $pidArr ? $pidArr[count($pidArr)-1] : 0;
+        $level = 0;
+        if($pid){
+            $level = $this->where('id',$pid)->value('level') + 1;
+        }
+        return $this->save(array_merge(request()->post(),['pid'=>$pid, 'level'=>$level]));
     }
 
     public function edit()
