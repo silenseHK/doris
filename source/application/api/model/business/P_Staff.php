@@ -47,12 +47,33 @@ class P_Staff extends Base_P_Staff
         unset($staff['pwd']);
         ##生成token
         $staff['token'] = $this->setToken($staff);
-        $staff['access'] = array_column($staff['role']['access'],'alias');
+//        $staff['access'] = array_column($staff['role']['access'],'alias');
+        $staff['access'] = $this->filterAccess($staff['role']['access']);
 
         ##更新登录时间
         $this->where('id',$staff['id'])->setField('login_time', time());
 
         return $staff;
+    }
+
+    protected function filterAccess($access)
+    {
+        $all = [];
+        foreach($access as $k => $ac)
+        {
+            if(!isset($all[$ac['page_id']]))
+            {
+                $all[$ac['page_id']] = [
+                    'id' => Db::name('p_page')->where('id', $ac['page_id'])->value('alias'),
+                    'operation' => [
+                        $ac['alias']
+                    ]
+                ];
+            }else{
+                $all[$ac['page_id']]['operation'][] = $ac['alias'];
+            }
+        }
+        return array_values($all);
     }
 
     public function logout($token)
