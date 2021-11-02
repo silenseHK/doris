@@ -57,7 +57,7 @@ class Department extends Controller
             'query' => \request()->request()
         ]);
         ##分公司列表
-        $company_list = $this->companyModel->lists();
+        $company_list = $this->companyModel->levelCate();
         return $this->fetch('lists',compact('lists','company_list'));
     }
 
@@ -75,7 +75,7 @@ class Department extends Controller
             return $this->renderSuccess('操作成功');
         }else{
             ##分公司列表
-            $company_ist = $this->companyModel->lists();
+            $company_ist = $this->companyModel->adminLists();
             return $this->fetch('',compact('company_ist'));
         }
     }
@@ -98,8 +98,12 @@ class Department extends Controller
             $info = $this->departmentModel->where('id',$id)->field('id, title, c_id')->find();
             if(!$info)
                 return $this->renderError('部门数据已删除或不存在');
+            $info = $info->getData();
+            $companies = [];
+            $this->companyModel->getParents($info['c_id'],$companies);
+            $info['c_id'] = $companies;
             ##分公司列表
-            $company_ist = $this->companyModel->lists();
+            $company_ist = $this->companyModel->adminLists();
             return $this->fetch('',compact('company_ist','info'));
         }
     }

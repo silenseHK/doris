@@ -65,7 +65,7 @@ class Staff extends Controller
             'query' => \request()->request()
         ]);
         ##分公司列表
-        $company_list = $this->companyModel->lists();
+        $company_list = $this->companyModel->levelCate();
         return $this->fetch('lists',compact('lists','company_list'));
     }
 
@@ -83,7 +83,7 @@ class Staff extends Controller
             return $this->renderSuccess('操作成功');
         }else{
             ##分公司列表
-            $company_ist = $this->companyModel->lists();
+            $company_ist = $this->companyModel->adminLists();
             ##角色列表
             $role_list = $this->roleModel->lists();
             ##部门列表
@@ -112,8 +112,11 @@ class Staff extends Controller
                 return $this->renderError('员工数据已删除或不存在');
             $info = $info->getData();
             $info['pwd'] = '';
+            $companies = [];
+            $this->companyModel->getParents($info['c_id'],$companies);
+            $info['c_id'] = $companies;
             ##分公司列表
-            $company_ist = $this->companyModel->lists();
+            $company_ist = $this->companyModel->adminLists();
             ##角色列表
             $role_list = $this->roleModel->lists();
             ##部门列表

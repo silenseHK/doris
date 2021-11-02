@@ -43,14 +43,11 @@
                                 </el-form-item>
 
                                 <el-form-item label="所属分公司 *">
-                                    <el-select v-model="form.c_id" filterable placeholder="请选择">
-                                        <el-option
-                                            v-for="item in company_list"
-                                            :key="item.id"
-                                            :label="item.title"
-                                            :value="item.id">
-                                        </el-option>
-                                    </el-select>
+                                    <el-cascader
+                                            v-model="form.c_id"
+                                            :options="company_list"
+                                            :props="{ checkStrictly: true }"
+                                            clearable></el-cascader>
                                 </el-form-item>
 
                                 <el-form-item>
@@ -80,7 +77,7 @@
         var App = new Vue({
             el: '#my-form',
             data: {
-                company_list: <?= $company_ist ?>,
+                company_list: <?= json_encode($company_ist) ?>,
 
                 form: <?= json_encode($info) ?>,
                 can_submit: true,
@@ -96,7 +93,9 @@
                     }
                     let that = this;
                     this.can_submit = false;
-                    $.post("<?= url('project.department/edit') ?>", {...this.form}, function(res){
+                    let params = {...this.form}
+                    params.c_id = params.c_id[params.c_id.length - 1];
+                    $.post("<?= url('project.department/edit') ?>", params, function(res){
                         if(res.code == 1){
                             that.$message.success(res.msg);
                         }else{
@@ -110,10 +109,7 @@
                 },
             },
             computed: {
-                department_list(){
-                    if(!this.form.c_id || !this.department_lists[this.form.c_id])return [];
-                    return this.department_lists[this.form.c_id];
-                },
+
                 check(){
                     if(!this.form.title || !this.form.c_id || !this.can_submit)
                         return false;

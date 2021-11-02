@@ -15,6 +15,11 @@ class P_Company extends P_Base
 
     protected $delete_time = 'delete_time';
 
+    public function levelCate()
+    {
+        return $this->field('id, title, level, pid')->select()->toArray();
+    }
+
     public function lists()
     {
         $list = $this->field('id, title, level, pid')->select()->toArray();

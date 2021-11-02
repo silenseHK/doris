@@ -76,11 +76,17 @@ class Company extends Controller
             }
             return $this->renderSuccess('操作成功');
         }else{
+            ##公司列表
+            $companies = $this->companyModel->adminLists();
             ##公司信息
-            $info = $this->companyModel->where('id',$id)->field('id, title')->find();
+            $info = $this->companyModel->where('id',$id)->field('id, title, pid')->find();
             if(!$info)
                 return $this->renderError('分公司数据已删除或不存在');
-            return $this->fetch('',compact('info'));
+            $info = $info->toArray();
+            $tree = [];
+            $this->companyModel->getParents($info['pid'],$tree);
+            $info['pid'] = $tree;
+            return $this->fetch('',compact('info','companies','tree'));
         }
     }
 

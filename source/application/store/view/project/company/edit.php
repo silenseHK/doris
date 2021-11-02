@@ -42,6 +42,14 @@
                                     <el-input v-model="form.title" maxlength="20"></el-input>
                                 </el-form-item>
 
+                                <el-form-item label="上级公司 *">
+                                    <el-cascader
+                                            v-model="form.pid"
+                                            :options="options"
+                                            :props="{ checkStrictly: true }"
+                                            clearable></el-cascader>
+                                </el-form-item>
+
                                 <el-form-item>
                                     <el-button type="primary" @click="onSubmit">添加</el-button>
                                     <el-button @click="goBack">取消</el-button>
@@ -70,6 +78,7 @@
             el: '#my-form',
             data: {
                 form: <?= json_encode($info) ?>,
+                options: <?= json_encode($companies) ?>,
                 can_submit: true,
             },
             created(){

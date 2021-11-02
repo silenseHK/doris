@@ -51,14 +51,12 @@
                                 </el-form-item>
 
                                 <el-form-item label="所属分公司 *">
-                                    <el-select v-model="form.c_id" filterable placeholder="请选择" @change="selectCompany">
-                                        <el-option
-                                                v-for="item in company_list"
-                                                :key="item.id"
-                                                :label="item.title"
-                                                :value="item.id">
-                                        </el-option>
-                                    </el-select>
+                                    <el-cascader
+                                            v-model="form.c_id"
+                                            :options="company_list"
+                                            :props="{ checkStrictly: true }"
+                                            @change="selectCompany"
+                                            clearable></el-cascader>
                                 </el-form-item>
 
                                 <el-form-item label="所属部门 *">
@@ -120,7 +118,7 @@
         var App = new Vue({
             el: '#my-form',
             data: {
-                company_list: <?= $company_ist ?>,
+                company_list: <?= json_encode($company_ist) ?>,
                 role_list: <?= $role_list ?>,
                 department_lists: <?= json_encode($department_list) ?>,
 
@@ -147,7 +145,9 @@
                     }
                     let that = this;
                     this.can_submit = false;
-                    $.post("<?= url('project.staff/add') ?>", {...this.form}, function(res){
+                    let params = {...this.form}
+                    params.c_id = params.c_id[params.c_id.length - 1];
+                    $.post("<?= url('project.staff/add') ?>", params, function(res){
                         if(res.code == 1){
                             that.$message.success(res.msg);
                             that.init();
@@ -178,8 +178,10 @@
             },
             computed: {
                 department_list(){
-                    if(!this.form.c_id || !this.department_lists[this.form.c_id])return [];
-                    return this.department_lists[this.form.c_id];
+                    if(!this.form.c_id)return [];
+                    let c_id = this.form.c_id[this.form.c_id.length - 1];
+                    if(!this.department_lists[c_id])return [];
+                    return this.department_lists[c_id];
                 },
                 check(){
                     if(!this.form.title || !this.form.a_id || !this.form.c_id || (this.form.is_expert != 0 && this.form.is_expert != 1) || !this.form.role_id || !this.form.account || !this.form.pwd || !this.form.status || !this.can_submit)

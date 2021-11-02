@@ -85,7 +85,7 @@
                 can_submit: true,
             },
             created(){
-                console.log(this.form.pid)
+
             },
             methods: {
                 onSubmit() {
@@ -109,6 +109,7 @@
                 init(){
                     this.form = {
                         title: '',
+                        pid: [],
                     }
                 },
                 goBack(){

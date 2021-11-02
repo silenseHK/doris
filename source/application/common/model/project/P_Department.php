@@ -29,7 +29,7 @@ class P_Department extends P_Base
      */
     public function listsGroupByCompany()
     {
-        $list = $this->field('id, title, c_id')->select();
+        $list = $this->field('id, title, c_id')->select()->toArray();
         $group = [];
         foreach($list as $li)
         {
