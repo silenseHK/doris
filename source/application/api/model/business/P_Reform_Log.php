@@ -71,7 +71,16 @@ class P_Reform_Log extends Base_P_Reform_Log
         ##每页条数
         $size = input('post.size/d',15);
         ##数据
-        return $this->where('matter_id',$matter_id)->field('id, desc, department, staff, create_time')->order('create_time','desc')->paginate($size);
+        return $this
+            ->where('matter_id',$matter_id)
+            ->with(
+                [
+                    'annexList'
+                ]
+            )
+            ->field('id, desc, department, staff, create_time')
+            ->order('create_time','desc')
+            ->paginate($size);
     }
 
 }

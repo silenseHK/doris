@@ -94,6 +94,11 @@ class P_Advice extends Base_P_Advice
         return $this->alias('a')
             ->join('p_matters m','m.id = a.matter_id','left')
             ->join('p_matter_cate mc','mc.id = m.type','left')
+            ->with(
+                [
+                    'annex'
+                ]
+            )
             ->where($where)
             ->field('m.title, m.create_time, m.type, m.risk, m.desc, a.desc as advice_desc, a.advice, a.create_time, a.id, mc.title as cate_title')
             ->order('a.create_time','desc')
