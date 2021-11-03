@@ -362,9 +362,7 @@ class P_Matter extends Base_P_Matter
             $list['data'][$ke]['create_time'] = date('Y-m-d H:i', $da['create_time']);
             $list['data'][$ke]['assign_time'] = date('Y-m-d H:i', $da['assign_time']);
             $list['data'][$ke]['risk'] = $this->getRisk($da['risk']);
-            $list['data'][$ke]['
-'] = $da['
-'] > 0 ? date('Y-m-d H:i', $da['complete_ime']) : '--';
+            $list['data'][$ke]['complete_time'] = $da['complete_time'] > 0 ? date('Y-m-d H:i', $da['complete_time']) : '--';
         }
         return $list;
     }
