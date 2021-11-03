@@ -67,16 +67,23 @@ class P_Project extends Base_P_Project
         {
             $member = explode(',',trim($member,','));
         }
+        ##检查组组长
+        $manager = isset($data['manager']) ? $data['manager'] : '';
+        if($manager)
+        {
+            $manager = explode(',',trim($manager,','));
+        }
         unset($data['member']);
+        unset($data['manager']);
         $this->startTrans();
         try{
             $res = $this->save($data);
             if(!$res){
                 throw new Exception('创建项目失败');
             }
+            $project_id = $this->getLastInsID();
             if($member)
             {
-                $project_id = $this->getLastInsID();
                 $member_data = [];
                 foreach($member as $mem)
                 {
@@ -89,6 +96,22 @@ class P_Project extends Base_P_Project
                 if(!$res)
                 {
                     throw new Exception('检查组组员增加失败');
+                }
+            }
+            if($manager)
+            {
+                $manager_data = [];
+                foreach($manager as $man)
+                {
+                    $manager_data[] = [
+                        'project_id' => $project_id,
+                        'staff_id' => intval($man)
+                    ];
+                }
+                $res = Db::name('p_project_manager')->insertAll($manager_data);
+                if(!$res)
+                {
+                    throw new Exception('检查组组长增加失败');
                 }
             }
             Db::commit();
@@ -110,7 +133,14 @@ class P_Project extends Base_P_Project
         {
             $member = explode(',',trim($member,','));
         }
+        ##检查组组长
+        $manager = isset($data['manager']) ? $data['manager'] : '';
+        if($manager)
+        {
+            $manager = explode(',',trim($manager,','));
+        }
         unset($data['member']);
+        unset($data['manager']);
         $this->startTrans();
         try{
             $res = $this->where('id', $id)->update($data);
@@ -119,6 +149,8 @@ class P_Project extends Base_P_Project
             }
             ##删除以前的组员
             Db::name('p_project_staff')->where('project_id',$id)->delete();
+            ##删除以前的组长
+            Db::name('p_project_manager')->where('project_id',$id)->delete();
             if($member)
             {
                 $member_data = [];
@@ -133,6 +165,22 @@ class P_Project extends Base_P_Project
                 if(!$res)
                 {
                     throw new Exception('检查组组员编辑失败');
+                }
+            }
+            if($manager)
+            {
+                $manager_data = [];
+                foreach($manager as $man)
+                {
+                    $manager_data[] = [
+                        'project_id' => $id,
+                        'staff_id' => intval($man)
+                    ];
+                }
+                $res = Db::name('p_project_manager')->insertAll($manager_data);
+                if(!$res)
+                {
+                    throw new Exception('检查组组长编辑失败');
                 }
             }
             Db::commit();
@@ -165,7 +213,7 @@ class P_Project extends Base_P_Project
                     {
                         $query->field('id, title');
                     },
-                    'manager_staff' => function(Query $query)
+                    'managers' => function(Query $query)
                     {
                         $query->field('id, title');
                     },
@@ -175,7 +223,7 @@ class P_Project extends Base_P_Project
                     }
                 ]
             )
-            ->field('id, title, type, desc, company_id, manager, create_time, status, check_time, level')
+            ->field('id, title, type, desc, company_id, create_time, status, check_time, level')
             ->find();
         if(empty($data)){
             return $this->setError('项目不存在或已删除');

@@ -55,4 +55,9 @@ class P_Project extends P_Base
         return $this->belongsToMany('app\common\model\project\P_Staff','p_project_staff','staff_id','project_id')->field('yoshop_p_staff.id, yoshop_p_staff.title');
     }
 
+    public function managers()
+    {
+        return $this->belongsToMany('app\common\model\project\P_Staff','p_project_manager','staff_id','project_id')->field('yoshop_p_staff.id, yoshop_p_staff.title');
+    }
+
 }
