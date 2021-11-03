@@ -1,4 +1,4 @@
 <?php
 return [
-    'app\home\command\Test',
+    '\app\home\command\Test',
 ];

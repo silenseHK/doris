@@ -152,17 +152,4 @@ class Staff extends Base
         return false;
     }
 
-    public function pendingMatters()
-    {
-        if(request()->isPost())
-        {
-            if(!$list = $this->matterModel->pendingMatters($this->user_id))
-            {
-                return $this->renderError($this->matterModel->getError());
-            }
-            return $this->renderSuccess($list);
-        }
-        return false;
-    }
-
 }

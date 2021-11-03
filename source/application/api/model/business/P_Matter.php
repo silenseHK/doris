@@ -330,6 +330,9 @@ class P_Matter extends Base_P_Matter
      */
     public function assignMatters($user_id)
     {
+        ## 更新问题超时
+        $this->where('status',1)->where('reform_time','<',time())->setField('status',3);
+
         ##用户所在部门
         $user = Db::name('p_staff')->where('id', $user_id)->field('id, a_id, is_expert')->find();
         if(!$user['is_expert'] || !$user['a_id'])
@@ -338,7 +341,7 @@ class P_Matter extends Base_P_Matter
         }
         if(!$user['a_id'])
         {
-            return $this->setError('清联系管理员为您分配部门');
+            return $this->setError('请联系管理员为您分配部门');
         }
         $where = [];
         $where['ma.a_id'] = ['=', $user['a_id']];
@@ -352,13 +355,14 @@ class P_Matter extends Base_P_Matter
             ->join('p_matters m','m.id = ma.matter_id','left')
             ->join('p_project p','m.project_id = p.id','left')
             ->where($where)
-            ->field('m.id, m.title, m.project_id, m.desc, m.risk, m.create_time, m.project_id, ma.create_time assign_time, p.title as project_title')
+            ->field('m.id, m.title, m.project_id, m.desc, m.risk, m.create_time, m.project_id, m.complete_ime, ma.create_time assign_time, p.title as project_title')
             ->paginate($size)->toArray();
         foreach($list['data'] as $ke => $da)
         {
             $list['data'][$ke]['create_time'] = date('Y-m-d H:i', $da['create_time']);
             $list['data'][$ke]['assign_time'] = date('Y-m-d H:i', $da['assign_time']);
             $list['data'][$ke]['risk'] = $this->getRisk($da['risk']);
+            $list['data'][$ke]['complete_ime'] = $da['complete_ime'] > 0 ? date('Y-m-d H:i', $da['complete_ime']) : '--';
         }
         return $list;
     }
