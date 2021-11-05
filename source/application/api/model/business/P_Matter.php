@@ -355,14 +355,15 @@ class P_Matter extends Base_P_Matter
             ->join('p_matters m','m.id = ma.matter_id','left')
             ->join('p_project p','m.project_id = p.id','left')
             ->where($where)
-            ->field('m.id, m.title, m.project_id, m.desc, m.risk, m.create_time, m.project_id, m.complete_time, ma.create_time assign_time, p.title as project_title')
+            ->field('m.id, m.title, m.project_id, m.desc, m.risk, m.reform_time, m.create_time, m.project_id, m.complete_time, ma.create_time assign_time, p.title as project_title, m.status')
             ->paginate($size)->toArray();
         foreach($list['data'] as $ke => $da)
         {
             $list['data'][$ke]['create_time'] = date('Y-m-d H:i', $da['create_time']);
             $list['data'][$ke]['assign_time'] = date('Y-m-d H:i', $da['assign_time']);
+            $list['data'][$ke]['reform_time'] = date('Y-m-d H:i', $da['reform_time']);
             $list['data'][$ke]['risk'] = $this->getRisk($da['risk']);
-            $list['data'][$ke]['complete_time'] = $da['complete_time'] > 0 ? date('Y-m-d H:i', $da['complete_time']) : '--';
+            $list['data'][$ke]['complete_time'] = ceil(($da['reform_time'] - $da['create_time']) / (60 * 60 * 24));
         }
         return $list;
     }

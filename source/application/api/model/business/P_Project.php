@@ -45,7 +45,7 @@ class P_Project extends Base_P_Project
                         {
                             $query->field('id, title');
                         },
-                        'manager_staff' => function(Query $query)
+                        'managers' => function(Query $query)
                         {
                             $query->field('id, title');
                         },
@@ -55,7 +55,8 @@ class P_Project extends Base_P_Project
                         }
                     ]
                 )
-                ->field('id, title, type, desc, company_id, manager, create_time, status, check_time, level, id as total_matter, id as deal_matter')->paginate($size);
+                ->field('id, title, type, desc, company_id, manager, create_time, status, check_time, level, id as total_matter, id as deal_matter')
+                ->paginate($size);
     }
 
     public function add()
